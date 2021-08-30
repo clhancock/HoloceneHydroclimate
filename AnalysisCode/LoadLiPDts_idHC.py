@@ -235,10 +235,7 @@ for FigKey in [FigKeySeason,FigKeyCategory]:
     if save: plt.savefig(gitHub+'Figures/HC12k_'+name+'.png', dpi=400,format='png')
     else: plt.show()
 #%%
-#plt.title("a) Proxy Sites (color signifies cluster regions)",fontsize=SetFig['fontsizeL'])
-
-
-for variable in ['EarlylinSlopeDir','LatelinSlopeDir','bin6ka']: #plot proxy values to check calculations
+for variable in ['EarlySlope','LateSlope','bin6ka']: #plot proxy values to check calculations
     plt.style.use('ggplot')
     plt.figure(figsize=(20,10)); plt.rcParams['axes.facecolor'] ='white'
     plt.rcParams['axes.linewidth'] = 1; plt.rcParams['axes.edgecolor'] = 'k'
@@ -246,8 +243,7 @@ for variable in ['EarlylinSlopeDir','LatelinSlopeDir','bin6ka']: #plot proxy val
     ax1.spines['geo'].set_edgecolor('black')
     ax1.set_global(); ax1.add_feature(cfeature.LAND,facecolor='whitesmoke',edgecolor='k')
     ax1.coastlines(); ax1.add_feature(cfeature.LAKES,facecolor='none',edgecolor='k')
-    plot_df = data_hc_df; plot_df = plot_df[plot_df[variable].notna()]
-    #plot_df = plot_df.loc[(plot_df['Direction'] == 'positive')]
+    plot_df = data_HC; plot_df = plot_df[plot_df[variable].notna()]
     proxy_scatter = ax1.scatter(plot_df.Lon,plot_df.Lat,c=plot_df[variable],
             marker='o',s=130,edgecolor='k',lw=1,alpha=0.8,transform=ccrs.PlateCarree(),
             cmap='BrBG',vmin=-1,vmax=1)
@@ -255,15 +251,4 @@ for variable in ['EarlylinSlopeDir','LatelinSlopeDir','bin6ka']: #plot proxy val
     plt.show()
 
 
-val = {'count':[],'name':[],'color':[]}
-for category in data_hc_df['CategorySpecific'].unique():
-    val['name'].append(category)
-    val['count'].append(list(data_hc_df['CategorySpecific']).count(category))
-    val['color'].append(proxyTypeFigKey[category]['c'])
-                        
-fig1, ax1 = plt.subplots()
-ax1.pie(val['count'], labels=val['name'], colors=val['color'],startangle=90)
-ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-
-plt.show()
 
