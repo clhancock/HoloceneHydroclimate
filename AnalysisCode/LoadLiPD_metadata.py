@@ -1,18 +1,24 @@
 #Load packages
-import pyleoclim as pyleo; import lipd  # Packages for analyzing LiPD files 
-import numpy as np                      # Package with useful numerical functions
-import xarray as xr; import pandas as pd# Package for handling file types
-import math; from scipy import stats    # Packages for calculations  
+import pyleoclim as pyleo               # Packages for analyzing LiPD files 
+#import lipd                             # Packages for analyzing LiPD files 
+import numpy  as np                     # Package with useful numerical functions
+#import xarray as xr                     #Package for handling file types
+import pandas as pd
+#import math
+from scipy import stats                 # Packages for calculations  
 import pymannkendall as mk              # Package for trend detection
 import matplotlib.pyplot as plt         # Packages for making figures
-import matplotlib.gridspec as gridspec;  import matplotlib.colors as pltcolors
-import matplotlib as mpl; from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+#import matplotlib as mpl 
+import matplotlib.gridspec as gridspec
+#import matplotlib.colors as pltcolors
+#from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import cartopy.crs as ccrs              # Packages for mapping in python
-import cartopy.feature as cfeature; import cartopy.util as cutil
+import cartopy.feature as cfeature
+#import cartopy.util as cutil
 #
 dataDir='/Volumes/GoogleDrive/My Drive/zResearch/Data/'
 save=False
-gitHub ='/Volumes/GoogleDrive/My Drive/Classwork/EnvData/Lab1/HoloceneHydroclimate/'
+gitHub ='/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
 #%%
 #Load all available LiPD files & 
 #
@@ -86,8 +92,8 @@ def assignProxyCategory(archive,proxy,unit):
 
 #Function to calculate trend of timeseries data
 def calcTrend(timeValues,proxyValues,ageMin,ageMax,direction):    
-    divisions = 3; minset = 2; sigLevel = 0.05; CI = 0.95; method = 'lin'
-    if len(proxyValues) < 12: minset = 1
+    divisions = 2; minset = 3; sigLevel = 0.05; CI = 0.95; method = 'lin'
+    if len(proxyValues) < 12: minset = 2
     ageRange = (ageMax - ageMin)/divisions
     valuedata = pd.DataFrame([timeValues,proxyValues]).transpose()
     valuedata.columns = ['time','values']
@@ -157,7 +163,7 @@ def df_LiPDmetadata (lipd_list,standardize):
     return(data_matrix)
     
 dataHC= df_LiPDmetadata(lipdHC,True)
-dataT = df_LiPDmetadata(lipdT,True)
+#dataT = df_LiPDmetadata(lipdT,False)
 
 #%%
 #Convert to dataFrame and upload to gitHub folder. Next step cluster in arc
@@ -168,14 +174,20 @@ data_HC = data_HC.loc[(data_HC['Direction'] != '')];     print(len(data_HC))
 data_HC = data_HC.loc[(data_HC['Season'] != 'summer+') & 
                       (data_HC['Season'] != 'winter+')]; print(len(data_HC))
 
-data_T = pd.DataFrame.from_dict(dataT); 
-print("No. of temperature records");                     print(len(data_T))
+#data_T = pd.DataFrame.from_dict(dataT); 
+#print("No. of temperature records");                     print(len(data_T))
 #data_T = data_T.loc[(data_T['Unit'] == 'degC')];         print(len(data_T))
-data_T = data_T.loc[(data_T['Season'] != 'summer+') & 
-                  (data_T['Season']   != 'winter+')];    print(len(data_T))
+#data_T = data_T.loc[(data_T['Season'] != 'summer+') & 
+ #                 (data_T['Season']   != 'winter+')];    print(len(data_T))
 
 data_HC.to_csv(gitHub+'DataSummary/proxyHC.csv')
-data_T.to_csv( gitHub+'DataSummary/proxyT.csv')
+#data_T.to_csv( gitHub+'DataSummary/proxyT.csv')
+
+
+#692 records from consisiting of 257 pollen, 131 lake Deposit, 109 speleothem, 32 lefwax dD, 32 lake sediment d18O, 10 glacier ice, and 121 miscellaneous records
+
+
+
 #%%
 FigKeyCategory={'Speleothem':   {'s':1,  'marker':'^', 'c':'firebrick'}, 
         'Speleothem (d18O)':    {'s':1,  'marker':'^', 'c':'firebrick'},
@@ -194,10 +206,10 @@ FigKeyCategory={'Speleothem':   {'s':1,  'marker':'^', 'c':'firebrick'},
         }  
 FigKeySeason = {'summerOnly':   {'s':1,  'marker':'^', 'c':'r'},
                 'winterOnly':   {'s':1,  'marker':'v', 'c':'b'},
-                'Annual':       {'s':0.8,  'marker':'o', 'c':'dimgrey'},
-                'annual':       {'s':0.8,  'marker':'o', 'c':'dimgrey'},
-                'not specified':{'s':0.8,  'marker':'o', 'c':'dimgrey'},
-                '':             {'s':0.8,  'marker':'o', 'c':'dimgrey'}
+                'Annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey'},
+                'annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey'},
+                'not specified':{'s':0.5,  'marker':'o', 'c':'dimgrey'},
+                '':             {'s':0.5,  'marker':'o', 'c':'dimgrey'}
         }
 FigKeyExtent = {'Global':{'pltExtent':[0,8,0,10],'GeoExtent':[-180,180,-90,90],'Name':'Global'},
                  'NA':    {'pltExtent':[8,12,2,6],'GeoExtent':[-130,-50,23,55], 'Name':'North America'},
@@ -235,7 +247,7 @@ for FigKey in [FigKeySeason,FigKeyCategory]:
     if save: plt.savefig(gitHub+'Figures/HC12k_'+name+'.png', dpi=400,format='png')
     else: plt.show()
 #%%
-for variable in ['EarlySlope','LateSlope','bin6ka']: #plot proxy values to check calculations
+for variable in ['EarlySlopeSig','LateSlopeSig','bin6ka']: #plot proxy values to check calculations
     plt.style.use('ggplot')
     plt.figure(figsize=(20,10)); plt.rcParams['axes.facecolor'] ='white'
     plt.rcParams['axes.linewidth'] = 1; plt.rcParams['axes.edgecolor'] = 'k'
@@ -249,6 +261,4 @@ for variable in ['EarlySlope','LateSlope','bin6ka']: #plot proxy values to check
             cmap='BrBG',vmin=-1,vmax=1)
     plt.title(variable,fontsize=30)
     plt.show()
-
-
 
