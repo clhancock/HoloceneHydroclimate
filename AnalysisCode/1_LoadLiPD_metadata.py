@@ -303,7 +303,7 @@ for source in dataSource:
         
 fig1, ax1 = plt.subplots()
 ax1.pie(datasource['count'], labels=datasource['sourceNo'],startangle=90,
-        colors=['lightgrey','firebrick','powderblue','forestgreen','cornflowerblue','rosybrown','darkslategrey'])
+        colors=['lightgrey','firebrick','k','powderblue','forestgreen','cornflowerblue','rosybrown','darkslategrey'])
 ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 plt.show()
 if save: plt.savefig(gitHub+'Figures/HC12k_DataSourceAttempt'+'.png', dpi=400,format='png')

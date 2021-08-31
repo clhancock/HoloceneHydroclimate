@@ -20,6 +20,32 @@ dataDir='/Volumes/GoogleDrive/My Drive/zResearch/Data/'
 save=False
 gitHub ='/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
 #%%
+def calcTrend(timeValues,proxyValues,ageMin,ageMax,direction):    
+    divisions = 2; minset = 3; sigLevel = 0.05; CI = 0.95; method = 'lin'
+    if len(proxyValues) < 12: minset = 2
+    ageRange = (ageMax - ageMin)/divisions
+    valuedata = pd.DataFrame([timeValues,proxyValues]).transpose()
+    valuedata.columns = ['time','values']
+    valuedata = valuedata.loc[(valuedata['time'] <= ageMax) & (valuedata['time'] >= ageMin)]
+    valuedata = valuedata.dropna() 
+    check = []    
+    for timeperiod in range(divisions):
+        checkValue = len(valuedata.loc[(valuedata['time'] <= ageMin+(timeperiod+1)*ageRange) 
+                                     & (valuedata['time'] >= ageMin+(timeperiod)*ageRange)]['time'])
+        if checkValue >= minset: check.append(True)
+        else: check.append(False)   
+    if check.count(True) == divisions:
+        valuedata['time']   = valuedata['time']*-1 #To get correct forward direction
+        valuedata['values'] = valuedata['values']*direction
+        trendDirection = mk.original_test(valuedata['values']*-1,alpha=sigLevel)
+        if   method == 'lin': Slope = stats.linregress( valuedata['time'],valuedata['values'])
+        elif method == 'sen': Slope = stats.theilslopes(valuedata['values'],valuedata['time'],CI)
+        output = {'Direction':trendDirection[0],'Slope':Slope[0]*1000}
+        if output['Direction'] == 'no trend': output['SlopeSig'] = 0
+        else:                                 output['SlopeSig'] = output['Slope']
+    else: output = {'Direction':np.NaN, 'Slope':np.NaN, 'SlopeSig':np.NaN}
+    return(output)
+#%%
 #Load Model Data
 #
 #Set time variables and resolution of data
@@ -38,30 +64,148 @@ modelKey = {'trace':{'lat':'lat','lon':'lon',
                      'Evap':{'varName':'totalEvap_mm_srf','conversion':[1,0]}, #already in mm/day
                      'Temp':{'varName':'temp_mm_1_5m','conversion':[1,-273.15]}}} #converts K to degC
 dataModel = {}
-for model in modelKey:
+for model in modelKey.keys():
     dataModel[model] = {}
-    data = xr.open_dataset(dataDir['model']+model+'/PRECIP_ann.nc',decode_times=False)
-    dataModel[model]['lat']  = data[modelKey[model]['lat']].values
-    dataModel[model]['lon']  = data[modelKey[model]['lon']].values
-    dataModel[model]['lon']  = xr.where(dataModel[model]['lon'] > 180,dataModel[model]['lon'] - 360,dataModel[model]['lon'])
-    dataModel[model]['time'] = timebin
     for variable in ['Precip','Evap']: #',Temp'
-        modelData[model][variable] = {}
-        for season in ['ann','djf','jja']:
-             print(variable+season)
-             data = xr.open_dataset(dataDir['model']+model+'/'+variable+'_'+season+'.nc',decode_times=False)
+        dataModel[model][variable] = {}
+        for season in ['ANN','DJF','JJA']:
+             print(model+variable+season)
+             #Load data
+             filename = modelKey[model][variable]['varName']
+             if model == 'hadcm': filename = 'deglh.vn1_0.'+filename+'.monthly.'+season
+             elif model=='trace': filename = 'trace.01-36.22000BP.cam2.'+filename+'.22000BP_decavg'+season+'_400BCE'
+             data = xr.open_dataset(dataDir+'Model/'+model+'/'+filename+'.nc',decode_times=False)
+             #For first climate variable, add lat/lon information 
+             if len(dataModel[model]) == 1: 
+                 dataModel[model]['lat']  = data[modelKey[model]['lat']].values
+                 dataModel[model]['lon']  = data[modelKey[model]['lon']].values
+                 dataModel[model]['lon']  = xr.where(dataModel[model]['lon'] > 180,dataModel[model]['lon'] - 360,dataModel[model]['lon'])
+                 dataModel[model]['time'] = timebin
+             #Convert to common time units
              modeltime   = data[modelKey[model]['Time']['varName']]
              modeltime   = modeltime.values*(modelKey[model]['Time']['conversion'][0])+modelKey[model]['Time']['conversion'][1] 
+             #Convert to common variable units (mm/day typically)
              modelvalues = data[modelKey[model][variable]['varName']]
              modelvalues = modelvalues.values*(modelKey[model][variable]['conversion'][0])+modelKey[model][variable]['conversion'][1]              
+             #Convert to common data structure
              if model == 'hadcm': modelvalues = modelvalues[:,0,:,:]
+             #Bin data to common time resolution 
              modelvalues = pd.DataFrame([list(modeltime),list(modelvalues)]).transpose() 
              modelvalues.columns = ['time','values']
              binvalue = []
              for timeslice in timebin: binvalue.append(np.mean(modelvalues.loc[(modelvalues['time'] >= timeslice-ageRes/2) & (modelvalues['time'] < (timeslice+ageRes/2))]['values']))
-             modelData[model][variable][season] = np.dstack(binvalue)
-    modelData[model]['EffM'] = {}
-    for season in ['ann','djf','jja']:
-        modelData[model]['EffM'][season] = modelData[model]['Precip'][season] - modelData[model]['Evap'][season] 
+             dataModel[model][variable][season] = np.dstack(binvalue)
+    #
+    #Calculate P-E
+    dataModel[model]['EffM'] = {}
+    for season in ['ANN','DJF','JJA']:
+        dataModel[model]['EffM'][season] = dataModel[model]['Precip'][season] - dataModel[model]['Evap'][season] 
 #
+#%%
+#def plotModelValues(model,season='ANN',variable='Precip'):
+
+    
+#%%
+
+#%%
+#Calc model pesuodporxy timeseries based on location, season, length, variable
+#
+setTime = {'Total':{'min':ageMin,                  'max':ageMax},
+           'Early':{'min':ageMin+(ageMax-ageMin)/2,'max':ageMax},
+           'Late' :{'min':ageMin,                  'max':ageMin+(ageMax-ageMin)/2}}
+#ageMin,ageMax,ageRes
+def calculatePseudoProxy(proxyDF,model,
+                         climVar='HC', # Change to 'Ann' or 'Summer' to test assumptions about proxies
+                         seasonality='ANN',# Change to 'P' or 'M' to test assumptions about proxies
+                         standardize=True, #Will calculate z scores for records relative to Holocene timeseries
+                         ageRes=100,binRes=1000):
+    pseudoproxy={}
+    names_key    = ['TSid','Lat','Lon','Category','CategorySpecific','Interp']
+    variable_key = ['Direction','Slope','SlopeSig']
+    pseudoproxy['modelTS'] = []
+    for time in setTime:
+        #Set up dictionary lists to add to 
+        for time in setTime: 
+            for var in variable_key: pseudoproxy[time+var] = []
+        for name in names_key: pseudoproxy[name] = [] 
+        for age in range(ageMin,ageMax,binRes): 
+            pseudoproxy['bin'+str(int(age/ageRes))+'ka'] = []
+        #Populate data from model values
+        for index, site in proxyDF.iterrows():
+            #Add metadata
+            for name in names_key: pseudoproxy[name].append(site[name])
+            #ID seasonality from proxy metadata
+            if site['Season'] == 'summerOnly': 
+                if seasonality == 'ann':  season = seasonality
+                elif site['Lat'] > 0:     season = 'jja'
+                else:                     season = 'djf'
+            elif site['Season'] == 'winterOnly':
+                if seasonality == 'ann':  season = seasonality
+                elif site['Lat'] > 0:     season = 'djf'
+                else:                     season = 'jja'
+            else: season = seasonality
+            #ID appropriate climate variable for pseudoproxy
+            if   climVar == 'T':          variable = 'Temp'
+            elif climVar == 'HC':
+                if site['Interp'] == 'P': variable = 'Precip'
+                else:                     variable = 'EffM'
+            elif climVar == 'P':          variable = 'Precip'
+            elif climVar == 'P-E':        variable = 'EffM'
+            #ID Model grid Location for proxy site
+            lat=np.argmin(np.abs(dataModel[model]['lat']-site['Lat']))
+            lon=np.argmin(np.abs(dataModel[model]['lon']-site['Lon']))
+            #Standardize and get age range
+            modelvalues = dataModel[model][variable][season][lat,lon,:]
+            if standardize: modelvalues = stats.zscore(modelvalues)
+            mask = [idx for idx, val in enumerate(dataModel[model]['time']) if (val < site['ageMin'] or val > site['ageMax'])]
+            modelvalues[mask] = np.NaN
+            modelvalues=list(modelvalues)
+            pseudoproxy['modelTS'].append(list(modelvalues))
+            #Calculate trends
+            for time in setTime:   
+                out = calcTrend(dataModel[model]['time'],modelvalues,setTime[time]['min'],setTime[time]['max'],1)               
+                for var in variable_key: 
+                    pseudoproxy[time+var].append(out[var])
+            mask = [idx for idx, val in enumerate(dataModel[model]['time']) if val >= 0 and val < 1000]
+            print(mask)
+            lipdTS_std = np.nanmean(modelvalues[mask])
+            #Calcaulte Bin values
+            for age in range(ageMin,ageMax,ageRes):
+                mask = [idx for idx, val in enumerate(dataModel[model]['time']) if val >= age and val < age+ageRes]
+                value_ts = np.nanmean(modelvalues[mask])
+                pseudoproxy['bin'+str(int(age/ageRes))+'ka'].append((value_ts-lipdTS_std))
+    return(pseudoproxy)
+    #
+
+
+calculatePseudoProxy(data_HC,'trace','HC')
+
+#%%
+climateVariable = 'HC'
+for variable in ['bin6ka']: #plot proxy values to check calculations
+    plt.style.use('ggplot')
+    plt.figure(figsize=(20,10)); plt.rcParams['axes.facecolor'] ='white'
+    plt.rcParams['axes.linewidth'] = 1; plt.rcParams['axes.edgecolor'] = 'k'
+    ax1 = plt.subplot(projection=ccrs.Robinson()) 
+    ax1.spines['geo'].set_edgecolor('black')
+    ax1.set_global(); ax1.add_feature(cfeature.LAND,facecolor='whitesmoke',edgecolor='k')
+    ax1.coastlines(); ax1.add_feature(cfeature.LAKES,facecolor='none',edgecolor='k')
+    plot_df = modelData[model]['pseudoproxyTS'][climateVariable]
+    #plot_df = plot_df.loc[(plot_df['Direction'] == 'positive')]
+    mask = [idx for idx, val in enumerate(plot_df[variable]) if np.isnan(val) == False]
+    for i in mask:
+        proxy_scatter = ax1.scatter(plot_df['Lon'][i],plot_df['Lat'][i],c=plot_df[variable][i],
+            marker='o',s=130,edgecolor='k',lw=1,alpha=0.8,transform=ccrs.PlateCarree(),
+            cmap='BrBG',vmin=-2,vmax=2)
+    plt.title(variable,fontsize=30)
+    plt.show()
+
+hadcm_hc_df = pd.DataFrame.from_dict(modelData['hadcm']['pseudoproxyTS']['HC']); print("No. of hydroclimate records"); print(len(hadcm_hc_df))
+trace_hc_df = pd.DataFrame.from_dict(modelData['trace']['pseudoproxyTS']['HC']); print("No. of hydroclimate records"); print(len(trace_hc_df))
+#hadcm_temp_df = pd.DataFrame.from_dict(modelData['hadcm']['pseudoproxyTS']['T']); print("No. of temperature records"); print(len(hadcm_temp_df))
+#trace_temp_df = pd.DataFrame.from_dict(modelData['trace']['pseudoproxyTS']['T']); print("No. of temperature records"); print(len(trace_temp_df))
+hadcm_hc_df.to_csv(dataDir['lipd']+'summary/hadcmHC.csv')
+trace_hc_df.to_csv(dataDir['lipd']+'summary/traceHC.csv')
+#hadcm_temp_df.to_csv(dataDir['lipd']+'summary/hadcmT.csv')
+#trace_temp_df.to_csv(dataDir['lipd']+'summary/traceT.csv')
 
