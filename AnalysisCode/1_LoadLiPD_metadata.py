@@ -20,7 +20,7 @@ dataDir='/Volumes/GoogleDrive/My Drive/zResearch/Data/'
 save=False
 gitHub ='/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
 #%%
-#Load all available LiPD files & 
+#Read all available LiPD files & extrat to timeseries objects
 #
 LiPDdatabase   = pyleo.Lipd(dataDir+'LiPD/database')
 LiPDdatabaseTS = LiPDdatabase.to_tso()
@@ -48,16 +48,16 @@ for ts in LiPDdatabaseTS:
             #Check if in temp12k
             if compilation['compilationName'] == "Temp12k":
                 if any(v == '1_0_2' for v in compilation['compilationVersion']): 
-                    lipdT.append(ts) ###
+                    lipdT.append(ts) ### add record
             #Check if in HC12k
             elif compilation['compilationName'] == "HoloceneHydroclimate":
                 ts['paleoData_values'] = [np.nan if x == 'nan' else x for x in ts['paleoData_values']] #Convert Lake Deposit records to integers
                 if ts['archiveType'] == 'LakeDeposits':
-                    ts['paleoData_values'] = [x-2 for x in ts['paleoData_values']] #Change 1,2,3 values to -1,0,1  
+                    ts['paleoData_values'] = [x-2 for x in ts['paleoData_values']] #Change 1,2,3 values to -1 (high),0,1 (low)
                     if np.count_nonzero(~np.isnan(ts['paleoData_values'][0:11])) >= 9: #Set minimal resolution
-                        if np.nanmin(ts['paleoData_values'][0:11]) != np.nanmax(ts['paleoData_values'][0:11]):
-                            lipdHC.append(ts) ###
-                else: lipdHC.append(ts) ###
+                        if np.nanmin(ts['paleoData_values'][0:11]) != np.nanmax(ts['paleoData_values'][0:11]): #has some variability over Holocene
+                            lipdHC.append(ts) ### add record
+                else: lipdHC.append(ts) ### add record
     except: pass
 
 print(' - Found '+str(len(lipdT))+' temperature proxies -')
@@ -118,7 +118,7 @@ def calcTrend(timeValues,proxyValues,ageMin,ageMax,direction):
     return(output)
 
 #Function to create dataframe of relevent data / quick qc sheet to sort data by
-def df_LiPDmetadata (lipd_list,standardize):
+def LiPDmetadata (lipd_list,standardize):
     problem_records = []; RecordNo=0
     data_matrix = {'Category':[],'CategorySpecific':[],
                    'ageMin':[],'ageMax':[],'ageRange':[],'ageRes':[]}
@@ -162,8 +162,8 @@ def df_LiPDmetadata (lipd_list,standardize):
     for record in problem_records: print(record)
     return(data_matrix)
     
-dataHC= df_LiPDmetadata(lipdHC,True)
-#dataT = df_LiPDmetadata(lipdT,False)
+dataHC = LiPDmetadata(lipdHC,True)
+#dataT = LiPDmetadata(lipdT,False)
 
 #%%
 #Convert to dataFrame and upload to gitHub folder. Next step cluster in arc
@@ -261,4 +261,51 @@ for variable in ['EarlySlopeSig','LateSlopeSig','bin6ka']: #plot proxy values to
             cmap='BrBG',vmin=-1,vmax=1)
     plt.title(variable,fontsize=30)
     plt.show()
+    
+#%%
+dataSource = []
+for ts in lipdHC:
+    if ts['paleoData_TSid'] in dataHC['TSid']:
+        test = {}
+        try:    test['url'] = ts['originalDataUrl']
+        except: test['url'] = ''
+        try:    test['createdBy'] = ts['createdBy']
+        except: test['createdBy'] = ''
+        try:    test['calibration'] = ts['paleoData_calibration_method']
+        except: test['calibration'] = ''
+        try:    test['doi1'] = ts['pub1_doi']
+        except: test['doi1'] = ''
+        try:    test['doi2'] = ts['pub2_doi']
+        except: test['doi2'] = ''
+        if   test['createdBy'] == 'http://github.com/nickmckay/oxfordLakeStatus2Lipd':
+                dataSource.append('Oxford Lake Status')
+        elif test['createdBy'] == 'sisal2lipd': 
+                dataSource.append('SISAL')
+        elif test['url'] == 'wNAm': 
+                dataSource.append('wNA')
+        elif test['calibration'] == 'JM18_MAT':
+                dataSource.append('Marsicek')
+        elif 'gov/paleo/study/15444' in  test['url'] or '10.5194/cp-10-1605-2014' == test['doi2']: 
+                dataSource.append('Arctic')
+        elif ts['dataSetName'][0:2] == 'LS':
+                dataSource.append('iso2k')
+        elif '10.25921/4RY2-G808' in test['url'] or '/paleo/study/27330' in test['url']: 
+                dataSource.append('Temp12k')
+        else: dataSource.append('Miscellanious')
+
+
+datasource = {'source':[],'count':[],'sourceNo':[]}
+for source in dataSource:
+    if source not in datasource['source']:
+        datasource['source'].append(source)
+        datasource['sourceNo'].append(source+' (n='+str(dataSource.count(source))+')')
+        datasource['count'].append(dataSource.count(source))
+        
+fig1, ax1 = plt.subplots()
+ax1.pie(datasource['count'], labels=datasource['sourceNo'],startangle=90,
+        colors=['lightgrey','firebrick','powderblue','forestgreen','cornflowerblue','rosybrown','darkslategrey'])
+ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+plt.show()
+if save: plt.savefig(gitHub+'Figures/HC12k_DataSourceAttempt'+'.png', dpi=400,format='png')
+else: plt.show()
 

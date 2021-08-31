@@ -87,13 +87,16 @@ for var in varList:
                        norm=mpl.colors.Normalize(norm*-1,norm),
                        legend=True)
     plt.title(var+" median value for regions with at least "+str(threshold)+" records")
-    plt.show()
+    if save: plt.savefig(gitHub+'Figures//Test_IPCCregionMedianValues/'+var+'.png', dpi=400,format='png')
+    else: plt.show()
 
 #Plot Number of records in each regions
+var='Count'
 regionsMap = regionsProxyData.loc[regionsProxyData[var].notna()] 
 geoplot.choropleth(regionsMap,figsize=(8,4),edgecolor='k',
                        hue=regionsMap[var],cmap='Greens',
                        norm=mpl.colors.Normalize(0,50),
                        legend=True)
 plt.title(var+" of records within each region")
-plt.show()
+if save: plt.savefig(gitHub+'Figures//Test_IPCCregionMedianValues/'+var+'.png', dpi=400,format='png')
+else: plt.show()
