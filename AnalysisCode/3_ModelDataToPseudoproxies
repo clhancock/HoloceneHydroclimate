@@ -1,5 +1,5 @@
 #Load packages
-import pyleoclim as pyleo               # Packages for analyzing LiPD files 
+#import pyleoclim as pyleo               # Packages for analyzing LiPD files 
 #import lipd                             # Packages for analyzing LiPD files 
 import numpy  as np                     # Package with useful numerical functions
 import xarray as xr                     #Package for handling file types
@@ -9,7 +9,7 @@ from scipy import stats                 # Packages for calculations
 import pymannkendall as mk              # Package for trend detection
 import matplotlib.pyplot as plt         # Packages for making figures
 #import matplotlib as mpl 
-import matplotlib.gridspec as gridspec
+#import matplotlib.gridspec as gridspec
 #import matplotlib.colors as pltcolors
 #from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import cartopy.crs as ccrs              # Packages for mapping in python
@@ -19,6 +19,7 @@ import cartopy.feature as cfeature
 dataDir='/Volumes/GoogleDrive/My Drive/zResearch/Data/'
 save=False
 gitHub ='/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
+data_HC =  pd.read_csv(gitHub+'DataSummary/proxyHC.csv')
 #%%
 def calcTrend(timeValues,proxyValues,ageMin,ageMax,direction):    
     divisions = 2; minset = 3; sigLevel = 0.05; CI = 0.95; method = 'lin'
@@ -189,43 +190,17 @@ def calculatePseudoProxy(proxyDF,
 #modelHC    = calculatePseudoProxy(data_HC)
 #%%
 
-modelProxiesTests = {}
-for seasonality in ['Proxy','Ann','Summer']:
-    for climVar in ['HC','P','P-E']:
-        modelProxiesTests[seasonality+climVar] = calculatePseudoProxy(data_HC,
-                                                                      climVar=climVar,
-                                                                      seasonality=seasonality)
-        
-
-
-
+modelProxies = {}
+for Season in ['Proxy','Ann','Summer']:
+    for climateInterp in ['HC','P','P-E']:
+        name = climateInterp+'_'+Season
+        modelProxies[name] = calculatePseudoProxy(data_HC,
+                                                  climVar=climateInterp,
+                                                  seasonality=Season)
+        if save:
+            for model in modelProxies[name].keys():
+                modelProxies[name][model].to_csv(gitHub+'DataSummary/'+model+'_Pseudoproxy_'+name+'.csv')
 
 #%%
-climateVariable = 'HC'
-for variable in ['bin6ka']: #plot proxy values to check calculations
-    plt.style.use('ggplot')
-    plt.figure(figsize=(20,10)); plt.rcParams['axes.facecolor'] ='white'
-    plt.rcParams['axes.linewidth'] = 1; plt.rcParams['axes.edgecolor'] = 'k'
-    ax1 = plt.subplot(projection=ccrs.Robinson()) 
-    ax1.spines['geo'].set_edgecolor('black')
-    ax1.set_global(); ax1.add_feature(cfeature.LAND,facecolor='whitesmoke',edgecolor='k')
-    ax1.coastlines(); ax1.add_feature(cfeature.LAKES,facecolor='none',edgecolor='k')
-    plot_df = modelData[model]['pseudoproxyTS'][climateVariable]
-    #plot_df = plot_df.loc[(plot_df['Direction'] == 'positive')]
-    mask = [idx for idx, val in enumerate(plot_df[variable]) if np.isnan(val) == False]
-    for i in mask:
-        proxy_scatter = ax1.scatter(plot_df['Lon'][i],plot_df['Lat'][i],c=plot_df[variable][i],
-            marker='o',s=130,edgecolor='k',lw=1,alpha=0.8,transform=ccrs.PlateCarree(),
-            cmap='BrBG',vmin=-2,vmax=2)
-    plt.title(variable,fontsize=30)
-    plt.show()
 
-hadcm_hc_df = pd.DataFrame.from_dict(modelData['hadcm']['pseudoproxyTS']['HC']); print("No. of hydroclimate records"); print(len(hadcm_hc_df))
-trace_hc_df = pd.DataFrame.from_dict(modelData['trace']['pseudoproxyTS']['HC']); print("No. of hydroclimate records"); print(len(trace_hc_df))
-#hadcm_temp_df = pd.DataFrame.from_dict(modelData['hadcm']['pseudoproxyTS']['T']); print("No. of temperature records"); print(len(hadcm_temp_df))
-#trace_temp_df = pd.DataFrame.from_dict(modelData['trace']['pseudoproxyTS']['T']); print("No. of temperature records"); print(len(trace_temp_df))
-hadcm_hc_df.to_csv(dataDir['lipd']+'summary/hadcmHC.csv')
-trace_hc_df.to_csv(dataDir['lipd']+'summary/traceHC.csv')
-#hadcm_temp_df.to_csv(dataDir['lipd']+'summary/hadcmT.csv')
-#trace_temp_df.to_csv(dataDir['lipd']+'summary/traceT.csv')
 
