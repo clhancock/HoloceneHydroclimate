@@ -114,71 +114,91 @@ setTime = {'Total':{'min':ageMin,                  'max':ageMax},
            'Early':{'min':ageMin+(ageMax-ageMin)/2,'max':ageMax},
            'Late' :{'min':ageMin,                  'max':ageMin+(ageMax-ageMin)/2}}
 #ageMin,ageMax,ageRes
-def calculatePseudoProxy(proxyDF,model,
-                         climVar='HC', # Change to 'Ann' or 'Summer' to test assumptions about proxies
-                         seasonality='ANN',# Change to 'P' or 'M' to test assumptions about proxies
+
+def calculatePseudoProxy(proxyDF,
+                         dataModelDict=dataModel,
+                         climVar='HC',#Or T # Change to 'P' or 'P-E' to test assumptions about proxies
+                         seasonality='Proxy', # Change to 'ANN' or 'Summer' to test assumptions about proxies
                          standardize=True, #Will calculate z scores for records relative to Holocene timeseries
-                         ageRes=100,binRes=1000):
-    pseudoproxy={}
-    names_key    = ['TSid','Lat','Lon','Category','CategorySpecific','Interp']
-    variable_key = ['Direction','Slope','SlopeSig']
-    pseudoproxy['modelTS'] = []
-    for time in setTime:
-        #Set up dictionary lists to add to 
-        for time in setTime: 
-            for var in variable_key: pseudoproxy[time+var] = []
-        for name in names_key: pseudoproxy[name] = [] 
-        for age in range(ageMin,ageMax,binRes): 
-            pseudoproxy['bin'+str(int(age/ageRes))+'ka'] = []
-        #Populate data from model values
-        for index, site in proxyDF.iterrows():
-            #Add metadata
-            for name in names_key: pseudoproxy[name].append(site[name])
-            #ID seasonality from proxy metadata
-            if site['Season'] == 'summerOnly': 
-                if seasonality == 'ann':  season = seasonality
-                elif site['Lat'] > 0:     season = 'jja'
-                else:                     season = 'djf'
-            elif site['Season'] == 'winterOnly':
-                if seasonality == 'ann':  season = seasonality
-                elif site['Lat'] > 0:     season = 'djf'
-                else:                     season = 'jja'
-            else: season = seasonality
-            #ID appropriate climate variable for pseudoproxy
-            if   climVar == 'T':          variable = 'Temp'
-            elif climVar == 'HC':
-                if site['Interp'] == 'P': variable = 'Precip'
-                else:                     variable = 'EffM'
-            elif climVar == 'P':          variable = 'Precip'
-            elif climVar == 'P-E':        variable = 'EffM'
-            #ID Model grid Location for proxy site
-            lat=np.argmin(np.abs(dataModel[model]['lat']-site['Lat']))
-            lon=np.argmin(np.abs(dataModel[model]['lon']-site['Lon']))
-            #Standardize and get age range
-            modelvalues = dataModel[model][variable][season][lat,lon,:]
-            if standardize: modelvalues = stats.zscore(modelvalues)
-            mask = [idx for idx, val in enumerate(dataModel[model]['time']) if (val < site['ageMin'] or val > site['ageMax'])]
-            modelvalues[mask] = np.NaN
-            modelvalues=list(modelvalues)
-            pseudoproxy['modelTS'].append(list(modelvalues))
-            #Calculate trends
-            for time in setTime:   
-                out = calcTrend(dataModel[model]['time'],modelvalues,setTime[time]['min'],setTime[time]['max'],1)               
-                for var in variable_key: 
-                    pseudoproxy[time+var].append(out[var])
-            mask = [idx for idx, val in enumerate(dataModel[model]['time']) if val >= 0 and val < 1000]
-            print(mask)
-            lipdTS_std = np.nanmean(modelvalues[mask])
-            #Calcaulte Bin values
-            for age in range(ageMin,ageMax,ageRes):
-                mask = [idx for idx, val in enumerate(dataModel[model]['time']) if val >= age and val < age+ageRes]
-                value_ts = np.nanmean(modelvalues[mask])
-                pseudoproxy['bin'+str(int(age/ageRes))+'ka'].append((value_ts-lipdTS_std))
-    return(pseudoproxy)
-    #
+                         binRes=1000):
+    output={}
+    for model in dataModelDict.keys():
+            pseudoproxy={}
+            names_key    = ['TSid','Lat','Lon','Category','CategorySpecific','Interp']
+            variable_key = ['Direction','Slope','SlopeSig']
+            pseudoproxy['modelTS'] = []
+            #Set up dictionary lists to add to 
+            for time in setTime:  
+                for var in variable_key: pseudoproxy[time+var] = []
+            for name in names_key: pseudoproxy[name] = [] 
+            for age in range(ageMin,ageMax,binRes): 
+                pseudoproxy['bin'+str(int(age/binRes))+'ka'] = []
+            #Populate data from model values
+            for index, site in proxyDF.iterrows():
+                #Add metadata
+                for name in names_key: pseudoproxy[name].append(site[name])
+                #ID seasonality from proxy metadata
+                if   seasonality == 'ANN':      season = 'ANN' #assume everying annual 
+                elif seasonality == 'Summer': #summer or annual are summer
+                    if site['Season'] == 'winterOnly':
+                        if site['Lat'] > 0:     season = 'DJF'
+                        else:                   season = 'JJA'
+                    else: 
+                        if site['Lat'] > 0:     season = 'JJA'
+                        else:                   season = 'DJF'
+                else: #Use proxy metadata
+                    if site['Season'] == 'summerOnly': 
+                        if site['Lat'] > 0:     season = 'JJA'
+                        else:                   season = 'DJF'
+                    if site['Season'] == 'winterOnly':
+                        if site['Lat'] > 0:     season = 'DJF'
+                        else:                   season = 'JJA'
+                    else: season = 'ANN'
+                #ID appropriate climate variable for pseudoproxy
+                if   climVar == 'T':          variable = 'Temp'
+                elif climVar == 'HC':
+                    if site['Interp'] == 'P': variable = 'Precip'
+                    else:                     variable = 'EffM'
+                elif climVar == 'P':          variable = 'Precip'
+                elif climVar == 'P-E':        variable = 'EffM'
+                #ID Model grid Location for proxy site
+                lat=np.argmin(np.abs(dataModel[model]['lat']-site['Lat']))
+                lon=np.argmin(np.abs(dataModel[model]['lon']-site['Lon']))
+                #Standardize and get age range
+                modelvalues = dataModel[model][variable][season][lat,lon,:]
+                if standardize: modelvalues = stats.zscore(modelvalues)
+                mask = [idx for idx, val in enumerate(dataModel[model]['time']) if (val < site['ageMin'] or val > site['ageMax'])]
+                modelvalues[mask] = np.NaN
+                #if len(pseudoproxy['modelTS']) < 1:
+                pseudoproxy['modelTS'].append(list(modelvalues))
+                #Calculate trends
+                for time in setTime:   
+                    out = calcTrend(dataModel[model]['time'],list(modelvalues),setTime[time]['min'],setTime[time]['max'],1)               
+                    for var in variable_key: 
+                        pseudoproxy[time+var].append(out[var])
+                mask = [idx for idx, timeval in enumerate(dataModel[model]['time']) if timeval >= 0 and timeval <= 1000]
+                lipdTS_std = np.nanmean(modelvalues[mask])
+                #Calcaulte Bin values
+                for age in range(ageMin,ageMax,binRes):
+                    mask = [idx for idx, val in enumerate(dataModel[model]['time']) if val >= age and val < age+ageRes]
+                    value_ts = np.nanmean(modelvalues[mask])
+                    pseudoproxy['bin'+str(int(age/binRes))+'ka'].append((value_ts-lipdTS_std))
+            output[model] = pd.DataFrame.from_dict(pseudoproxy)
+    return(output)
+
+#modelHC    = calculatePseudoProxy(data_HC)
+#%%
+
+modelProxiesTests = {}
+for seasonality in ['Proxy','Ann','Summer']:
+    for climVar in ['HC','P','P-E']:
+        modelProxiesTests[seasonality+climVar] = calculatePseudoProxy(data_HC,
+                                                                      climVar=climVar,
+                                                                      seasonality=seasonality)
+        
 
 
-calculatePseudoProxy(data_HC,'trace','HC')
+
 
 #%%
 climateVariable = 'HC'
