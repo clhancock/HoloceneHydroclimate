@@ -8,7 +8,7 @@ import pandas as pd
 from scipy import stats                 # Packages for calculations  
 import pymannkendall as mk              # Package for trend detection
 import matplotlib.pyplot as plt         # Packages for making figures
-#import matplotlib as mpl 
+import matplotlib as mpl 
 #import matplotlib.gridspec as gridspec
 #import matplotlib.colors as pltcolors
 #from mpl_toolkits.axes_grid1.inset_locator import inset_axes
@@ -194,14 +194,14 @@ modelProxies = {}
 for Season in ['Proxy','Ann','Summer']:
     for climateInterp in ['HC','P','P-E']:
         name = climateInterp+'_'+Season
-        modelProxies[name] = calculatePseudoProxy(data_HC[0:200],
+        modelProxies[name] = calculatePseudoProxy(data_HC,
                                                   climVar=climateInterp,
                                                   seasonality=Season)
         if save:
             for model in modelProxies[name].keys():
                 modelProxies[name][model].to_csv(gitHub+'DataSummary/'+model+'_Pseudoproxy_'+name+'.csv')
 
-
+#%%
 #Compare models pseudoproxies with proxies
 #Set up data to compare
 names_key = ['Category', 'CategorySpecific','TSid', 'Lat', 'Lon']
@@ -255,36 +255,57 @@ def agreementByCat(df,var,sortBy='Category',agreement='general'):
 
 
 agreeOut={}
-for climVar in ['HC']:
-    agreeOut[climVar]={}
+for model in ['proxy_hadcm','proxy_trace','model_model']:
+    agreeOut[model]={}
     for variable in variable_key: 
-        agreeOut[climVar][variable]={}
+        agreeOut[model][variable]={}
         for method in modelProxies.keys():
             modelProxyAgreement = dataAgreeSign(data_HC,modelProxies[method],variable)
-            modelProxyAgreeCat  = agreementByCat(modelProxyAgreement,'proxy_hadcm',agreement='general')
-            agreeOut[climVar][variable][method] = modelProxyAgreeCat
-        agreeOut[climVar][variable] = pd.DataFrame(agreeOut[climVar][variable])
+            modelProxyAgreeCat  = agreementByCat(modelProxyAgreement,model,sortBy='CategorySpecific',agreement='general')
+            agreeOut[model][variable][method] = modelProxyAgreeCat
+        agreeOut[model][variable] = pd.DataFrame(agreeOut[model][variable])
+
+#%%
+var1 = 'LateSlope'
+var2 = 'EarlySlope'
+
+
+
+agreeMatrix= np.mean([agreeOut['proxy_hadcm'][var1],agreeOut['proxy_trace'][var1],
+                                    agreeOut['proxy_hadcm'][var2],agreeOut['proxy_trace'][var2]],axis=0)
+
+my_norm = mpl.colors.Normalize(30,70) 
+my_cmap = plt.cm.get_cmap('RdBu')
+color_vals = my_cmap(my_norm(agreeMatrix))
+
+#plt.title('Agreement by proxy type & category with Psuedoproxies (avg trace/hadcm early/late trends)',loc='left')
+plt.table(cellText=agreeMatrix,
+          colLabels=agreeOut['proxy_hadcm'][var1].columns,
+          rowLabels=agreeOut['proxy_hadcm'][var1].index,
+          cellColours=color_vals,
+          loc='center').scale(1.5, 2)
+plt.axis('off')
+plt.show()
+
+
+agreeDiff = agreeMatrix.transpose()
+agreeDiff = agreeDiff-agreeDiff[0]
+agreeDiff = agreeDiff.transpose()
+my_norm = mpl.colors.Normalize(-10,10) 
+my_cmap = plt.cm.get_cmap('RdBu')
+color_vals = my_cmap(my_norm(agreeDiff))
+
+plt.table(cellText=agreeDiff,
+          colLabels=agreeOut['proxy_hadcm'][var1].columns,
+          rowLabels=agreeOut['proxy_hadcm'][var1].index,
+          cellColours=color_vals,
+          loc='center').scale(1.5, 2)
+#plt.title('Agreement by proxy type & category with Psuedoproxies (avg trace/hadcm early/late trends)')
+
+plt.axis('off')
+plt.show()
+#%%
+
 
 #%%
     
-
-for climVar in ['HC']:
-    for variable in variable_key: 
-
-        dataAgree[climVar][variable] = {}
-        
-    for model in ['proxy','hadcm','trace']: 
-        dataAgree[climVar][model] = pd.read_csv(dataDir['lipd']+'summary/'+model+climVar+'.csv')
-    
-    
-    dataAgree[climVar]['agree'] = {}
-    for model in ['proxy-trace','proxy-hadcm','hadcm-trace']:
-        model1 = model[:5]
-        model2 = model[6:]
-        dataAgree[climVar]['agree'][model] = {}
-        for name in names_key:
-            dataAgree[climVar]['agree'][model][name] = dataAgree[climVar][model1][name]
-        for var in compareList:
-            dataAgree[climVar]['agree'][model][var] = list(np.sign(dataAgree[climVar][model1][var]*dataAgree[climVar][model2][var]))
-            dataAgree[climVar]['agree'][model][var+'_Val'] = list(dataAgree[climVar][model1][var])
-        dataAgree[climVar]['agree'][model] = pd.DataFrame.from_dict(dataAgree[climVar]['agree'][model])
