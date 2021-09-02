@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt         # Packages for making figures
 import matplotlib as mpl 
 #import matplotlib.gridspec as gridspec
 #import matplotlib.colors as pltcolors
-#from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import cartopy.crs as ccrs              # Packages for mapping in python
 import cartopy.feature as cfeature
 #import cartopy.util as cutil
@@ -305,7 +305,77 @@ plt.table(cellText=agreeDiff,
 plt.axis('off')
 plt.show()
 #%%
-
+for variable in ['EarlySlopeSig','LateSlopeSig','bin6ka']: #plot proxy values to check calculations
+    modelProxyAgreement = dataAgreeSign(data_HC,modelProxies['HC_Proxy'],variable)    
+    plot_df = modelProxyAgreement; plot_df = plot_df[plot_df['agree_countSign'].notna()]
+    plt.style.use('ggplot')
+    plt.figure(figsize=(20,10)); plt.rcParams['axes.facecolor'] ='white'
+    plt.rcParams['axes.linewidth'] = 1; plt.rcParams['axes.edgecolor'] = 'k'
+    ax1 = plt.subplot(projection=ccrs.Robinson()) 
+    ax1.spines['geo'].set_edgecolor('black')
+    ax1.set_global(); ax1.add_feature(cfeature.LAND,facecolor='whitesmoke',edgecolor='k')
+    ax1.coastlines(); ax1.add_feature(cfeature.LAKES,facecolor='none',edgecolor='k')
+    proxy_scatter = ax1.scatter(plot_df.Lon,plot_df.Lat,c=plot_df['agree_countSign'],
+            marker='o',s=130,edgecolor='k',lw=1,alpha=0.8,transform=ccrs.PlateCarree(),
+            cmap='BrBG',vmin=-2,vmax=2)
+    plt.title(variable,fontsize=30)
+    plt.show()
 
 #%%
-    
+FigKeyCategory={'Speleothem':   {'s':1,  'marker':'^', 'c':'firebrick'}, 
+        'Speleothem (d18O)':    {'s':1,  'marker':'^', 'c':'firebrick'},
+        'Speleothem (d13C)':    {'s':1,  'marker':'v', 'c':'indianred'},
+        'Speleothem (other)':   {'s':1,  'marker':'>', 'c':'r'},
+        'Lake Deposits':        {'s':1.5,'marker':'.', 'c':'cornflowerblue'},
+        'Glacier Ice':          {'s':1,  'marker':'D', 'c':'powderblue'},
+        'Lake Sediment (d18O)': {'s':1,  'marker':'o', 'c':'darkblue'},
+        'Leaf Wax (dD)':        {'s':1,  'marker':'p', 'c':'darkorchid'}, 
+        'Pollen':               {'s':1,  'marker':'P', 'c':'forestgreen'},  
+        'Pollen (calibrated)':  {'s':1,  'marker':'P', 'c':'seagreen'},    
+        'Pollen (uncalibrated)':{'s':1,  'marker':'X', 'c':'olive'}, 
+        'Other':                {'s':1,  'marker':'s', 'c':'grey'}, 
+        'Other (calibrated)' :  {'s':1,  'marker':'s', 'c':'dimgrey'},  
+        'Other (uncalibrated)': {'s':1,  'marker':'s', 'c':'lightgrey'}
+        }  
+FigKeySeason = {'summerOnly':   {'s':1,  'marker':'^', 'c':'r'},
+                'winterOnly':   {'s':1,  'marker':'v', 'c':'b'},
+                'Annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey'},
+                'annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey'},
+                'not specified':{'s':0.5,  'marker':'o', 'c':'dimgrey'},
+                '':             {'s':0.5,  'marker':'o', 'c':'dimgrey'}
+        }
+FigKeyExtent = {'Global':{'pltExtent':[0,8,0,10],'GeoExtent':[-180,180,-90,90],'Name':'Global'},
+                 'NA':    {'pltExtent':[8,12,2,6],'GeoExtent':[-130,-50,23,55], 'Name':'North America'},
+                 'Eur':   {'pltExtent':[8,12,6,9],'GeoExtent':[-12,40,35,70],    'Name':'Europe'}
+                 }
+
+for variable in ['EarlySlopeSig','LateSlopeSig','bin6ka']:
+    modelProxyAgreement = dataAgreeSign(data_HC,modelProxies['HC_Proxy'],variable)    
+    plt.style.use('ggplot')
+    plt.figure(figsize=(20,10))
+    plt.rcParams['xtick.labelsize'] = 10
+    plt.rcParams['axes.facecolor'] ='white'; plt.rcParams['axes.linewidth'] = 1; plt.rcParams['axes.edgecolor'] = 'k'
+    gs = gridspec.GridSpec(12,12,wspace=0,hspace=0.2)
+    for ax in FigKeyExtent: 
+        extent = FigKeyExtent[ax]['pltExtent']
+        ax1 = plt.subplot(gs[extent[0]:extent[1],extent[2]:extent[3]],projection=ccrs.PlateCarree())
+        ax1.set_extent(FigKeyExtent[ax]['GeoExtent'])
+        ax1.coastlines()
+        ax1.spines['geo'].set_edgecolor('black')
+        ax1.add_feature(cfeature.LAND, facecolor='whitesmoke',edgecolor='k')
+        ax1.add_feature(cfeature.LAKES,facecolor='none',      edgecolor='k')
+        name = 'CategorySpecific'
+        if ax == 'Global': 
+              ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='grey',lw=0.2)
+              plt.title(variable)
+        elif ax == 'NA':
+              ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='k',lw=0.3)        
+              ax1.add_feature(cfeature.STATES,facecolor='none',edgecolor='grey',lw=0.2)        
+        else: ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='k',lw=0.3)            
+        for category in modelProxyAgreement[name].unique(): 
+            plot_df = modelProxyAgreement.loc[(modelProxyAgreement[name] == category)]
+            proxy_scatter = ax1.scatter(plot_df.Lon,plot_df.Lat,c=plot_df['agree_countSign'],
+                edgecolor='k',lw=1,alpha=0.8,transform=ccrs.PlateCarree(),cmap='BrBG',vmin=-2,vmax=2,
+                marker=FigKeyCategory[category]['marker'],s=FigKeyCategory[category]['s']*100)
+    if save: plt.savefig(gitHub+'Figures/HC12k_'+name+'.png', dpi=400,format='png')
+    else: plt.show()
