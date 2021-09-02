@@ -115,7 +115,7 @@ setTime = {'Total':{'min':ageMin,                  'max':ageMax},
            'Early':{'min':ageMin+(ageMax-ageMin)/2,'max':ageMax},
            'Late' :{'min':ageMin,                  'max':ageMin+(ageMax-ageMin)/2}}
 #ageMin,ageMax,ageRes
-
+z=[]
 def calculatePseudoProxy(proxyDF,
                          dataModelDict=dataModel,
                          climVar='HC',#Or T # Change to 'P' or 'P-E' to test assumptions about proxies
@@ -139,7 +139,7 @@ def calculatePseudoProxy(proxyDF,
                 #Add metadata
                 for name in names_key: pseudoproxy[name].append(site[name])
                 #ID seasonality from proxy metadata
-                if   seasonality == 'ANN':      season = 'ANN' #assume everying annual 
+                if   seasonality == 'Ann':      season = 'ANN' #assume everying annual 
                 elif seasonality == 'Summer': #summer or annual are summer
                     if site['Season'] == 'winterOnly':
                         if site['Lat'] > 0:     season = 'DJF'
@@ -147,14 +147,14 @@ def calculatePseudoProxy(proxyDF,
                     else: 
                         if site['Lat'] > 0:     season = 'JJA'
                         else:                   season = 'DJF'
-                else: #Use proxy metadata
+                elif seasonality == 'Proxy': #Use proxy metadata
                     if site['Season'] == 'summerOnly': 
                         if site['Lat'] > 0:     season = 'JJA'
                         else:                   season = 'DJF'
                     if site['Season'] == 'winterOnly':
                         if site['Lat'] > 0:     season = 'DJF'
                         else:                   season = 'JJA'
-                    else: season = 'ANN'
+                    else:                       season = 'ANN'
                 #ID appropriate climate variable for pseudoproxy
                 if   climVar == 'T':          variable = 'Temp'
                 elif climVar == 'HC':
@@ -189,18 +189,102 @@ def calculatePseudoProxy(proxyDF,
 
 #modelHC    = calculatePseudoProxy(data_HC)
 #%%
-
+save=True
 modelProxies = {}
 for Season in ['Proxy','Ann','Summer']:
     for climateInterp in ['HC','P','P-E']:
         name = climateInterp+'_'+Season
-        modelProxies[name] = calculatePseudoProxy(data_HC,
+        modelProxies[name] = calculatePseudoProxy(data_HC[0:200],
                                                   climVar=climateInterp,
                                                   seasonality=Season)
         if save:
             for model in modelProxies[name].keys():
                 modelProxies[name][model].to_csv(gitHub+'DataSummary/'+model+'_Pseudoproxy_'+name+'.csv')
 
+
+#Compare models pseudoproxies with proxies
+#Set up data to compare
+names_key = ['Category', 'CategorySpecific','TSid', 'Lat', 'Lon']
+variable_key = []
+for time in setTime:
+    for variable in ['Slope','SlopeSig']: 
+        variable_key.append(time+variable)
+for time in range(1,12): 
+        variable_key.append('bin'+str(time)+'ka')
+
+#Compare
+def dataAgreeSign (proxyDF,modelDF,metric):
+    output={}
+    for name in ['Category', 'CategorySpecific','TSid', 'Lat', 'Lon']:
+        output[name] = proxyDF[name]
+    #Make sure comparing same sites
+    if sum(proxyDF['Lat']-modelDF['trace']['Lat']) != 0: print('ERROR!!! '); output[name]=[]
+    #
+    #Get values and sign
+    proxyVal  = proxyDF[metric];          proxySign = np.sign(proxyVal)
+    traceVal  = modelDF['trace'][metric]; traceSign = np.sign(traceVal)
+    hadcmVal  = modelDF['hadcm'][metric]; hadcmSign = np.sign(hadcmVal)
+    #Compare agreement
+    output['proxy_trace'] = proxySign*traceSign
+    output['proxy_hadcm'] = proxySign*hadcmSign
+    output['model_model'] = hadcmSign*traceSign
+    output['agree_count'] = ((output['proxy_trace']+1)+(output['proxy_hadcm']+1))/2 #0=both models disagree, 1 = 1 model agrees, 2 = both models agree
+    output['agree_countSign'] = output['agree_count']*proxySign
+    output = pd.DataFrame.from_dict(output)
+    return(output)
+
+def agreementByCat(df,var,sortBy='Category',agreement='general'):
+    output = {}
+    df_dropna = df.dropna(subset=[var])
+    if agreement == 'general': 
+        output['all'] = round((list(df_dropna[var]).count(1)/len(df_dropna[var]))*100,)    
+    else: 
+        try: output['all'] = round((list(df_dropna[var]).count(1)/(list(df_dropna[var]).count(1)+list(df_dropna[var]).count(-1)))*100,)    
+        except: output['all'] = np.NaN
+    #
+    for category in df[sortBy].unique(): 
+        df_select = df.loc[(df[sortBy] == category)]
+        df_dropna = df_select.dropna(subset=[var])
+        if agreement == 'general': 
+            try: output[category] = round((list(df_dropna[var]).count(1)/len(df_dropna[var]))*100,)    
+            except: output[category] = np.NaN    
+        else: 
+            try: output[category] = round((list(df_dropna[var]).count(1)/(list(df_dropna[var]).count(1)+list(df_dropna[var]).count(-1)))*100,)    
+            except: output[category] = np.NaN    
+    return(output)
+
+
+agreeOut={}
+for climVar in ['HC']:
+    agreeOut[climVar]={}
+    for variable in variable_key: 
+        agreeOut[climVar][variable]={}
+        for method in modelProxies.keys():
+            modelProxyAgreement = dataAgreeSign(data_HC,modelProxies[method],variable)
+            modelProxyAgreeCat  = agreementByCat(modelProxyAgreement,'proxy_hadcm',agreement='general')
+            agreeOut[climVar][variable][method] = modelProxyAgreeCat
+        agreeOut[climVar][variable] = pd.DataFrame(agreeOut[climVar][variable])
+
 #%%
+    
 
+for climVar in ['HC']:
+    for variable in variable_key: 
 
+        dataAgree[climVar][variable] = {}
+        
+    for model in ['proxy','hadcm','trace']: 
+        dataAgree[climVar][model] = pd.read_csv(dataDir['lipd']+'summary/'+model+climVar+'.csv')
+    
+    
+    dataAgree[climVar]['agree'] = {}
+    for model in ['proxy-trace','proxy-hadcm','hadcm-trace']:
+        model1 = model[:5]
+        model2 = model[6:]
+        dataAgree[climVar]['agree'][model] = {}
+        for name in names_key:
+            dataAgree[climVar]['agree'][model][name] = dataAgree[climVar][model1][name]
+        for var in compareList:
+            dataAgree[climVar]['agree'][model][var] = list(np.sign(dataAgree[climVar][model1][var]*dataAgree[climVar][model2][var]))
+            dataAgree[climVar]['agree'][model][var+'_Val'] = list(dataAgree[climVar][model1][var])
+        dataAgree[climVar]['agree'][model] = pd.DataFrame.from_dict(dataAgree[climVar]['agree'][model])
