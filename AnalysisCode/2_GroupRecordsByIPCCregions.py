@@ -30,6 +30,7 @@ ipccRegionsPrj = ipccRegions.to_crs("EPSG:32662") #Project to  #WGS_1984_Plate_C
 
 proxyDataByRegionPrj = sjoin(proxyDataPrj, ipccRegionsPrj, how="left", op="within")
 proxyDataByRegion    = proxyDataByRegionPrj.to_crs("EPSG:4326") #for mapping
+if save: proxyDataByRegion.to_csv(gitHub+'DataSummary/proxyHC_regions.csv')
 
 crs = ccrs.PlateCarree()
 fig, ax = plt.subplots(subplot_kw={'projection': crs})
@@ -72,7 +73,7 @@ regionsProxyData = regionsProxyData.loc[(regionsProxyData['Count'] >= threshold)
 regionsProxyData = regionsProxyData.loc[(regionsProxyData['Name'] != 'N.Atlantic-Ocean')]
 
 #Save file to folder
-regionsProxyData.to_csv(gitHub+'DataSummary/proxyHC_IPCCregions.csv')
+if save: regionsProxyData.to_csv(gitHub+'DataSummary/proxyHC_IPCCregions.csv')
 
 #%%
 #Plot values for each region to investigate regional variations

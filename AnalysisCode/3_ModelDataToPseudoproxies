@@ -337,19 +337,13 @@ FigKeyCategory={'Speleothem':   {'s':1,  'marker':'^', 'c':'firebrick'},
         'Other (calibrated)' :  {'s':1,  'marker':'s', 'c':'dimgrey'},  
         'Other (uncalibrated)': {'s':1,  'marker':'s', 'c':'lightgrey'}
         }  
-FigKeySeason = {'summerOnly':   {'s':1,  'marker':'^', 'c':'r'},
-                'winterOnly':   {'s':1,  'marker':'v', 'c':'b'},
-                'Annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey'},
-                'annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey'},
-                'not specified':{'s':0.5,  'marker':'o', 'c':'dimgrey'},
-                '':             {'s':0.5,  'marker':'o', 'c':'dimgrey'}
-        }
+
 FigKeyExtent = {'Global':{'pltExtent':[0,8,0,10],'GeoExtent':[-180,180,-90,90],'Name':'Global'},
                  'NA':    {'pltExtent':[8,12,2,6],'GeoExtent':[-130,-50,23,55], 'Name':'North America'},
                  'Eur':   {'pltExtent':[8,12,6,9],'GeoExtent':[-12,40,35,70],    'Name':'Europe'}
                  }
 
-for variable in ['EarlySlopeSig','LateSlopeSig','bin6ka']:
+for variable in ['EarlySlope','LateSlope','bin6ka']:
     modelProxyAgreement = dataAgreeSign(data_HC,modelProxies['HC_Proxy'],variable)    
     plt.style.use('ggplot')
     plt.figure(figsize=(20,10))
@@ -375,7 +369,7 @@ for variable in ['EarlySlopeSig','LateSlopeSig','bin6ka']:
         for category in modelProxyAgreement[name].unique(): 
             plot_df = modelProxyAgreement.loc[(modelProxyAgreement[name] == category)]
             proxy_scatter = ax1.scatter(plot_df.Lon,plot_df.Lat,c=plot_df['agree_countSign'],
-                edgecolor='k',lw=1,alpha=0.8,transform=ccrs.PlateCarree(),cmap='BrBG',vmin=-2,vmax=2,
+                edgecolor='k',lw=0.5,alpha=0.8,transform=ccrs.PlateCarree(),cmap='BrBG',vmin=-2,vmax=2,
                 marker=FigKeyCategory[category]['marker'],s=FigKeyCategory[category]['s']*100)
     if save: plt.savefig(gitHub+'Figures/HC12k_'+name+'.png', dpi=400,format='png')
     else: plt.show()

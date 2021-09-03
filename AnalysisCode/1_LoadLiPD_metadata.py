@@ -231,19 +231,23 @@ for FigKey in [FigKeySeason,FigKeyCategory]:
         ax1.add_feature(cfeature.LAND, facecolor='whitesmoke',edgecolor='k')
         ax1.add_feature(cfeature.LAKES,facecolor='none',      edgecolor='k')
         if FigKey  == FigKeyCategory: name = 'CategorySpecific'
-        elif FigKey == FigKeySeason: name = 'Season'
+        elif FigKey == FigKeySeason:  name = 'Season'
         if ax == 'Global': 
               ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='grey',lw=0.2)            
         elif ax == 'NA':
               ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='k',lw=0.3)        
-              ax1.add_feature(cfeature.STATES,facecolor='none',edgecolor='grey',lw=0.2)        
+              ax1.add_feature(cfeature.STATES, facecolor='none',edgecolor='grey',lw=0.2)        
         else: ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='k',lw=0.3)            
-        for category in data_HC[name].unique(): 
+        for category in sorted(data_HC[name].unique())[::-1]: 
             plot_df = data_HC.loc[(data_HC[name] == category)]
             proxy_scatter = ax1.scatter(plot_df.Lon,plot_df.Lat,c=FigKey[category]['c'],
                 edgecolor='k',lw=1,alpha=0.8,transform=ccrs.PlateCarree(),
-                marker=FigKey[category]['marker'],s=FigKey[category]['s']*100)
-        plt.draw()
+                marker=FigKey[category]['marker'],s=FigKey[category]['s']*100,
+                label=category)
+        if ax == 'Global': 
+            proxylegend = ax1.legend(loc='center left',bbox_to_anchor=(0,.35))
+    proxylegend.get_frame().set_alpha(1)        
+    plt.draw()
     if save: plt.savefig(gitHub+'Figures/HC12k_'+name+'.png', dpi=400,format='png')
     else: plt.show()
 #%%
