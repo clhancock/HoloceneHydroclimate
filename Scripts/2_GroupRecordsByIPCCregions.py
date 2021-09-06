@@ -20,7 +20,7 @@ save = True # for figures
 #%%
 #
 #Set variables used in region ID 
-climVar='HC'   #HC or T
+climVar='T'   #HC or T
 threshold = 3  #Minimum number of records for a region to be included in analysis
 Oceans = False #Option to only get Land or Land-Ocean regions
 #
