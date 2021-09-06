@@ -19,6 +19,14 @@ import cartopy.feature as cfeature
 dataDir='/Volumes/GoogleDrive/My Drive/zResearch/Data/'
 save=False
 gitHub ='/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
+
+# Outputs
+# csv with table of proxy Tsid, metadata, and caclualted values (slope/binvalues)
+# map of proxy site symbolized based on catergory or season 
+# maps of calculated variables
+# pie chart of data soruces
+
+
 #%%
 #Read all available LiPD files & extrat to timeseries objects
 #
@@ -166,7 +174,7 @@ dataHC = LiPDmetadata(lipdHC,True)
 #dataT = LiPDmetadata(lipdT,False)
 
 #%%
-#Convert to dataFrame and upload to gitHub folder. Next step cluster in arc
+#Convert to dataFrame and upload to gitHub folder. Next step id regions and model pseudoproxies
 #
 data_HC = pd.DataFrame.from_dict(dataHC); 
 print("No. of hydroclimate records");                    print(len(data_HC))
@@ -189,6 +197,8 @@ data_HC.to_csv(gitHub+'DataSummary/proxyHC.csv')
 
 
 #%%
+#Plot figures based on metadata (category or season) with isnet maps
+#
 FigKeyCategory={'Speleothem':   {'s':1,  'marker':'^', 'c':'firebrick'}, 
         'Speleothem (d18O)':    {'s':1,  'marker':'^', 'c':'firebrick'},
         'Speleothem (d13C)':    {'s':1,  'marker':'v', 'c':'indianred'},
@@ -215,7 +225,6 @@ FigKeyExtent = {'Global':{'pltExtent':[0,8,0,10],'GeoExtent':[-180,180,-90,90],'
                  'NA':    {'pltExtent':[8,12,2,6],'GeoExtent':[-130,-50,23,55], 'Name':'North America'},
                  'Eur':   {'pltExtent':[8,12,6,9],'GeoExtent':[-12,40,35,70],    'Name':'Europe'}
                  }
-
 for FigKey in [FigKeySeason,FigKeyCategory]:
     plt.style.use('ggplot')
     plt.figure(figsize=(20,10))
