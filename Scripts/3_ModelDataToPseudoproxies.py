@@ -16,10 +16,12 @@ import cartopy.crs as ccrs              # Packages for mapping in python
 import cartopy.feature as cfeature
 #import cartopy.util as cutil
 #
-dataDir='/Volumes/GoogleDrive/My Drive/zResearch/Data/'
+dataDir  ='/Volumes/GoogleDrive/My Drive/zResearch/Data/'
+gitHubDir = '/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
+#
 save=False
-gitHub ='/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
-data_HC =  pd.read_csv(gitHub+'DataSummary/proxyHC.csv')
+data_HC =  pd.read_csv(gitHubDir+'DataFiles/proxyHC.csv')
+data_T  =  pd.read_csv(gitHubDir+'DataFiles/proxyT.csv')
 #%%
 def calcTrend(timeValues,proxyValues,ageMin,ageMax,direction):    
     divisions = 2; minset = 3; sigLevel = 0.05; CI = 0.95; method = 'lin'
@@ -102,10 +104,6 @@ for model in modelKey.keys():
     for season in ['ANN','DJF','JJA']:
         dataModel[model]['EffM'][season] = dataModel[model]['Precip'][season] - dataModel[model]['Evap'][season] 
 #
-#%%
-#def plotModelValues(model,season='ANN',variable='Precip'):
-
-    
 #%%
 
 #%%
@@ -373,3 +371,4 @@ for variable in ['EarlySlope','LateSlope','bin6ka']:
                 marker=FigKeyCategory[category]['marker'],s=FigKeyCategory[category]['s']*100)
     if save: plt.savefig(gitHub+'Figures/HC12k_'+name+'.png', dpi=400,format='png')
     else: plt.show()
+#%%

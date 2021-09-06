@@ -16,16 +16,14 @@ import cartopy.crs as ccrs              # Packages for mapping in python
 import cartopy.feature as cfeature
 #import cartopy.util as cutil
 #
-dataDir='/Volumes/GoogleDrive/My Drive/zResearch/Data/'
-save=False
-gitHub ='/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
-
+dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Data/'
+gitHubDir = '/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
+save    = False # for figures
 # Outputs
 # csv with table of proxy Tsid, metadata, and caclualted values (slope/binvalues)
 # map of proxy site symbolized based on catergory or season 
 # maps of calculated variables
 # pie chart of data soruces
-
 
 #%%
 #Read all available LiPD files & extrat to timeseries objects
@@ -38,7 +36,7 @@ LiPDnewTS      = LiPDnew.to_tso()
 #%%
 # filter timeseries relevant to temp12k and hc12k
 #
-lipdHC = []; lipdT = []; dataSetList = []
+lipdHC,lipdT,dataSetList = [],[],[]
 #Add files from newdata folder
 for ts in LiPDnewTS: #These files don't have proper metadata
     if ts['paleoData_TSid'] in dataSetList: continue #To prevent duplicate files
@@ -171,7 +169,7 @@ def LiPDmetadata (lipd_list,standardize):
     return(data_matrix)
     
 dataHC = LiPDmetadata(lipdHC,True)
-#dataT = LiPDmetadata(lipdT,False)
+dataT = LiPDmetadata(lipdT,False)
 
 #%%
 #Convert to dataFrame and upload to gitHub folder. Next step id regions and model pseudoproxies
@@ -182,17 +180,16 @@ data_HC = data_HC.loc[(data_HC['Direction'] != '')];     print(len(data_HC))
 data_HC = data_HC.loc[(data_HC['Season'] != 'summer+') & 
                       (data_HC['Season'] != 'winter+')]; print(len(data_HC))
 
-#data_T = pd.DataFrame.from_dict(dataT); 
-#print("No. of temperature records");                     print(len(data_T))
-#data_T = data_T.loc[(data_T['Unit'] == 'degC')];         print(len(data_T))
-#data_T = data_T.loc[(data_T['Season'] != 'summer+') & 
- #                 (data_T['Season']   != 'winter+')];    print(len(data_T))
+data_T = pd.DataFrame.from_dict(dataT); 
+print("No. of temperature records");                     print(len(data_T))
+data_T = data_T.loc[(data_T['Unit'] == 'degC')];         print(len(data_T))
+data_T = data_T.loc[(data_T['Season'] != 'summer+') & 
+                    (data_T['Season'] != 'winter+')];    print(len(data_T))
 
-data_HC.to_csv(gitHub+'DataSummary/proxyHC.csv')
-#data_T.to_csv( gitHub+'DataSummary/proxyT.csv')
+data_HC.to_csv(gitHubDir+'DataFiles/proxyHC.csv')
+data_T.to_csv( gitHubDir+'DataFiles/proxyT.csv')
 
 
-#692 records from consisiting of 257 pollen, 131 lake Deposit, 109 speleothem, 32 lefwax dD, 32 lake sediment d18O, 10 glacier ice, and 121 miscellaneous records
 
 
 
@@ -257,7 +254,7 @@ for FigKey in [FigKeySeason,FigKeyCategory]:
             proxylegend = ax1.legend(loc='center left',bbox_to_anchor=(0,.35))
     proxylegend.get_frame().set_alpha(1)        
     plt.draw()
-    if save: plt.savefig(gitHub+'Figures/HC12k_'+name+'.png', dpi=400,format='png')
+    if save: plt.savefig(gitHubDir+'Figures/HC12k_'+name+'.png', dpi=400,format='png')
     else: plt.show()
 #%%
 for variable in ['EarlySlopeSig','LateSlopeSig','bin6ka']: #plot proxy values to check calculations
@@ -319,6 +316,6 @@ ax1.pie(datasource['count'], labels=datasource['sourceNo'],startangle=90,
         colors=['lightgrey','firebrick','k','powderblue','forestgreen','cornflowerblue','rosybrown','darkslategrey'])
 ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 plt.show()
-if save: plt.savefig(gitHub+'Figures/HC12k_DataSourceAttempt'+'.png', dpi=400,format='png')
+if save: plt.savefig(gitHubDir+'Figures/HC12k_DataSourceAttempt'+'.png', dpi=400,format='png')
 else: plt.show()
 
