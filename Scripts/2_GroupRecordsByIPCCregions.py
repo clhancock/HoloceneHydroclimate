@@ -20,7 +20,7 @@ save = True # for figures
 #%%
 #
 #Set variables used in region ID 
-climVar='T'   #HC or T
+climVar='HC'   #HC or T
 threshold = 3  #Minimum number of records for a region to be included in analysis
 Oceans = False #Option to only get Land or Land-Ocean regions
 #
@@ -71,9 +71,9 @@ proxyDataByRegion=proxyDataByRegion
 regionsProxyData = {'Name':[],'Count':[],'geometry':[]}
 for var in varList: regionsProxyData[var] = []  
              
-for name in (proxyDataByRegion['Name'].unique()):
+for name in (proxyDataByRegion['Name_right'].unique()):
     if type(name) != str: continue
-    dataSubset = proxyDataByRegion.loc[(proxyDataByRegion['Name'] == name)]
+    dataSubset = proxyDataByRegion.loc[(proxyDataByRegion['Name_right'] == name)]
     regionsProxyData['Name'].append(name)
     regionsProxyData['Count'].append(np.shape(dataSubset)[0])
     for var in varList: regionsProxyData[var].append(np.nanmedian(dataSubset[var]))
@@ -81,7 +81,7 @@ for name in (proxyDataByRegion['Name'].unique()):
     
 regionsProxyData = pd.DataFrame.from_dict(regionsProxyData)
 regionsProxyData = regionsProxyData.loc[(regionsProxyData['Count'] >= threshold)]
-regionsProxyData = regionsProxyData.loc[(regionsProxyData['Name'] != 'N.Atlantic-Ocean')]
+#regionsProxyData = regionsProxyData.loc[(regionsProxyData['Name'] != 'N.Atlantic-Ocean')]
 
 #Save file to folder
 if save: regionsProxyData.to_csv(gitHubDir+'DataFiles/proxy'+climVar+'_IPCCregions.csv')

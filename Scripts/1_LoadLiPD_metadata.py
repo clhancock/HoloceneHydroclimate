@@ -1,6 +1,6 @@
 #Load packages
 import pyleoclim as pyleo               # Packages for analyzing LiPD files 
-#import lipd                             # Packages for analyzing LiPD files 
+import lipd                             # Packages for analyzing LiPD files 
 import numpy  as np                     # Package with useful numerical functions
 #import xarray as xr                     #Package for handling file types
 import pandas as pd
@@ -36,19 +36,18 @@ LiPDnewTS      = LiPDnew.to_tso()
 #%%
 # filter timeseries relevant to temp12k and hc12k
 #
-lipdHC,lipdT,dataSetList = [],[],[]
+lipdHC,lipdT,dataSetList = [],[],['Pass Age Control','Dune.Finney.2012','Dunee.Finney.2012']
+
 #Add files from newdata folder
 for ts in LiPDnewTS: #These files don't have proper metadata
-    if ts['paleoData_TSid'] in dataSetList: continue #To prevent duplicate files
-    dataSetList.append(ts['paleoData_TSid']); dataSetList.append(ts['dataSetName'])
+    dataSetList.append(ts['dataSetName'])
     try: #Not all ts have an interpretation to search for 
         if ts['paleoData_interpretation'][0]['variable'] in ['P','P-E','P_E','M']: 
             lipdHC.append(ts)
     except: pass
 #Add files from general database folder without duplicates
 for ts in LiPDdatabaseTS:
-    if ts['dataSetName'] in dataSetList or ts['paleoData_TSid'] in dataSetList: continue #To prevent duplicate files
-    dataSetList.append(ts['paleoData_TSid'])
+    if ts['dataSetName'] in dataSetList: continue #To prevent duplicate files
     try: #Not all ts have a compilation data to search for 
         for compilation in ts['paleoData_inCompilationBeta']:
             #Check if in temp12k
@@ -68,6 +67,12 @@ for ts in LiPDdatabaseTS:
 
 print(' - Found '+str(len(lipdT))+' temperature proxies -')
 print(' - Found '+str(len(lipdHC))+' hydroclimate proxies -')
+
+#%%
+fTS = lipd.filterTs(lipdHC,'paleoData_TSid == LPDfdd2a0239')
+ts = pyleo.LipdSeries(fTS[0]).clean(True)
+plt.plot(ts.time,ts.value,linewidth=1)
+plt.show()
 
 #%%
 #Create summary table with metadata imformation and statistics for LiPD records 
@@ -122,13 +127,13 @@ def calcTrend(timeValues,proxyValues,ageMin,ageMax,direction):
         else:                                 output['SlopeSig'] = output['Slope']
     else: output = {'Direction':np.NaN, 'Slope':np.NaN, 'SlopeSig':np.NaN}
     return(output)
-
+#FCE4EC F8BBD0 F48GB1
 #Function to create dataframe of relevent data / quick qc sheet to sort data by
 def LiPDmetadata (lipd_list,standardize):
     problem_records = []; RecordNo=0
     data_matrix = {'Category':[],'CategorySpecific':[],
                    'ageMin':[],'ageMax':[],'ageRange':[],'ageRes':[]}
-    names_metadata = {'TSid':'paleoData_TSid','Lat':'geo_meanLat','Lon':'geo_meanLon',
+    names_metadata = {'TSid':'paleoData_TSid','Lat':'geo_meanLat','Lon':'geo_meanLon','Name':'dataSetName',
                       'Archive':'archiveType','Proxy':'paleoData_proxy','Unit':'paleoData_units'}
     names_interp = {'Interp':'variable','Season':'seasonalityGeneral','Direction':'direction'}
     for key in names_metadata: data_matrix[key] = []
@@ -169,16 +174,21 @@ def LiPDmetadata (lipd_list,standardize):
     return(data_matrix)
     
 dataHC = LiPDmetadata(lipdHC,True)
-dataT = LiPDmetadata(lipdT,False)
+dataT  = LiPDmetadata(lipdT,False)
 
 #%%
 #Convert to dataFrame and upload to gitHub folder. Next step id regions and model pseudoproxies
 #
+cal = True
+if cal: tsidList = ['GHe74bbbb1','LPDe897b7c7','WEB8783f810','WEB85c68a3a','WEBc0fa285c','WEB9660e756','WEB820982f9']
+else:   tsidList = ['GHe74bbbb1','LPDe897b7c7','WEBa0656c03','WEBc9694a07','WEBd1b743fa','WEB801cc768','WEB720c22d6']
 data_HC = pd.DataFrame.from_dict(dataHC); 
 print("No. of hydroclimate records");                    print(len(data_HC))
 data_HC = data_HC.loc[(data_HC['Direction'] != '')];     print(len(data_HC))
 data_HC = data_HC.loc[(data_HC['Season'] != 'summer+') & 
                       (data_HC['Season'] != 'winter+')]; print(len(data_HC))
+data_HC = data_HC.iloc[[i for i,val in enumerate(data_HC.TSid) if val not in tsidList]]; print(len(data_HC))
+
 
 data_T = pd.DataFrame.from_dict(dataT); 
 print("No. of temperature records");                     print(len(data_T))
@@ -188,6 +198,7 @@ data_T = data_T.loc[(data_T['Season'] != 'summer+') &
 
 data_HC.to_csv(gitHubDir+'DataFiles/proxyHC.csv')
 data_T.to_csv( gitHubDir+'DataFiles/proxyT.csv')
+
 
 
 
