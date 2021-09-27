@@ -22,7 +22,7 @@ save = True # for figures
 #Set variables used in region ID 
 climVar='HC'   #HC or T
 threshold = 3  #Minimum number of records for a region to be included in analysis
-Oceans = False #Option to only get Land or Land-Ocean regions
+Oceans = True #Option to only get Land or Land-Ocean regions
 #
 #Load proxy data as a point geoDataframe
 proxyData    = pd.read_csv(gitHubDir+'DataFiles/proxy'+climVar+'.csv')
@@ -40,6 +40,10 @@ ipccRegionsPrj = ipccRegions.to_crs("EPSG:32662") #Project to  #WGS_1984_Plate_C
 #Spatial join to ID which polygon each point is within
 proxyDataByRegionPrj = sjoin(proxyDataPrj, ipccRegionsPrj, how="left", op="within")
 proxyDataByRegion    = proxyDataByRegionPrj.to_crs("EPSG:4326") #for mapping
+
+proxyDataByRegion['Acronym'][np.where(proxyDataByRegion['TSid']=='OLS_R2xzPJfmtMh')[0][0]] = 'SAH'
+proxyDataByRegion['Acronym'][np.where(proxyDataByRegion['TSid']=='LPD053400dbb')[0][0]] = 'WCA'
+
 if save: proxyDataByRegion.to_csv(gitHubDir+'DataFiles/proxy'+climVar+'_regions.csv')
 #
 #Map regions and proxy data 

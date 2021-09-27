@@ -113,7 +113,6 @@ setTime = {'Total':{'min':ageMin,                  'max':ageMax},
            'Early':{'min':ageMin+(ageMax-ageMin)/2,'max':ageMax},
            'Late' :{'min':ageMin,                  'max':ageMin+(ageMax-ageMin)/2}}
 #ageMin,ageMax,ageRes
-z=[]
 def calculatePseudoProxy(proxyDF,
                          dataModelDict=dataModel,
                          climVar='HC',#Or T # Change to 'P' or 'P-E' to test assumptions about proxies
@@ -187,7 +186,7 @@ def calculatePseudoProxy(proxyDF,
 
 #modelHC    = calculatePseudoProxy(data_HC)
 #%%
-save=True
+#save=True
 modelProxies = {}
 for Season in ['Proxy','Ann','Summer']:
     for climateInterp in ['HC','P','P-E']:
@@ -199,6 +198,15 @@ for Season in ['Proxy','Ann','Summer']:
             for model in modelProxies[name].keys():
                 modelProxies[name][model].to_csv(gitHub+'DataSummary/'+model+'_Pseudoproxy_'+name+'.csv')
 
+
+#%%
+
+
+trace.01-36.22000BP.cam2.PRECT.22000BP_decavgANN_400BCE.nc calculatePseudoProxy(data_HC,climVar='HC',seasonality='Proxy')
+
+
+
+#%%
 #%%
 #Compare models pseudoproxies with proxies
 #Set up data to compare

@@ -180,8 +180,8 @@ dataT  = LiPDmetadata(lipdT,False)
 #Convert to dataFrame and upload to gitHub folder. Next step id regions and model pseudoproxies
 #
 cal = True
-if cal: tsidList = ['GHe74bbbb1','LPDe897b7c7','WEB8783f810','WEB85c68a3a','WEBc0fa285c','WEB9660e756','WEB820982f9']
-else:   tsidList = ['GHe74bbbb1','LPDe897b7c7','WEBa0656c03','WEBc9694a07','WEBd1b743fa','WEB801cc768','WEB720c22d6']
+if cal: tsidList = ['GHb78af5db','GHe74bbbb1','LPDe897b7c7','WEB8783f810','WEB85c68a3a','WEBc0fa285c','WEB9660e756','WEB820982f9']
+else:   tsidList = ['GHb78af5db','GHe74bbbb1','LPDe897b7c7','WEBa0656c03','WEBc9694a07','WEBd1b743fa','WEB801cc768','WEB720c22d6']
 data_HC = pd.DataFrame.from_dict(dataHC); 
 print("No. of hydroclimate records");                    print(len(data_HC))
 data_HC = data_HC.loc[(data_HC['Direction'] != '')];     print(len(data_HC))
@@ -222,12 +222,12 @@ FigKeyCategory={'Speleothem':   {'s':1,  'marker':'^', 'c':'firebrick'},
         'Other (calibrated)' :  {'s':1,  'marker':'s', 'c':'dimgrey'},  
         'Other (uncalibrated)': {'s':1,  'marker':'s', 'c':'lightgrey'}
         }  
-FigKeySeason = {'summerOnly':   {'s':1,  'marker':'^', 'c':'r'},
-                'winterOnly':   {'s':1,  'marker':'v', 'c':'b'},
-                'Annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey'},
-                'annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey'},
-                'not specified':{'s':0.5,  'marker':'o', 'c':'dimgrey'},
-                '':             {'s':0.5,  'marker':'o', 'c':'dimgrey'}
+FigKeySeason = {'summerOnly':   {'s':1,  'marker':'^', 'c':'r','label':'Summer'},
+                'winterOnly':   {'s':1,  'marker':'v', 'c':'b','label':'Winter'},
+                'Annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey','label':'Annual'},
+                'annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey','label':''},
+                'not specified':{'s':0.5,  'marker':'o', 'c':'dimgrey','label':''},
+                '':             {'s':0.5,  'marker':'o', 'c':'dimgrey','label':''}
         }
 FigKeyExtent = {'Global':{'pltExtent':[0,8,0,10],'GeoExtent':[-180,180,-90,90],'Name':'Global'},
                  'NA':    {'pltExtent':[8,12,2,6],'GeoExtent':[-130,-50,23,55], 'Name':'North America'},
@@ -241,7 +241,9 @@ for FigKey in [FigKeySeason,FigKeyCategory]:
     gs = gridspec.GridSpec(12,12,wspace=0,hspace=0.2)
     for ax in FigKeyExtent: 
         extent = FigKeyExtent[ax]['pltExtent']
-        ax1 = plt.subplot(gs[extent[0]:extent[1],extent[2]:extent[3]],projection=ccrs.PlateCarree())
+        if ax == 'Global': PROJ = ccrs.PlateCarree()
+        else: PROJ = ccrs.PlateCarree()
+        ax1 = plt.subplot(gs[extent[0]:extent[1],extent[2]:extent[3]],projection=PROJ)
         ax1.set_extent(FigKeyExtent[ax]['GeoExtent'])
         ax1.coastlines()
         ax1.spines['geo'].set_edgecolor('black')
