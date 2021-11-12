@@ -19,6 +19,16 @@ save = True # for figures
 
 #%%
 #
+inlat = -5
+inlon =  -70
+z = pd.DataFrame([[inlat,inlon]])
+z.columns = ['Lat','Lon']
+z['geometry'] = z.apply(lambda x: Point((float(x.Lon), float(x.Lat))), axis=1)
+z    = gpd.GeoDataFrame(z, geometry='geometry')
+z    = z.set_crs(epsg=4326)   #WGS84
+z = z.to_crs("EPSG:32662") #Project to  #WGS_1984_Plate_Carre
+sjoin(z, ipccRegionsPrj, how="left", op="within")
+
 #Set variables used in region ID 
 climVar='HC'   #HC or T
 threshold = 3  #Minimum number of records for a region to be included in analysis
