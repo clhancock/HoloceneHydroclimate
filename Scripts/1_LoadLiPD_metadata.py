@@ -222,18 +222,22 @@ FigKeyCategory={'Speleothem':   {'s':1,  'marker':'^', 'c':'firebrick'},
         'Other (calibrated)' :  {'s':1,  'marker':'s', 'c':'dimgrey'},  
         'Other (uncalibrated)': {'s':1,  'marker':'s', 'c':'lightgrey'}
         }  
-FigKeySeason = {'summerOnly':   {'s':1,  'marker':'^', 'c':'r','label':'Summer'},
-                'winterOnly':   {'s':1,  'marker':'v', 'c':'b','label':'Winter'},
+FigKeySeason = {'summerOnly':   {'s':1,  'marker':'^', 'c':'orangered','label':'Summer'},
+                'winterOnly':   {'s':1,  'marker':'v', 'c':'slateblue','label':'Winter'},
                 'Annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey','label':'Annual'},
                 'annual':       {'s':0.5,  'marker':'o', 'c':'dimgrey','label':''},
-                'not specified':{'s':0.5,  'marker':'o', 'c':'dimgrey','label':''},
-                '':             {'s':0.5,  'marker':'o', 'c':'dimgrey','label':''}
+                'not specified':{'s':0.5,  'marker':'o', 'c':'lightgrey','label':''},
+                '':             {'s':0.5,  'marker':'o', 'c':'lightgrey','label':''}
+        }
+FigKeyInterp = {'P': {'s':0.8,  'marker':'s', 'c':'steelblue','label':'P'},
+                'M':   {'s':0.8,  'marker':'o', 'c':'seagreen','label':'M'},
+                'P-E':   {'s':0.8,  'marker':'o', 'c':'seagreen','label':'P-E'},
         }
 FigKeyExtent = {'Global':{'pltExtent':[0,8,0,10],'GeoExtent':[-180,180,-90,90],'Name':'Global'},
                  'NA':    {'pltExtent':[8,12,2,6],'GeoExtent':[-130,-50,23,55], 'Name':'North America'},
                  'Eur':   {'pltExtent':[8,12,6,9],'GeoExtent':[-12,40,35,70],    'Name':'Europe'}
                  }
-for FigKey in [FigKeySeason,FigKeyCategory]:
+for FigKey in [FigKeySeason,FigKeyInterp,FigKeyCategory]:
     plt.style.use('ggplot')
     plt.figure(figsize=(20,10))
     plt.rcParams['xtick.labelsize'] = 10
@@ -251,13 +255,14 @@ for FigKey in [FigKeySeason,FigKeyCategory]:
         ax1.add_feature(cfeature.LAKES,facecolor='none',      edgecolor='k')
         if FigKey  == FigKeyCategory: name = 'CategorySpecific'
         elif FigKey == FigKeySeason:  name = 'Season'
+        elif FigKey == FigKeyInterp:  name = 'Interp'
         if ax == 'Global': 
               ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='grey',lw=0.2)            
         elif ax == 'NA':
               ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='k',lw=0.3)        
               ax1.add_feature(cfeature.STATES, facecolor='none',edgecolor='grey',lw=0.2)        
         else: ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='k',lw=0.3)            
-        for category in sorted(data_HC[name].unique())[::-1]: 
+        for category in sorted(data_HC[name].unique())[::1]: 
             plot_df = data_HC.loc[(data_HC[name] == category)]
             proxy_scatter = ax1.scatter(plot_df.Lon,plot_df.Lat,c=FigKey[category]['c'],
                 edgecolor='k',lw=1,alpha=0.8,transform=ccrs.PlateCarree(),
@@ -270,20 +275,43 @@ for FigKey in [FigKeySeason,FigKeyCategory]:
     if save: plt.savefig(gitHubDir+'Figures/HC12k_'+name+'.png', dpi=400,format='png')
     else: plt.show()
 #%%
-for variable in ['EarlySlopeSig','LateSlopeSig','bin6ka']: #plot proxy values to check calculations
+for variable in ['EarlySlope','LateSlope']: #plot proxy values to check calculations
     plt.style.use('ggplot')
-    plt.figure(figsize=(20,10)); plt.rcParams['axes.facecolor'] ='white'
-    plt.rcParams['axes.linewidth'] = 1; plt.rcParams['axes.edgecolor'] = 'k'
-    ax1 = plt.subplot(projection=ccrs.Robinson()) 
-    ax1.spines['geo'].set_edgecolor('black')
-    ax1.set_global(); ax1.add_feature(cfeature.LAND,facecolor='whitesmoke',edgecolor='k')
-    ax1.coastlines(); ax1.add_feature(cfeature.LAKES,facecolor='none',edgecolor='k')
-    plot_df = data_HC; plot_df = plot_df[plot_df[variable].notna()]
-    proxy_scatter = ax1.scatter(plot_df.Lon,plot_df.Lat,c=plot_df[variable],
-            marker='o',s=130,edgecolor='k',lw=1,alpha=0.8,transform=ccrs.PlateCarree(),
-            cmap='BrBG',vmin=-1,vmax=1)
-    plt.title(variable,fontsize=30)
-    plt.show()
+    plt.figure(figsize=(20,10))
+    plt.rcParams['xtick.labelsize'] = 10
+    plt.rcParams['axes.facecolor'] ='white'; plt.rcParams['axes.linewidth'] = 1; plt.rcParams['axes.edgecolor'] = 'k'
+    gs = gridspec.GridSpec(12,12,wspace=0,hspace=0.2)
+    for ax in FigKeyExtent: 
+        extent = FigKeyExtent[ax]['pltExtent']
+        if ax == 'Global': PROJ = ccrs.PlateCarree()
+        else: PROJ = ccrs.PlateCarree()
+        ax1 = plt.subplot(gs[extent[0]:extent[1],extent[2]:extent[3]],projection=PROJ)
+        ax1.set_extent(FigKeyExtent[ax]['GeoExtent'])
+        ax1.coastlines()
+        ax1.spines['geo'].set_edgecolor('black')
+        ax1.add_feature(cfeature.LAND, facecolor='whitesmoke',edgecolor='k')
+        ax1.add_feature(cfeature.LAKES,facecolor='none',      edgecolor='k')
+        if FigKey  == FigKeyCategory: name = 'CategorySpecific'
+        elif FigKey == FigKeySeason:  name = 'Season'
+        elif FigKey == FigKeyInterp:  name = 'Interp'
+        if ax == 'Global': 
+              ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='grey',lw=0.2)
+              plt.title(variable,fontsize=30)
+        elif ax == 'NA':
+              ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='k',lw=0.3)        
+              ax1.add_feature(cfeature.STATES, facecolor='none',edgecolor='grey',lw=0.2)        
+        else: ax1.add_feature(cfeature.BORDERS,facecolor='none',edgecolor='k',lw=0.3)
+        for category in sorted(data_HC[name].unique())[::1]: 
+            plot_df = data_HC
+            plot_df = plot_df[plot_df[variable].notna()]
+            plot_df = plot_df.loc[(data_HC[name] == category)]
+            proxy_scatter = ax1.scatter(plot_df.Lon,plot_df.Lat,c=plot_df[variable],
+                                        marker=FigKey[category]['marker'],s=130,edgecolor='k',lw=1,alpha=0.8,transform=ccrs.PlateCarree(),
+                                        cmap='BrBG',vmin=-0.7,vmax=0.7)
+        if ax == 'Global': plt.colorbar(proxy_scatter)
+    if save: plt.savefig(gitHubDir+'Figures/HC12k_'+variable+'.png', dpi=400,format='png')
+    else: plt.show()
+
     
 #%%
 dataSource = []
@@ -306,11 +334,15 @@ for ts in lipdHC:
                 dataSource.append('SISAL')
         elif test['url'] == 'wNAm': 
                 dataSource.append('wNA')
+        elif test['url'] == 'geochange.er.usgs.gov/midden/':
+                dataSource.append('wNA')
         elif test['calibration'] == 'JM18_MAT':
                 dataSource.append('Marsicek')
         elif 'gov/paleo/study/15444' in  test['url'] or '10.5194/cp-10-1605-2014' == test['doi2']: 
-                dataSource.append('Arctic')
+                dataSource.append('Arctic Holocene')
         elif ts['dataSetName'][0:2] == 'LS':
+                dataSource.append('iso2k')
+        elif test['url'] == 'https://essd.copernicus.org/articles/12/2261/2020/':
                 dataSource.append('iso2k')
         elif '10.25921/4RY2-G808' in test['url'] or '/paleo/study/27330' in test['url']: 
                 dataSource.append('Temp12k')
@@ -325,10 +357,12 @@ for source in dataSource:
         datasource['count'].append(dataSource.count(source))
         
 fig1, ax1 = plt.subplots()
-ax1.pie(datasource['count'], labels=datasource['sourceNo'],startangle=90,
-        colors=['lightgrey','firebrick','k','powderblue','forestgreen','cornflowerblue','rosybrown','darkslategrey'])
+ax1.pie(datasource['count'], labels=datasource['sourceNo'],startangle=40,
+        colors=['lightgrey','firebrick','k','powderblue','darkgreen',
+                'cornflowerblue','goldenrod','sienna'],
+        wedgeprops = {'lw': 1.3,'edgecolor' :'k'})
 ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-plt.show()
+#plt.show()
 if save: plt.savefig(gitHubDir+'Figures/HC12k_DataSourceAttempt'+'.png', dpi=400,format='png')
 else: plt.show()
 
