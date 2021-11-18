@@ -1,0 +1,146 @@
+---
+goal: create regional composits based on ipcc regions. works with either temp or hc
+input: LiPD files, csv file from python script to filter TSids with
+output: individual csv for each region where columns repersent iterations. Also summary with each column as the regional median timeseries
+---
+#Changed minN from 8 to 3 in standardize function to accomodate lake deposits
+#   this is the number of measurments neaded to be located withing the search range
+
+###Settings in script
+```{r}
+#Set up directories and names
+dataDir   <- '/Volumes/GoogleDrive/My Drive/zResearch/Data/'
+githubDir <- '/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
+setwd(githubDir)
+```
+
+```{r}
+library(geoChronR)
+library(lipdR)
+#library(scales)
+#library(cowplot)
+library(purrr)
+library(dplyr)
+library(magrittr)
+#library(ggplot2)
+library(compositeR)
+library(foreach)
+library(doParallel)
+#library(abind)
+#library(ncdf4)
+```
+
+###Load Data
+```{r}
+lipdData <- readRDS("lipdData.rds")
+Save <- TRUE
+
+climVar <- 'HC'
+lipdTSO <- lipdData[[climVar]]
+regionNames <- sort(unique(as.character(pullTsVariable(lipdTSO,'geo_ipccRegion'))))
+```
+
+
+```{r}
+#set.seed(#) Set same sets of records which will make completely reproducable
+#
+#Set variables for composite code
+nens          <- 100  #make low to run quickly, set high to get large ensemble range (variation from standardization search range and order )
+binsize       <- 200 #years
+ageMin        <- 0 #age BP
+ageMax        <- 12000 #age BP
+searchAgeMin  <- 0 #age BP
+searchAgeMax  <- 8000 #age BP
+searchDuration<-(ageMax-ageMin)/4 #yrs
+minNrecords   <- 6 #num of records
+#
+binvec   <- seq(ageMin-binsize/2, to = ageMax+binsize/2, by = binsize)
+binYears <- rowMeans(cbind(binvec[-1],binvec[-length(binvec)]))
+
+#Set up data to add once
+compositeEns      <- vector(mode="list")
+medianCompositeTS <- data_frame(time=binYears)
+    
+for (region in regionNames) {
+  #Filter the TS by cluster name and make sure have enough values
+  lipdRegion <- filterTs(lipdTSO,paste('geo_ipccRegion ==',region))
+  #Skip if number of records is too few
+  if(length(lipdRegion)<minNrecords|sum(pullTsVariable(lipdRegion,'archiveType')!="LakeDeposits")<5|region=='SAS')next
+  #
+  #setup and run ensemble ########## This is the main part of the code to edit ##########
+  compEns <- matrix(NA,nrow = length(binYears),ncol=nens)
+  for (i in 1:nens){
+    tc <- compositeEnsembles(lipdRegion,
+                             binvec,
+                             stanFun = standardizeMeanIteratively,
+                             ageVar  = "age",
+                             alignInterpDirection = TRUE,
+                             spread      = TRUE,
+                             duration    = searchDuration,
+                             searchRange = c(searchAgeMin,searchAgeMax),
+                             normalizeVariance = TRUE,
+                             scope = "climate",
+                             binFun = simpleBinTs) #sampleEnsembleThenBinTs
+
+    compEns[,i] <- tc$composite
+  }
+  #
+  # Return reconstruction and additional data for plotting
+  compositeEns[[region]]  <- compEns
+  medianCompositeTS[[region]] <- apply(compositeEns[[region]],1,median)
+}
+```
+
+
+###SAVE
+```{r}
+write.csv(medianCompositeTS,
+          paste(githubDir,'DataFiles/RegionalComposites/',climVar,'/MedianTSbyRegion.csv',sep=''),
+          row.names = FALSE)
+
+for (region in names(names(compositeEnsVals))){
+  write.csv(compositeEnsVals[[region]],
+            paste(githubDir,'DataFiles/RegionalComposites/',climVar,'/',region,'.csv',sep=''), 
+            row.names = FALSE)
+}
+
+print("csv files saved")
+```
+
+
+```{r}
+standardizeMeanIteratively <- function (ages, pdm, duration, searchRange, normalizeVariance = TRUE, 
+  thresh = 0.01, minN = 3) 
+{
+  start <- standardizeOverRandomInterval(ages = ages, pdm = pdm, 
+    duration = duration, searchRange = searchRange, normalizeVariance = normalizeVariance, 
+    minN = minN)
+  start[!is.finite(start)] <- NA
+  colsds <- apply(pdm, 2, sd, na.rm = TRUE)
+  filledBins <- apply(pdm, 2, function(x) sum(is.finite(x)))
+  bad <- which(colSums(is.finite(start)) == 0 | colsds < 0.1 | 
+    filledBins < minN)
+  if (length(bad) >= (NCOL(start) - 2)) {
+    stop("No good columns after standardization")
+  }
+  delta <- thresh + 1
+  meanAllRMSE <- 1000
+  upmat <- start
+  while (delta > thresh) {
+    allRMSE <- matrix(NA, nrow = ncol(start))
+    rvec <- sample(1:ncol(start))
+    for (j in rvec) {
+      es <- recordRMSE(upmat[, j], upmat)
+      meanBias <- es$totalBias
+      upmat[, j] <- upmat[, j] - meanBias
+      allRMSE[j] <- es$totalRMSE
+    }
+    old <- meanAllRMSE
+    meanAllRMSE <- mean(allRMSE, na.rm = TRUE)
+    delta <- old - meanAllRMSE
+  }
+  return(upmat)
+}
+
+```
+
