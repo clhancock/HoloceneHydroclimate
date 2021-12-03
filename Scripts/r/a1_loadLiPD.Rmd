@@ -1,0 +1,190 @@
+---
+goal: Create r.data files for temp12k and hc12k to refrence from. 
+      Also assign regional designations and additional metadata. 
+input: LiPD files; refRegions
+output: rdata for Temp12k and HC12k ts
+author: chris hancock
+---
+
+setwd(githubDir)
+###Settings in script
+```{r}
+#Set up directories and names
+githubDir <- '/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate'
+githubDir <- 'G:/My Drive/zResearch/HoloceneHydroclimate/'
+setwd(githubDir)
+
+#Which versions of datesets to use
+tempVers <- '1_0_2'
+hcVers   <- '0_3_0'
+
+#Cut off for lake deposite numbers
+lakeDeposNo <- 9
+#
+```
+
+
+###Load Packages
+```{r}
+library(lipdR)
+library(maptools)
+library(proj4)
+library(sf)
+library(sp)
+library(tidyverse)
+```
+
+
+###Load ipcc region spatial data
+```{r}
+PROJ <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+refregions <- readShapePoly(file.path(githubDir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
+                            proj4string=CRS(PROJorig))
+refregions <-  spTransform(refregions, CRSobj = PROJ)
+```
+
+###Load LiPD Data
+```{r}
+#Load Lipd Files
+D_temp <- readLipd(paste("http://lipdverse.org/Temp12k/",tempVers,"/Temp12k",tempVers,".zip",sep=''))
+D_hc   <- readLipd(paste("http://lipdverse.org/HoloceneHydroclimate/",hcVers,"/HoloceneHydroclimate",hcVers,".zip",sep=''))
+D_new  <- readLipd(file.path(githubDir,'Data','LiPD','NewFiles_HC12k_0_3_0'))
+
+#Combine LiPD files and extract data from 2 sources without duplicates
+TS_temp <- extractTs(D_temp)
+TS_hc   <- c(extractTs(D_hc),extractTs(D_new))
+
+TS_temp <- splitInterpretationByScope(TS_temp)
+TS_hc   <- splitInterpretationByScope(TS_hc)
+
+TS_all  <- c(TS_temp,TS_hc)
+```
+
+###Assign tsids for data compilations based on within correct dataset and version 
+```{r}
+tsidListHC   <- c('WEB7d1c845d','WEB2e632027','WEBfbcf81a6','WEB8ffb0dbb','WEB7ebd522d','WEBb3fd19e6','WEBeab5d1e0','WEBbed2c631','WEB8a35bba5','WEB4b390c30','WEB1f2d5fc5','WEB843e2ae7','WEBc7a2aaa7','GHab77d673','LPDfdd2a0239','LPDba471ae7','WEBa6153aaf','WEBb3112945','WEB4362aee7','WEBed535db2','WEB1392075b-dup-dup','WEBa4116a5e','LPD6d6b5db7','NAm2kHydro015','WEB8c583cb8','WEB1392075b-dup','WEBe297c3e8','pRAINCyEKVBKyz8PbI','WEBf652d8e7','GH277c77ee','GHab77d673')
+tsidListTemp <- c()
+for (ts in TS_all){
+  compNo <- 1
+  while (!is.null(ts[[paste('inCompilationBeta',compNo,'_compilationName',sep='')]])){
+    compName <- ts[[paste('inCompilationBeta',compNo,'_compilationName',sep='')]]
+    compVers <- ts[[paste('inCompilationBeta',compNo,'_compilationVersion',sep='')]]
+    if (compName == 'Temp12k'){
+      if (any(compVers == tempVers)){
+        tsidListTemp <- c(tsidListTemp,ts$paleoData_TSid)
+      }
+    } else if (compName == 'HoloceneHydroclimate'){
+      if (any(compVers == hcVers)){
+        if (sum(!is.na(ts$paleoData_values[which(ts$age < 12000)])) >= lakeDeposNo){
+          tsidListHC <- c(tsidListHC,ts$paleoData_TSid)
+        }
+      }
+    }
+    compNo <- compNo+1
+  }
+}
+
+
+lipdData <- list(Temp = TS_temp[which(pullTsVariable(TS_temp,"paleoData_TSid") %in% tsidListTemp)], 
+                 HC   = TS_hc[  which(pullTsVariable(TS_hc  ,"paleoData_TSid") %in% tsidListHC)])
+
+print(paste("Temp:",length(lipdData$Temp)))
+print(paste("HC:",length(lipdData$HC)))
+```
+
+
+###Add metadata
+```{r}
+for (climVar in names(lipdData)){
+  lipd <- lipdData[[climVar]]
+  for (ts in 1:length(lipd)){
+    lipd[[ts]]$age <- as.numeric(lipd[[ts]]$age)
+    lipd[[ts]]$paleoData_values <- as.numeric(lipd[[ts]]$paleoData_values)
+    #Make sure name of climate interp field is standardized 
+    if (is.null(lipd[[ts]]$climateInterpretation1_direction) == FALSE){
+      lipd[[ts]]$climateInterpretation1_interpDirection <- lipd[[ts]]$climateInterpretation1_direction
+    }
+    #
+    #Add Ipcc regions to metdata
+    pointData <- data.frame(longitude=c(lipd[[ts]]$geo_longitude),latitude=c(lipd[[ts]]$geo_latitude))
+    pointData <- SpatialPointsDataFrame(coords=pointData,data = pointData, 
+                                        proj4string = CRS(PROJorig))
+    pointData <-  spTransform(pointData, CRSobj = PROJ)
+    lipd[[ts]]$geo_ipccRegion <- as.character(over(pointData, refregions)$Acronym)
+    #
+    #Add age information
+    tso <- data_frame(age = as.numeric(lipd[[ts]]$age), values = as.numeric(lipd[[ts]]$paleoData_values)) %>%
+      filter(between(age,0,12000)) %>%
+      filter(!is.na(values)) %>%
+      arrange(age)
+    lipd[[ts]]$ageMin     <- min(tso$age)
+    lipd[[ts]]$ageMax     <- max(tso$age)
+    lipd[[ts]]$ageRange   <- diff(range(tso$age))
+    lipd[[ts]]$ageRes     <- median(diff(tso$age))
+    lipd[[ts]]$ageResPlus <- median(diff(tso$age[which(diff(tso$values) != 0)]))
+    #
+    #Add category information
+    if (climVar == 'HC'){
+      archive  <- lipd[[ts]]$archiveType
+      proxy    <- lipd[[ts]]$paleoData_proxy
+      unit     <- lipd[[ts]]$paleoData_units
+      if (is.null(proxy) | is.null(archive)){
+        lipd[[ts]]$Category         <- 'Other'
+        lipd[[ts]]$CategorySpecific <- 'Other (not calibrated)'
+      } else if (archive == 'Speleothem'){
+        lipd[[ts]]$Category           <- 'Speleothem'
+        if (proxy == 'd18O' | proxy ==  'd13C'){
+          lipd[[ts]]$CategorySpecific <- paste(archive,' (',proxy,')',sep='')
+        } else{
+          lipd[[ts]]$CategorySpecific <- 'Speleothem (other)'
+        }
+      } else if (archive == 'LakeDeposits'){
+        lipd[[ts]]$Category           <- 'Lake Deposits'
+        lipd[[ts]]$CategorySpecific   <- 'Lake Deposits'
+      } else if (archive == 'GlacierIce'){
+        lipd[[ts]]$Category           <- 'Glacier Ice'
+        lipd[[ts]]$CategorySpecific   <- 'Glacier Ice'
+      } else if (archive == 'LakeSediment' & proxy == 'd18O'){
+        lipd[[ts]]$Category           <- 'Lake Sediment d18O'
+        lipd[[ts]]$CategorySpecific   <- 'Lake Sediment (d18O)'
+      } else if (proxy == 'dDwax'){
+        lipd[[ts]]$Category           <- 'Leaf Wax dD'
+        lipd[[ts]]$CategorySpecific   <- 'Leaf Wax (dD)'
+      } else if (proxy == 'pollen'){
+        lipd[[ts]]$Category           <- 'Pollen'
+        if (is.null(unit)){
+          lipd[[ts]]$CategorySpecific <- 'Pollen (not calibrated)'
+        } else if (unit == 'mm' | unit == 'mm/a'){
+          lipd[[ts]]$CategorySpecific <- 'Pollen (calibrated)'
+        } else {
+          lipd[[ts]]$CategorySpecific <- 'Pollen (not calibrated)'
+        }
+      } else {
+        lipd[[ts]]$Category           <- 'Other'
+        if (is.null(unit)){
+          lipd[[ts]]$CategorySpecific <- 'Other (not calibrated)'
+        } else if (unit == 'mm' | unit == 'mm/a'){
+          lipd[[ts]]$CategorySpecific <- 'Other (calibrated)'
+        } else {
+          lipd[[ts]]$CategorySpecific <- 'Other (not calibrated)'
+        }
+      }
+    } else{lipd[[ts]]$Category <- lipd[[ts]]$paleoData_proxyGeneral}
+    #
+  }
+  #require >0 change points for lakedeposits
+  lipd                <- lipd[which(!is.na(pullTsVariable(lipd,"ageResPlus")))]
+  lipdData[[climVar]] <- lipd[which(pullTsVariable(lipd,"climateInterpretation1_seasonalityGeneral") %in% c('summer+','winter+') == FALSE)]
+
+}
+
+print(paste("Temp:",length(lipdData$Temp)))
+print(paste("HC:",length(lipdData$HC)))
+```
+
+
+###Save
+```{r}
+saveRDS(lipdData, file.path(githubDir,'Data','LiPD','lipdData.rds'))
+```
