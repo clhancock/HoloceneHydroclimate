@@ -1,10 +1,9 @@
 library(geoChronR)
 
-
 githubDir <- getwd()
-
+climVar <- 'HC'
 compositeData <- read.csv(file.path(githubDir,'Data','RegionComposites',climVar,'MedianTSbyRegion.csv'))
-proxyData <- readRDS(file=file.path(githubDir,'Data','LiPD','lipdData.rds'))[[climVar]]
+#proxyData     <- readRDS(file=file.path(githubDir,'Data','LiPD','lipdData.rds'))[[climVar]]
 
 #Calculate data to plot and connect it to region data. 
 #More complicated than needed because part of larger code to make series of figures for each region 

@@ -7,12 +7,6 @@ author: chris hancock
 
 setwd(githubDir)
 ###Settings in script
-```{r}
-#Set up directories and names
-githubDir <- '/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate'
-githubDir <- 'G:/My Drive/zResearch/HoloceneHydroclimate'
-setwd(githubDir)
-```
 
 
 ###Load Packages
@@ -28,6 +22,8 @@ library(tidyverse)
 ```
 
 ```{r}
+#Set up directories and names
+githubDir <- getwd()
 ageres   <- 200
 binyears <- seq(0,12000,ageres)
 ```

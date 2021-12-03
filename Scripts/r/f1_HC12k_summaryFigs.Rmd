@@ -8,11 +8,7 @@ author: chris hancock
 ###Settings in script
 ```{r}
 #Set up directories and names
-#dataDir   <- '/Volumes/GoogleDrive/My Drive/zResearch/Data/'
-githubDir <- '/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate'
-#dataDir   <- 'G:/My Drive/zResearch/Data/'
-githubDir <- 'G:/My Drive/zResearch/HoloceneHydroclimate/'
-setwd(githubDir)
+githubDir <- getwd()
 #
 ```
 
@@ -30,22 +26,22 @@ library(scales)
 library(sp)
 library(tidyverse)
 ```
-###Input Data
-```{r}
-lipdData <- readRDS(file=file.path(githubDir,'Data','LiPD','lipdData.rds'))
-Save <- TRUE
 
-PROJ <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
-PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+###Input Data
+```{r, warning=FALSE}
+lipdData <- readRDS(file=file.path(githubDir,'Data','LiPD','lipdData.rds'))
+
+PROJ       <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+PROJorig   <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 refregions <- readShapePoly(file.path(githubDir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
                             proj4string=CRS(PROJorig))
 refregions <-  spTransform(refregions, CRSobj = PROJ)
 
 countries  <- getMap("less islands")
-countries  <-  spTransform(countries,  CRSobj = PROJ)
+countries  <- spTransform(countries,  CRSobj = PROJ)
 
-climVar <- 'HC'
-lipdTSO <- lipdData[[climVar]]
+climVar    <- 'HC'
+lipdTSO    <- lipdData[[climVar]]
 ```
 
 
@@ -65,87 +61,78 @@ proxyMetaData <- tibble(dataset        = pullTsVariable(lipdTSO,'dataSetName'),
                         recordResPlus  = pullTsVariable(lipdTSO,'ageResPlus'))
 ```
 
+###Create list of color information
+```{r}
+plotVals <- vector(mode='list')
+plotVals$general  <- vector(mode='list')
+plotVals$specific <- vector(mode='list')
+
+plotVals$general$names <- sort(unique(proxyMetaData$Category))
+plotVals$general$colors<- c("powder blue","corn flower blue",
+                            "dark blue","dark orchid","grey",
+                            "forest green","firebrick")
+plotVals$general$shapes<- c(23,20,21,'p',22,'P',24)
+
+
+```
+
+
 Plot a histagram showing the median time difference between Holocene ages
 ```{r}
 plotRes <- ggplot(proxyMetaData)+
+  geom_vline(xintercept=median(proxyMetaData$recordRes),size=1.1) +
+  geom_vline(xintercept=mean(proxyMetaData$recordRes),size=1.1,linetype=2) +
   geom_histogram(aes(recordRes,fill=Category),color='Black',alpha=0.7,binwidth = 30) +
-  scale_fill_manual(values	=c("powder blue","corn flower blue","dark blue","dark orchid","grey","forest green","firebrick"))+
-  scale_x_continuous(name = "Median Sample Resolution Over the Holocene (binwidth = 30)" ,
-                     limits=c(0,1250),
-                     expand=c(0,0),
-                     breaks=seq(0,1250,150)) +
-  scale_y_continuous(name = "Count of Records",oob=scales::squish,
-                     limits=c(0,100),
-                     expand=c(0,0))+
+  scale_fill_manual(values=plotVals$general$colors) +
+  scale_x_continuous(name="Median Sample Resolution Over the Holocene (binwidth = 30)" ,
+                     limits=c(0,1250), expand=c(0,0), breaks=seq(0,1250,150)) +
+  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,100), expand=c(0,0))+
   theme_bw()+
   theme(text = element_text(family='sans',size=8),
-        legend.title = element_blank(),
-        legend.position = c(0.5,0.7))
+        legend.title = element_blank(),legend.position = c(0.5,0.7))
 plotRes
 
 plotResPlus <- ggplot(proxyMetaData)+
+  geom_vline(xintercept=median(proxyMetaData$recordResPlus),size=1.1) +
+  geom_vline(xintercept=mean(proxyMetaData$recordResPlus),size=1.1,linetype=2) +
   geom_histogram(aes(recordResPlus,fill=Category),color='Black',alpha=0.7,binwidth = 30) +
-  scale_fill_manual(values	=c("powder blue","corn flower blue","dark blue","dark orchid","grey","forest green","firebrick"))+
+  scale_fill_manual(values=plotVals$general$colors) +
   scale_x_continuous(name = "Median Sample Resolution Over the Holocene (binwidth = 30)" ,
-                     limits=c(0,3000),
-                     expand=c(0,0),
-                     breaks=seq(0,1250,150)) +
-  scale_y_continuous(name = "Count of Records",oob=scales::squish,
-                     limits=c(0,100),
-                     expand=c(0,0))+
+                     limits=c(0,3000), expand=c(0,0), breaks=seq(0,1250,150)) +
+  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,100), expand=c(0,0))+
   theme_bw()+
   theme(text = element_text(family='sans',size=8),
-        legend.title = element_blank(),
-        legend.position = c(0.5,0.7))
+        legend.title = element_blank(), legend.position = c(0.5,0.7))
 plotResPlus
 ```
-
 
 
 Plot a histagram based on record length over the Holocene
 ```{r}
 plotRange <- ggplot(proxyMetaData)+
+  geom_vline(xintercept=median(proxyMetaData$recordRange),size=1.1) +
+  geom_vline(xintercept=mean(proxyMetaData$recordRange),size=1.1,linetype=2) +
   geom_histogram(aes(recordRange,fill=Category),color='Black',alpha=0.7,binwidth = 300) +
-  scale_fill_manual(values	=c("powder blue","corn flower blue","dark blue","dark orchid","grey","forest green","firebrick"))+
+  scale_fill_manual(values=plotVals$general$colors) +
   scale_x_continuous(name = "Record Length Over the Holocene (binwidth = 300)",
-                     limits=c(3000,12000),
-                     expand=c(0,0),
-                     breaks=seq(3000,12000,1200)) +
-  scale_y_continuous(name = "Count of Records",oob=scales::squish,
-                     limits=c(0,80),
-                     expand=c(0,0)) +
+                     limits=c(3000,12000),expand=c(0,0),breaks=seq(3000,12000,1200)) +
+  scale_y_continuous(name = "Count of Records",oob=scales::squish,limits=c(0,80),expand=c(0,0)) +
   theme_bw()+
   theme(text = element_text(family='sans',size=8),
-        legend.title = element_blank(),
-        legend.position = c(0.5,0.7))
+        legend.title = element_blank(), legend.position = c(0.5,0.7))
 plotRange
 ```
 
 ```{r}
-colorVals <- sort(unique(pullTsVariable(lipdTSO,'Category')))
-colorVals <- str_replace(colorVals,"Glacier Ice","powder blue")
-colorVals <- str_replace(colorVals,"Lake Deposits","corn flower blue")
-colorVals <- str_replace(colorVals,"Lake Sediment d18O","dark blue")
-colorVals <- str_replace(colorVals,"Leaf Wax dD","dark orchid")
-colorVals <- str_replace(colorVals,"Other","grey")
-colorVals <- str_replace(colorVals,"Pollen","forest green")
-colorVals <- str_replace(colorVals,"Speleothem" ,"firebrick")
 #Plot a figure showiang temporal variability over the Holocene (using geochronR)
-plotTimeData <- plotTimeAvailabilityTs(lipdTSO,age.range = c(0,12000),step=200,
-                                       age.var="age", group='Category')
+plotTimeData <- plotTimeAvailabilityTs(lipdTSO,age.range = c(0,12000),step=200,group='Category')
 plotTime <- ggplot(plotTimeData$data,aes(yvec,value))+
   geom_area(alpha=0.7,aes(fill=group),color='Black')+
-  scale_fill_manual(values	= colorVals)+
-  scale_x_reverse(name = "Age (yr BP)",
-                  limits=c(12000,0),
-                  expand=c(0,0),
-                  n.breaks=7,
-                  sec.axis = sec_axis(~.,labels=NULL))+
-  scale_y_continuous(name = "Number of Records",
-                     limits=c(0,length(lipdTSO)),
-                     expand=c(0,0),
-                     labels=seq(0,length(lipdTSO),100),
-                     breaks=seq(0,length(lipdTSO),100))+
+  scale_fill_manual(values=plotVals$general$colors) +
+  scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),
+                  n.breaks=7,sec.axis = sec_axis(~.,labels=NULL))+
+  scale_y_continuous(name = "Number of Records",limits=c(0,length(lipdTSO)),expand=c(0,0),
+                     labels=seq(0,length(lipdTSO),100), breaks=seq(0,length(lipdTSO),100))+
   theme_bw()+
   theme(text = element_text(family='sans',size=8),
         legend.title = element_blank())
@@ -226,16 +213,16 @@ proxyMap
 
 Save Figures
 ```{r}
-ggsave(plot=plotRes, width = 6.5, height = 4, dpi = 400,
-       filename = paste(githubDir,"/Figures/PlotProxyAgeRes.png",sep=''))
-ggsave(plot=plotResPlus, width = 6.5, height = 4, dpi = 400,
-       filename = paste(githubDir,"/Figures/PlotProxyAgeResPlus.png",sep=''))
-ggsave(plot=plotRange, width = 6.5, height = 4, dpi = 400,
-       filename = paste(githubDir,"/Figures/PlotProxyAgeRange.png",sep=''))
-ggsave(plot=plotTime, width = 6, height = 2.5, dpi = 400,
-       filename = paste(githubDir,"/Figures/PlotTimeAvailability.png",sep=''))
-ggsave(paste('countByRegion_',climVar,'.png',sep=''),proxyMap,
-       path=paste(githubDir,'Figures/',sep=''),width=6,height=(6/1.97+0.5),dpi = 600,device='png')
+ggsave(plot=plotRes, width = 6.5, height = 4, dpi = 600,
+       filename = file.path(githubDir,"Figures","PlotProxyAgeRes.png"))
+ggsave(plot=plotResPlus, width = 6.5, height = 4, dpi = 600,
+       filename = file.path(githubDir,"Figures","PlotProxyAgeResPlus.png"))
+ggsave(plot=plotRange, width = 6.5, height = 4, dpi = 600,
+       filename = file.path(githubDir,"Figures","PlotProxyAgeRange.png"))
+ggsave(plot=plotTime, width = 6, height = 2.5, dpi = 600,
+       filename = file.path(githubDir,"Figures","PlotTimeAvailability.png"))
+ggsave(plot=proxyMap, width = 6, height = (6/1.97+0.5), dpi = 600,
+       filename = file.path(githubDir,"Figures",paste('countByRegion_',climVar,'.png',sep='')))
 ```
 
 
@@ -243,10 +230,48 @@ ggsave(paste('countByRegion_',climVar,'.png',sep=''),proxyMap,
 
 
 
+```{r}
+sdfProxy <- as.data.frame(proxyDataPrj)
+proxyMap2 <- ggplot() +
+  #Set Border around plot - probably not the best way to do this
+  borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=2) +
+  geom_map(data=refregions, map=fortify(refregions),
+           aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
+  #Add Country data (basemap)
+  geom_map(data=countries, map=fortify(countries),
+           aes(x=long, y=lat, group=group, map_id=id), fill = "grey90",color="white",size=0.2) +
+  #Add refrence regions boundaries
+  geom_map(data = refregions, map = dataTable, aes(x=long, y=lat, group=group, map_id=id),
+           fill=NA, color='Black') +
+  
+  coord_fixed(1)+ 
+  theme_void()
 
 
 
+plotVals$general$shapes<- c(5,1,10,9,0,3,2)
+#"Glacier Ice""Lake Deposits","Lake Sediment d18O" "Leaf Wax dD","Other","Pollen","Speleothem"           
+for (i in 1:length(plotVals$general$names)){
+  proxyMap2 <- proxyMap2 +
+    geom_point(data=(sdfProxy %>% filter(Category==plotVals$general$names[i])),
+               aes(x=longitude.1 , y=latitude.1), size=0.5, stroke=1.5, alpha=0.8,
+               shape=plotVals$general$shapes[i], color='Black')+
+    geom_point(data=(sdfProxy %>% filter(Category==plotVals$general$names[i])),
+               aes(x=longitude.1 , y=latitude.1), size=0.5, stroke=1, alpha=0.8,
+               shape=plotVals$general$shapes[i], color=plotVals$general$colors[i])
+}
 
+proxyMap2
+
+```
+
+
+N = 100; M = 1000
+good.shapes = c(1:25,33:127)
+foo = data.frame( x = rnorm(M), y = rnorm(M), s = factor( sample(1:N, M, replace = TRUE) ) )
+ggplot(aes(x,y,shape=s ), data=foo ) +
+    scale_shape_manual(values=good.shapes[1:N]) +
+        geom_point()
 
 
 EVERYTHING BELOW IS WORK IN PROGRESS
