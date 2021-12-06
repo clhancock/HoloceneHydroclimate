@@ -36,23 +36,6 @@ refregions <-  spTransform(refregions, CRSobj = PROJ)
 
 countries  <- getMap("less islands")
 countries  <- spTransform(countries,  CRSobj = PROJ)
-
-
-refrenceSubset <- subset(refregions, Acronym %in% regNames)
-
-basemap <- ggplot() +
-  #Set Border around plot - probably not the best way to do this
-  borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=2) +
-  geom_map(data=refregions, map=fortify(refregions),
-           aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
-  #Add Country data (basemap)
-  geom_map(data=countries, map=fortify(countries),
-           aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
-  borders(database = refrenceSubset, fill=NA, colour='grey20') + 
-  coord_fixed(1) + 
-  theme_void() 
-  
-basemap
 ```
 
 
@@ -86,6 +69,22 @@ regNames <- names(regionComposite$proxy)[-1]
 binvec <- regionComposite$proxy$time
 ageMin <- min(binvec)
 ageMax <- max(binvec)
+
+refrenceSubset <- subset(refregions, Acronym %in% regNames)
+
+basemap <- ggplot() +
+  #Set Border around plot - probably not the best way to do this
+  borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=2) +
+  geom_map(data=refregions, map=fortify(refregions),
+           aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
+  #Add Country data (basemap)
+  geom_map(data=countries, map=fortify(countries),
+           aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
+  borders(database = refrenceSubset, fill=NA, colour='grey20') + 
+  coord_fixed(1) + 
+  theme_void() 
+  
+#basemap
 ```
 
 
@@ -215,21 +214,26 @@ ggsave(plot=StripePlot, width = 6, height = 6*0.5072, dpi = 600,
 
 
 ```{r warning=FALSE}
-plotlimit_set <- 5
 for (reg in regNames){
   timeAvail <- plotTimeAvailabilityTs(plotData[[reg]]$lipd,age.range=c(ageMin,ageMax),
-                                      group.var ='Category',step=200)$dat %>%
+                                      group.var ='Category',step=100)$dat %>%
     group_by(yvec) %>% 
     summarise(count=sum(value),countPct=sum(value)/length(plotData[[reg]]$lipd))
   regionDataNA <- as.matrix(plotData[[reg]]$compMatix)
   regionData <- regionDataNA
-  idx <- which(timeAvail$countPct<0.5)
+  idx <- which(timeAvail$countPct<=0.5)
+  idx_MH <- which(timeAvail$yvec==6000)
   if (length(idx > 0)){
-    idx <- sort(unique(idx[which(between(idx,1,length(binvec)))]))
-    regionData[idx,] <- NA 
+    idx <- c(max(which(timeAvail$countPct[1:idx_MH]<=0.5),
+                 1),
+             min(which(timeAvail$countPct[idx_MH:length(timeAvail$countPct)]<=0.5)+idx_MH,
+                 length(timeAvail$countPct)))
+  regionData[1:idx[1],] <- NA 
+  regionData[idx[2]:length(timeAvail$countPct),] <- NA 
   }
   plotlimit_set <- min(mean(c(max(abs(apply(regionData,1,median,na.rm=TRUE)),na.rm=TRUE),
                               max(abs(regionData),na.rm=TRUE))),8)
+  plotlimit_set <- 4.5
   compBands <- vector(mode='list')
   compBands$na <- plotTimeseriesEnsRibbons(X=binvec, Y=regionDataNA, alp=0.9,line.width=0.2,
                                              color.low='grey90',
@@ -246,16 +250,17 @@ for (reg in regNames){
                       limits=c(12000,0), expand=c(0,0), n.breaks=7,sec.axis = dup_axis())+
       scale_y_continuous(name=paste('Standardized',climVar),
                       limits=c(plotlimit_set*-1000,plotlimit_set*1000),sec.axis = dup_axis(),
-                      breaks = seq(-plotlimit_set,plotlimit_set,2))+
+                      breaks = seq(-4,4,2))+
       coord_cartesian(xlim=c(12000,0), 
                       ylim=c(plotlimit_set*-1,plotlimit_set)) +
       theme_void() +
       theme(panel.border=element_rect(colour='Black',fill=NA,size=0.8))
     if (plt == names(compBands)[1]){
       compBands[[plt]] <- compBands[[plt]] + 
+        geom_hline(yintercept=0,size=0.15) +
         theme(panel.background=element_rect(colour='Black',fill='White',size=0.8),
-              axis.ticks=element_line(color = 'black',size=0.1),
-              axis.ticks.length=unit(-2.5,"pt"))
+              axis.ticks=element_line(color = 'black',size=0.15),
+              axis.ticks.length=unit(-2,"pt"))
     }
     compBandPlt <- compBandPlt + draw_plot(compBands[[plt]], x = 0, y = 0, width = 1, height = 1)
   } 

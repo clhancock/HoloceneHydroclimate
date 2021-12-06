@@ -22,31 +22,29 @@ library(tidyverse)
 
 #Set up directories and names
 githubDir <- getwd()
-climVar <- 'HC'
+climVar <- 'Temp'
 #
 
 ###Load Data
 lipdData <- readRDS(file.path(githubDir,'Data','LiPD','lipdData.rds'))
 lipdTSO <- lipdData[[climVar]]
 regionNames <- sort(unique(as.character(pullTsVariable(lipdTSO,'geo_ipccRegion'))))
+climVar <- 'T'
 
-save=TRUE
+save=FALSE
 #set.seed(#) Set same sets of records which will make completely reproducable
 #
 #Set variables for composite code
-nens          <- 1000  #make low to run quickly, set high to get large ensemble range (variation from standardization search range and order )
-binsize       <- 200 #years
-ageMin        <- -200 #age BP
-ageMax        <- 12200 #age BP
-searchAgeMin  <- 0 #age BP
-searchAgeMax  <- 8000 #age BP
+nens          <- 200  #make low to run quickly, set high to get large ensemble range (variation from standardization search range and order )
+binsize       <- 100 #years
+ageMin        <- -100 #age BP
+ageMax        <- 12400 #age BP
 searchDuration<- 3500 #yrs
 minNrecords   <- 6 #num of records
 samplePct <- 0.75
 #
 binvec   <- seq(ageMin-binsize/2, to = ageMax+binsize/2, by = binsize)
 binYears <- rowMeans(cbind(binvec[-1],binvec[-length(binvec)]))
-
 
 #Set up data to add once
 compositeEns      <- vector(mode="list")
@@ -58,13 +56,27 @@ for (region in regionNames) {
   #Skip if number of records is too few
   if(length(lipdRegion)<minNrecords|sum(pullTsVariable(lipdRegion,'archiveType')!="LakeDeposits")<=2)next
   #
+  timeAvail <- plotTimeAvailabilityTs(lipdRegion,age.range=c(0,12000),
+                                      group.var ='Category',step=binsize)$dat %>%
+    group_by(yvec) %>% 
+    summarise(count=sum(value),countPct=sum(value)/length(lipdRegion))
+  idx <- which(timeAvail$countPct<=0.5)
+  idx_MH <- which(timeAvail$yvec==6000)
+  if (length(idx > 0)){
+    idx <- c(max(which(timeAvail$countPct[1:idx_MH]<=0.5),
+                 which(timeAvail$yvec==0)),
+             min(which(timeAvail$countPct[idx_MH:length(timeAvail$countPct)]<=0.5)+idx_MH,
+                 which(timeAvail$yvec==10000)))
+  } else{idx <- c(which(timeAvail$yvec==0),which(timeAvail$yvec==10000))}
+  searchAgeMin  <- timeAvail$yvec[idx[1]] #age BP
+  searchAgeMax  <- timeAvail$yvec[idx[2]] #age BP
   #setup and run ensemble ########## This is the main part of the code to edit ##########
   compEns <- matrix(NA,nrow = length(binYears),ncol=nens)
   for (i in 1:nens){
     weights <- pullTsVariable(lipdRegion,'ageRange') / pullTsVariable(lipdRegion,'ageResPlus')
     weights[which(is.na(weights))] <- mean(weights,na.rm=TRUE)
     lipdRegionSample <- sample(x    = pullTsVariable(lipdRegion,'paleoData_TSid'),
-                               size = length(lipdRegion)*samplePct+1,
+                               size = length(lipdRegion)*samplePct,
                                prob = weights / sum(weights))
     lipdRegionSample <- lipdRegion[which(pullTsVariable(lipdRegion,'paleoData_TSid') %in% lipdRegionSample)]
     tc <- compositeR::compositeEnsembles(lipdRegionSample,
