@@ -44,7 +44,6 @@ climVar    <- 'HC'
 lipdTSO    <- lipdData[[climVar]]
 ```
 
-
 ###Add information about proxy categories
 ```{r}
 climVar <- 'HC'
@@ -59,23 +58,25 @@ proxyMetaData <- tibble(dataset        = pullTsVariable(lipdTSO,'dataSetName'),
                         recordRange    = pullTsVariable(lipdTSO,'ageRange'),
                         recordRes      = pullTsVariable(lipdTSO,'ageRes'),
                         recordResPlus  = pullTsVariable(lipdTSO,'ageResPlus'))
-```
-
+##############################
 ###Create list of color information
-```{r}
 plotVals <- vector(mode='list')
 plotVals$general  <- vector(mode='list')
 plotVals$specific <- vector(mode='list')
 
-plotVals$general$names <- sort(unique(proxyMetaData$Category))
-plotVals$general$colors<- c("powder blue","corn flower blue",
-                            "dark blue","dark orchid","grey",
-                            "forest green","firebrick")
-plotVals$general$shapes<- c(23,20,21,'p',22,'P',24)
+plotVals$general$names  <- sort(unique(proxyMetaData$Category))
+plotVals$general$colors <- c("powder blue","corn flower blue",
+                             "dark blue","dark orchid","grey",
+                             "forest green","firebrick")
+plotVals$general$shapes <- c(12,21,15,5,13,14,11)
 
+plotVals$specific$names <- sort(unique(proxyMetaData$CategorySpec))
+plotVals$specific$colors<- c("powder blue","corn flower blue",
+                             "dark blue","dark orchid","grey40","grey",
+                            "forest green","yellowgreen","lightcoral","firebrick","darkorange")
+plotVals$specific$shapes<- c(12,21,15,5,6,13,14,1,23,11,17)
 
 ```
-
 
 Plot a histagram showing the median time difference between Holocene ages
 ```{r}
@@ -91,7 +92,7 @@ plotRes <- ggplot(proxyMetaData)+
   theme(text = element_text(family='sans',size=8),
         legend.title = element_blank(),legend.position = c(0.5,0.7))
 plotRes
-
+##############################
 plotResPlus <- ggplot(proxyMetaData)+
   geom_vline(xintercept=median(proxyMetaData$recordResPlus),size=1.1) +
   geom_vline(xintercept=mean(proxyMetaData$recordResPlus),size=1.1,linetype=2) +
@@ -142,12 +143,7 @@ plotTime
 
 
 ```{r}
-
-
-proxyDataPrj <- SpatialPointsDataFrame(proxyMetaData[,c("longitude", "latitude")], 
-                                       proxyMetaData, 
-                                       proj4string=CRS(PROJorig))
-
+proxyDataPrj   <- SpatialPointsDataFrame(proxyMetaData[,c("longitude", "latitude")], proxyMetaData, proj4string=CRS(PROJorig))
 proxyDataPrj   <- spTransform(proxyDataPrj, CRSobj = PROJ)
 refrenceSubset <- subset(refregions, Acronym %in% proxyMetaData$ipccReg)
 
@@ -183,21 +179,43 @@ for (region in list(levels(refrenceSubset@data[["Acronym"]]))[[1]]){
 
 ```
 
+#Map proxy data with IPCC regions
 ```{r}
-proxyMap <- ggplot() +
+basemap <- ggplot() +
   #Set Border around plot - probably not the best way to do this
   borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=2) +
   geom_map(data=refregions, map=fortify(refregions),
            aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
   #Add Country data (basemap)
   geom_map(data=countries, map=fortify(countries),
-           aes(x=long, y=lat, group=group, map_id=id), fill = "grey60",color="grey90",size=0.2) +
+           aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
+  coord_fixed(1) + 
+  theme_void() 
+
+##############################
+#Plot Figure 1 proxy type for each site
+proxyMapSites <- basemap +
+  geom_map(data=refrenceSubset, map=dataTable, alpha=0.75, size=0.5, color='black' , 
+           aes(x=long, y=lat, group=group, map_id=id),fill=NA)
+
+for (i in 1:length(plotVals$specific$names)){
+  proxyMapSites <- proxyMapSites +
+    geom_star(data=(as.data.frame(proxyDataPrj) %>% filter(CategorySpec==plotVals$specific$names[i])),
+               aes(x=longitude.1 , y=latitude.1), size=1.5,color='Black',alpha=0.7,starstroke=0.3,
+               starshape=plotVals$specific$shapes[i], fill=plotVals$specific$colors[i])
+}
+proxyMapSites
+
+##############################
+#Plot Figure 2 count by regions
+proxyMapRegions <- basemap + 
   #Add refrence regions boundaries
-  geom_map(data = refrenceSubset, map = dataTable, aes(x=long, y=lat, group=group, map_id=id,
-                                               fill=as.factor(dataTable$CountName)),alpha=0.75,size=0.5,color='black') +
-  geom_point(data=as.data.frame(proxyDataPrj), aes(x=longitude.1 , y=latitude.1), shape=1,size=0.8) +
-  coord_fixed(1)+ theme_void() +
+  geom_map(data=refrenceSubset, map=dataTable, alpha=0.75, size=0.5, color='black' , 
+           aes(x=long, y=lat, group=group, map_id=id,fill=as.factor(dataTable$CountName))) +
   scale_fill_manual(values=figPalette,labels=figlabels)+
+  #Add proxy sites
+  geom_point(data=as.data.frame(proxyDataPrj), aes(x=longitude.1 , y=latitude.1), shape=1,size=0.8) +
+  #Format Legend
   theme(legend.position = c(0.5,-0.01),
         legend.direction = "horizontal",
         legend.title=element_blank(),
@@ -207,9 +225,8 @@ proxyMap <- ggplot() +
         legend.key.height = (unit(5, 'pt')),
         legend.text = element_text(family='sans',size=8))
 
-proxyMap
+proxyMapRegions
 ```
-
 
 Save Figures
 ```{r}
@@ -221,8 +238,10 @@ ggsave(plot=plotRange, width = 6.5, height = 4, dpi = 600,
        filename = file.path(githubDir,"Figures","PlotProxyAgeRange.png"))
 ggsave(plot=plotTime, width = 6, height = 2.5, dpi = 600,
        filename = file.path(githubDir,"Figures","PlotTimeAvailability.png"))
-ggsave(plot=proxyMap, width = 6, height = (6/1.97+0.5), dpi = 600,
-       filename = file.path(githubDir,"Figures",paste('countByRegion_',climVar,'.png',sep='')))
+ggsave(plot=proxyMapSites, width = 6, height = (6/1.97+0.5), dpi = 600,
+       filename = file.path(githubDir,"Figures",paste('PlotProxyTypeRegion_',climVar,'.png',sep='')))
+ggsave(plot=proxyMapRegions, width = 6, height = (6/1.97+0.5), dpi = 600,
+       filename = file.path(githubDir,"Figures",paste('PlotCountByRegion_',climVar,'.png',sep='')))
 ```
 
 
@@ -230,187 +249,14 @@ ggsave(plot=proxyMap, width = 6, height = (6/1.97+0.5), dpi = 600,
 
 
 
-```{r}
-sdfProxy <- as.data.frame(proxyDataPrj)
-proxyMap2 <- ggplot() +
-  #Set Border around plot - probably not the best way to do this
-  borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=2) +
-  geom_map(data=refregions, map=fortify(refregions),
-           aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
-  #Add Country data (basemap)
-  geom_map(data=countries, map=fortify(countries),
-           aes(x=long, y=lat, group=group, map_id=id), fill = "grey90",color="white",size=0.2) +
-  #Add refrence regions boundaries
-  geom_map(data = refregions, map = dataTable, aes(x=long, y=lat, group=group, map_id=id),
-           fill=NA, color='Black') +
-  
-  coord_fixed(1)+ 
-  theme_void()
-
-
-
-plotVals$general$shapes<- c(5,1,10,9,0,3,2)
-#"Glacier Ice""Lake Deposits","Lake Sediment d18O" "Leaf Wax dD","Other","Pollen","Speleothem"           
-for (i in 1:length(plotVals$general$names)){
-  proxyMap2 <- proxyMap2 +
-    geom_point(data=(sdfProxy %>% filter(Category==plotVals$general$names[i])),
-               aes(x=longitude.1 , y=latitude.1), size=0.5, stroke=1.5, alpha=0.8,
-               shape=plotVals$general$shapes[i], color='Black')+
-    geom_point(data=(sdfProxy %>% filter(Category==plotVals$general$names[i])),
-               aes(x=longitude.1 , y=latitude.1), size=0.5, stroke=1, alpha=0.8,
-               shape=plotVals$general$shapes[i], color=plotVals$general$colors[i])
-}
-
-proxyMap2
-
-```
-
-
-N = 100; M = 1000
-good.shapes = c(1:25,33:127)
-foo = data.frame( x = rnorm(M), y = rnorm(M), s = factor( sample(1:N, M, replace = TRUE) ) )
-ggplot(aes(x,y,shape=s ), data=foo ) +
-    scale_shape_manual(values=good.shapes[1:N]) +
-        geom_point()
-
-
-EVERYTHING BELOW IS WORK IN PROGRESS
-
-
-
-
 
 ```{r}
-
-binres <- 100
-stdAgeRange <- c(0,12000)
-binvec <- seq(0,12000,binres)
-
-regionDraw  <- vector(mode='list')
-for (region in c('monsoon','mid_Lat')){
-  if (region == 'monsoon'){
-    regionList <- c('SEA','EAS','TIB','SAS','WCA','SAH','NEAF','SEAF','SCA')
-  } else if (region == 'mid_Lat'){
-    regionList <- c('ESB','WSAF','NWS','WNA','CNA','ENA','GIC')
-  }
-  proxyDataSelect <- clusterGroups[which(proxyData$Acronym %in% regionList),]
-  ffTS <- fTS[which(pullTsVariable(fTS,"paleoData_TSid") %in% proxyDataSelect$TSid)]
-  m <- matrix(nrow=length(seq(0,12000,binres)),ncol=length(ffTS))
-  for (i in 1:length(ffTS)){
-    z <- spreadPaleoData(ffTS[[i]]$age,ffTS[[i]]$paleoData_values,
-                         binres,median(diff(ffTS[[i]]$age)))
-    zz <- rep(NA,length(seq(0,12000,binres)))
-    zz[which(binvec >= min(z$spreadAge) & binvec <= max(z$spreadAge))] <- z$spreadVal
-    idx <- which(binvec >= min(stdAgeRange) & binvec <= max(stdAgeRange))
-    zz <- (zz - mean(zz[idx],na.rm=TRUE)) / sd(zz[idx],na.rm=TRUE) 
-    if (ffTS[[i]]$climateInterpretation1_interpDirection == "negative"){
-      zz <- zz*-1
-    }
-    m[,i] <- zz 
-  }
-  m2 <- as.tibble(m) %>%
-      summarise(dry1 = rowSums(m < 0  & m >= -1, na.rm=TRUE),
-                dry2 = rowSums(m < -1 & m >= -2, na.rm=TRUE),
-                dry3 = rowSums(m < -2,           na.rm=TRUE),
-                wet1 = rowSums(m > 0  & m >= 1,  na.rm=TRUE),
-                wet2 = rowSums(m > 1  & m >= 2,  na.rm=TRUE),
-                wet3 = rowSums(m > 2,            na.rm=TRUE))
-  m3 <- as.tibble(t(apply(m2,1, function(x) x/sum(x))))
-  pctCat <- data.frame(timeVals = rep(binvec,3),
-                       wetVals  = c(m3$wet1,m3$wet2,m3$wet3),
-                       dryVals  = c(m3$dry1,m3$dry2,m3$dry3),
-                       CatNames = c(rep(1,length(binvec)),
-                                    rep(2,length(binvec)),
-                                    rep(3,length(binvec))))
-  regionDraw[[region]] <- ggplot(pctCat)+
-    geom_density(aes(x=timeVals,y=wetVals,width=binres,
-                 fill=CatNames,show.legend=FALSE))+
-    geom_col(aes(x=timeVals,y=dryVals*-1,width=binres,
-                 fill=CatNames*-1,show.legend=FALSE))+
-    scale_fill_distiller(palette = "BrBG",direction=1) +
-    scale_x_reverse(name = "Age (yr BP)",
-                    limits=c(12000,0),
-                    expand=c(0,0),
-                    n.breaks=7)+
-    scale_y_continuous(name = "Pct of Records",
-                       limits=c(-1,1),
-                       expand=c(0,0),
-                       breaks=seq(-1,1,0.25))+
-    theme_bw() + theme(legend.position = "none") 
-  m4<- m3 %>% 
-    mutate(dry3=(dry3+dry2+dry1)*-1,
-           dry2=(dry2+dry1)*-1,
-           dry1=dry1*-1,
-           wet3=wet3+wet2+wet1,
-           wet2=wet2+wet1)
-  
-  plt <- ggplot()
-  colorVals <- brewer.pal(6, 'BrBG')
-  #colorVals <- colorVals[c(3,2,1,4,5,6)]
-  colorVals <- colorVals[c(1,2,3,6,5,4)]
-  count<-0
-  for (var in c('dry3','dry2','dry1','wet3','wet2','wet1')){
-    count <- count+1
-    plt <- plt + 
-      geom_line(data=data.frame(x=binvec,y=predict(loess(binvec~m4[[var]]))),
-                           aes(x,y)) +
-      geom_area(data=data.frame(spline(binvec,m4[[var]])),
-                           aes(x,y),fill=colorVals[count],color='black',alpha=0.8)
-  } 
-  plt <- plt +
-      scale_x_reverse(name = "Age (yr BP)",
-                      limits=c(12000,0),
-                      expand=c(0,0),
-                      n.breaks=7)+
-      scale_y_continuous(name = "Pct of Records",
-                         limits=c(-1,1),
-                         expand=c(0,0),
-                         breaks=seq(-1,1,0.25))+
-      geom_hline(yintercept=0)+
-      theme_bw() + theme(legend.position = "none") 
-  regionDraw[[paste(region,'_smooth',sep='')]] <- plt
-}
-
-pctWetDry <- ggdraw() + 
-  draw_plot(regionDraw[['monsoon_smooth']] , x = 0, y = 0,   width = 1, height = 0.5) + 
-  draw_plot(regionDraw[['mid_Lat_smooth']],  x = 0, y = 0.5, width = 1, height = 0.5) 
-ggsave(paste('pctWetDry_',climateVariable,'.png',sep=''),pctWetDry,
-       path=paste(githubDir,'Figures/',sep=''),width=6,height=4,dpi = 600,device='png')
-  
-```
-
-
-
-
-
-```{r}
-mapData <- as.data.frame(proxyDataPrj)
-mapData <- mapData %>% mutate(categoryShape = case_when(
-  CategorySpecific == "Glacier Ice"          ~  '\u25CA',
-  CategorySpecific == "Lake Deposits"        ~  '\u25CB',
-  CategorySpecific == "Lake Sediment (d18O)" ~  '\U25EF',
-  CategorySpecific == "Leaf Wax"             ~  '\u2B20',
-  CategorySpecific == "Other (calibrated)"   ~  '\u25A0',
-  CategorySpecific == "Other (uncalibrated)" ~  '\u25A0',
-  CategorySpecific == "Pollen (calibrated)"  ~  '\U271A',
-  CategorySpecific == "Pollen (uncalibrated)"~  '\U2716',
-  CategorySpecific == "Speleothem (d18O)"    ~  '\u25B2',
-  CategorySpecific == "Speleothem (d13C)"    ~  '\u25BC',
-  CategorySpecific == "Speleothem (other)"   ~  '\u25BA'))
-
-mapData <- mapData %>% mutate(categoryColor = case_when(
-  CategorySpecific == "Glacier Ice"          ~  '\u25CA',
-  CategorySpecific == "Lake Deposits"        ~  '\u25CB',
-  CategorySpecific == "Lake Sediment (d18O)" ~  '\U25EF',
-  CategorySpecific == "Leaf Wax"             ~  '\u2B20',
-  CategorySpecific == "Other (calibrated)"   ~  '\u25A0',
-  CategorySpecific == "Other (uncalibrated)" ~  '\u25A0',
-  CategorySpecific == "Pollen (calibrated)"  ~  '\U271A',
-  CategorySpecific == "Pollen (uncalibrated)"~  '\U2716',
-  CategorySpecific == "Speleothem (d18O)"    ~  '\u25B2',
-  CategorySpecific == "Speleothem (d13C)"    ~  '\u25BC',
-  CategorySpecific == "Speleothem (other)"   ~  '\u25BA'))
-
-#ggplot() +geom_text(data=mapData, aes(x=Lon.1 , y=Lat.1,label=categoryShape),size=4)
+fTS <- lipdTSO[which(proxyMetaData$ipccReg=='SAS')]
+tidyData <- tidyTs(fTS,age.var = "age")
+plot.df <- tidyData %>% 
+  filter(between(age,0,12000)) %>% #only years from 1600 to 2000
+  group_by(paleoData_TSid) %>% #group by column
+  arrange(geo_latitude) #and sort by archiveType
+plotTimeseriesStack(plot.df,time.var='age',invert.var='climateInterpretation1_interpDirection')
 
 ```

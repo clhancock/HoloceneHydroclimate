@@ -30,14 +30,14 @@ lipdData <- readRDS(file.path(githubDir,'Data','LiPD','lipdData.rds'))
 lipdTSO <- lipdData[[climVar]]
 regionNames <- sort(unique(as.character(pullTsVariable(lipdTSO,'geo_ipccRegion'))))
 
-
+save=TRUE
 #set.seed(#) Set same sets of records which will make completely reproducable
 #
 #Set variables for composite code
-nens          <- 200  #make low to run quickly, set high to get large ensemble range (variation from standardization search range and order )
+nens          <- 1000  #make low to run quickly, set high to get large ensemble range (variation from standardization search range and order )
 binsize       <- 200 #years
-ageMin        <- 0 #age BP
-ageMax        <- 12000 #age BP
+ageMin        <- -200 #age BP
+ageMax        <- 12200 #age BP
 searchAgeMin  <- 0 #age BP
 searchAgeMax  <- 8000 #age BP
 searchDuration<- 3500 #yrs
@@ -46,6 +46,7 @@ samplePct <- 0.75
 #
 binvec   <- seq(ageMin-binsize/2, to = ageMax+binsize/2, by = binsize)
 binYears <- rowMeans(cbind(binvec[-1],binvec[-length(binvec)]))
+
 
 #Set up data to add once
 compositeEns      <- vector(mode="list")
@@ -60,7 +61,11 @@ for (region in regionNames) {
   #setup and run ensemble ########## This is the main part of the code to edit ##########
   compEns <- matrix(NA,nrow = length(binYears),ncol=nens)
   for (i in 1:nens){
-    lipdRegionSample <- sample(pullTsVariable(lipdRegion,'paleoData_TSid'),length(lipdRegion)*samplePct+1)
+    weights <- pullTsVariable(lipdRegion,'ageRange') / pullTsVariable(lipdRegion,'ageResPlus')
+    weights[which(is.na(weights))] <- mean(weights,na.rm=TRUE)
+    lipdRegionSample <- sample(x    = pullTsVariable(lipdRegion,'paleoData_TSid'),
+                               size = length(lipdRegion)*samplePct+1,
+                               prob = weights / sum(weights))
     lipdRegionSample <- lipdRegion[which(pullTsVariable(lipdRegion,'paleoData_TSid') %in% lipdRegionSample)]
     tc <- compositeR::compositeEnsembles(lipdRegionSample,
                                          binvec,
@@ -82,17 +87,16 @@ for (region in regionNames) {
   medianCompositeTS[[region]] <- apply(compEns,1,median,na.rm=TRUE)
 }
 
-
-
-write.csv(medianCompositeTS, row.names = FALSE,
-          file = file.path(githubDir,'Data','RegionComposites',climVar,'MedianTSbyRegion.csv'))
-
-for (region in names(compositeEns)){
-  write.csv(compositeEns[[region]], row.names = FALSE,
-            file = file.path(githubDir,'Data','RegionComposites',climVar,paste(region,'.csv',sep='')))
-  
+if(save){
+  write.csv(medianCompositeTS, row.names = FALSE,
+            file = file.path(githubDir,'Data','RegionComposites',climVar,'MedianTSbyRegion.csv'))
+  for (region in names(compositeEns)){
+    write.csv(compositeEns[[region]], row.names = FALSE,
+              file = file.path(githubDir,'Data','RegionComposites',climVar,paste(region,'.csv',sep='')))
+  }
+  print("csv files saved")
 }
 
-print("csv files saved")
+
 
 

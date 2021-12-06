@@ -4,7 +4,14 @@ input: refregions, modelDF, proxyDF
 output: too many figures
 ---
 
-#Load packages and set directories 
+###Settings in script
+```{r}
+#Set up directories and names
+githubDir <- getwd()
+#
+```
+
+###Load packages 
 ```{r}
 library(compositeR)
 library(cowplot)
@@ -15,182 +22,299 @@ library(rkt)
 library(rworldmap)
 library(scales)
 library(tidyverse)
-
-#Set up directories
-dataDir   <- '/Volumes/GoogleDrive/My Drive/zResearch/Data/'
-githubDir <- '/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
-#
 ```
 
-#Load IPCC Refrence regions and country data for background and Load Data to Plot
-```{r}
-#Load IPCC Refrence regions and country data for background
-refregions <- readShapePoly(paste(githubDir,
-                                  'DataFiles/IPCC-WGI-reference-regions-v4_shapefile/',
-                                  'IPCC-WGI-reference-regions-v4.shp',
-                                  sep=''),
-                            proj4string=CRS("+proj=longlat +ellps=WGS84"))
-countries  <- getMap("less islands")
-#Project to robinson
-PROJ <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+###Input Data
+```{r, warning=FALSE}
+lipdData <- readRDS(file=file.path(githubDir,'Data','LiPD','lipdData.rds'))
+
+PROJ       <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+PROJorig   <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+refregions <- readShapePoly(file.path(githubDir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
+                            proj4string=CRS(PROJorig))
 refregions <-  spTransform(refregions, CRSobj = PROJ)
-countries  <-  spTransform(countries,  CRSobj = PROJ)
-#
-#--------------------------------------------------------
-#Load Data to Plot
-climateVariable = "HC"
-if(climateVariable == 'T'){
-  # clustersData <- clusterDataT
-  colorPalette <- 'RdBu'
-  colorDir <- -1
-  compColor <- c("#FFEBEE","#FFCDD2","#EF9A9A") #reds
-  #xlab <- "Cool <- (Standardized Anomoly) -> Warm"
-} else {
-  #  clustersData <- clusterDataHC
-  colorPalette <- 'BrBG'
-  colorDir <- 1
-  compColor <- c("#E8EAF6","#303F9F","#1A237E") #indigo
-  # xlab <- "Dry <- (Standardized Anomoly) -> Wet"
-}
-compositeData <- read.csv(paste(githubDir,'DataFiles/RegionalComposites/',
-                                climateVariable,'/MedianTSbyRegion.csv',sep=''))
-clusterGroups <- read.csv(paste(githubDir,'DataFiles/proxy',
-                                climateVariable,'_regions.csv',sep=''),
-                          row.names=1)
-name <- 'ProxyMetadata_RegionComposites'
-modelReconstruction <- vector(mode="list")
-for (model in c('trace','hadcm')){
-  modelReconstruction[[model]] <- read.csv(paste(githubDir,
-                                      'DataFiles/modelReconstructions/pseudoproxy/',
-                                      climateVariable,model,name,sep=''))
-}
 
-```
+countries  <- getMap("less islands")
+countries  <- spTransform(countries,  CRSobj = PROJ)
 
 
+refrenceSubset <- subset(refregions, Acronym %in% regNames)
 
-#Establish some of the settings for plotting the figure
-```{r}
-ageMin <- 0
-ageMax <- 12000
-ageRes <- 1000
-binvec1000 <- seq(ageMin,ageMax,1000)
-binvec100  <- seq(ageMin,ageMax,100)
-colorLimits  <- c(-2.5,2.5)
-colorSeq     <- seq(-2.2,2.2,0.4)
-colorNAval   <- 'light grey'
-```
-
-#Create the basemap ggplot element (1 version with color scale, 1 without)
-```{r}
-#Only use regions with proxy composites
-refrenceSubset <- subset(refregions, Acronym %in% names(compositeData))
-baseMap <- ggplot() +
+basemap <- ggplot() +
   #Set Border around plot - probably not the best way to do this
   borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=2) +
-  #Plot ref regions to give white backround on Map
-  geom_map(data=refregions, map=fortify(refregions),aes(group=group, map_id=id), 
-           fill="white", colour="white", size=1)+
+  geom_map(data=refregions, map=fortify(refregions),
+           aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
   #Add Country data (basemap)
-  geom_map(data=countries, map=fortify(countries),aes(group=group, map_id=id), 
-           fill = "grey60",color="grey50",size=0.2) +
-  #Add refrence regions boundaries
-  borders(database = refrenceSubset, fill=NA, colour='grey20')+
-  #Set Color/Plot/Legend settings
-  coord_fixed(1)+theme_void()
-
-
-#Add scale
-
-
-baseMapScale <- baseMap +
-  scale_fill_distiller(palette=colorPalette,
-                       na.value=colorNAval,
-                       limits = colorLimits,
-                       breaks = colorSeq,
-                       direction=colorDir,
-                       oob=squish,
-                       guide = guide_coloursteps(show.limits=FALSE)) +
-    theme(legend.position = c(0.5,-0.01),
-          legend.direction = "horizontal",
-          legend.title=element_blank(),
-          legend.background=element_rect(colour='black',size=0.4),
-          legend.margin=margin(t = 1, r = 1, b = 3, l = -4.5, unit = "pt"),
-          legend.key.width  = (unit(70, 'pt')),
-          legend.key.height = (unit(10, 'pt')),
-          legend.text = element_text(family='sans',size=8))
-
-#Or Don't
-baseMap <- baseMap + theme(legend.position = "none") 
-baseMap
+  geom_map(data=countries, map=fortify(countries),
+           aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
+  borders(database = refrenceSubset, fill=NA, colour='grey20') + 
+  coord_fixed(1) + 
+  theme_void() 
+  
+basemap
 ```
 
+
+#Set settings based on climate variable (HC or T)
+```{r}
+climVar    <- 'HC'
+lipdTSO    <- lipdData[[climVar]]
+
+climVarSettings    <- vector(mode='list')
+climVarSettings$T  <- vector(mode='list')
+climVarSettings$HC <- vector(mode='list')
+climVarSettings$T$Pal  <- 'RdBu'
+climVarSettings$T$Dir  <- 01
+climVarSettings$T$Col  <- c("#FFEBEE","#FFCDD2","#EF9A9A") #reds
+climVarSettings$T$Lab  <- "Cool <- (Standardized Anomoly) -> Warm"
+climVarSettings$HC$Pal <- 'BrBG'
+climVarSettings$HC$Dir <- 01
+climVarSettings$HC$Col <- c("#E8EAF6","#303F9F","#1A237E") #indigo
+climVarSettings$HC$Lab <- "Dry <- (Standardized Anomoly) -> Wet"
+climVarSettings$HC$Lim <-  c(-2.5,2.5)
+climVarSettings$HC$NAv <- 'light grey'
+climVarSettings$HC$Seq <- seq(-2.2,2.2,0.4)
+
+
+##############################
+regionComposite <- vector(mode='list')
+regionComposite$proxy <- read.csv(file.path(githubDir,'Data','RegionComposites/',climVar,'MedianTSbyRegion.csv'))
+regionComposite$trace <- readRDS(file.path(githubDir,'Data','Model','trace.rds'))
+regionComposite$hadcm <- readRDS(file.path(githubDir,'Data','Model','hadcm.rds'))
+regNames <- names(regionComposite$proxy)[-1]
+binvec <- regionComposite$proxy$time
+ageMin <- min(binvec)
+ageMax <- max(binvec)
+```
+
+
+
+```{r}
+xSize <- 0.085
+ySize <- 0.06
+nudgeVals <- data.frame(region=regNames,x=rep(0,length(regNames)),y=rep(0,length(regNames)))
+nudgeVals[which(regNames=='NWN'),'x'] <- 0.0115
+nudgeVals[which(regNames=='NWN'),'y'] <- 0.007
+nudgeVals[which(regNames=='NEN'),'y'] <- -0.022
+nudgeVals[which(regNames=='NEN'),'x'] <- 0.007
+nudgeVals[which(regNames=='GIC'),'x'] <- 0.003
+nudgeVals[which(regNames=='WNA'),'x'] <- -0.042
+nudgeVals[which(regNames=='CNA'),'x'] <- 0.0035
+nudgeVals[which(regNames=='ENA'),'x'] <- 0.042
+nudgeVals[which(regNames=='SAM'),'y'] <- -0.02
+nudgeVals[which(regNames=='NES'),'y'] <- 0.02
+nudgeVals[which(regNames=='NEU'),'x'] <- 0.004
+nudgeVals[which(regNames=='NEU'),'y'] <- 0.01
+nudgeVals[which(regNames=='WCE'),'x'] <- -0.005
+nudgeVals[which(regNames=='WSAF'),'x'] <- -0.022
+nudgeVals[which(regNames=='ESAF'),'x'] <- 0.022
+nudgeVals[which(regNames=='WCA'),'x'] <- -0.01
+nudgeVals[which(regNames=='ESB'),'y'] <- 0.004
+nudgeVals[which(regNames=='ESB'),'x'] <- -0.01
+nudgeVals[which(regNames=='ECA'),'y'] <- 0.013
+nudgeVals[which(regNames=='SAS'),'y'] <- -0.002
+nudgeVals[which(regNames=='SAS'),'x'] <- -0.005
+nudgeVals[which(regNames=='EAS'),'x'] <- 0.003
+nudgeVals[which(regNames=='SEA'),'x'] <- -0.017
+nudgeVals[which(regNames=='SAU'),'x'] <- -0.036
+nudgeVals[which(regNames=='NZ'),'x'] <- -0.025
+nudgeVals[which(regNames=='NZ'),'y'] <- 0.02
+
+
+globalPlotOfRegions <- function(plotName,data=plotData,basemapPlot=basemap,regions=regNames,
+                                nudgeDF=nudgeVals,w=xSize,h=ySize,
+                                save=FALSE,
+                                leg =climVarSettings[[climVar]],
+                                path=file.path(githubDir,'Figures','')){
+  map <- ggdraw() + draw_plot(basemap, x = 0, y = 0, width = 1, height = 1)
+  for (reg in regions){
+    xNudge  <- nudgeDF[which(regions==reg),'x']
+    yNudge  <- nudgeDF[which(regions==reg),'y']
+    map <- map + draw_plot(data[[reg]][[plotName]],
+                           x = xNudge+(0.5-w/2)+0.5*data[[reg]]$plotLon/(9050504*2), 
+                           y = yNudge+(0.5-h/2)+0.92*data[[reg]]$plotLat/(8625155*2), 
+                           width = w, height = h)
+  }
+  if (save){
+    ggsave(plot=map, width = 6, height = 6*0.5072, dpi = 600,
+           filename = paste(path,'global_',climVar,'_',plotName,'.png',sep=''))
+  }
+  return(map)
+}
+
+```
+
+
+```{r}
 #Create vector for adding plots for each region
 #Load proxy and model data for each region
-```{r}
 plotData <- vector(mode="list") 
 #Calculate data to plot and connect it to region data
-for (region in names(compositeData)[-1]){
-  plotData[[region]]           <- vector(mode="list")
-  plotData[[region]][['Name']] <- region
+for (reg in regNames){
+  plotData[[reg]] <- vector(mode="list")
+  plotData[[reg]]$Name <- reg
+  plotData[[reg]]$lipd <- filterTs(lipdTSO,paste('geo_ipccRegion',reg,sep='=='))
   #Load region composite matrix
-  plotData[[region]]$compMatix <- read.csv(paste(githubDir,
-                                                 'DataFiles/RegionalComposites/',
-                                                 climateVariable,
-                                                 '/',region,'.csv',sep=''))
-  #bin into 1000yr segments/stripes #apply(compMatix,1,median)
-  plotData[[region]]$proxy    <- data_frame(values=compositeData[[region]], 
-                                            time=compositeData[['time']])
-  plotData[[region]]$proxyBin <- bin(plotData[[region]]$proxy$time, 
-                                     plotData[[region]]$proxy$values, 
-                                     bin.vec=binvec1000, bin.fun = mean)
+  plotData[[reg]]$compMatix <- read.csv(file.path(githubDir,'Data','RegionComposites',climVar,
+                                                 paste(reg,'csv',sep='.')))
+  plotData[[reg]]$proxy <- data_frame(values=regionComposite$proxy[[reg]], time=regionComposite$proxy[['time']])
   #Get Lat/Lon information for labels associated with region and add to cluster dictionary
-  Shp <- refregions@polygons[[which(refregions@data[["Acronym"]]==region)]]@Polygons[[1]]
-  plotData[[region]]$plotLat <- Shp@labpt[2]
-  plotData[[region]]$plotLon <- Shp@labpt[1]
+  Shp <- refregions@polygons[[which(refregions@data[["Acronym"]]==reg)]]@Polygons[[1]]
+  plotData[[reg]]$plotLat <- Shp@labpt[2]
+  plotData[[reg]]$plotLon <- Shp@labpt[1]
   #Load model data
-  for (model in c('trace','hadcm')){
-    plotData[[region]][[model]]<-data.frame(time=binvec100,
-                                            values=modelReconstruction[[model]][[region]])
-  }
+ # for (model in c('trace','hadcm')){
+  #  plotData[[region]][[model]]<-data.frame(time=binvec100,
+  #                                          values=modelReconstruction[[model]][[region]])
+  #}
 }
 ```
 
-Stripe Plots ('StripePlot')
-```{r}  
-for (region in names(compositeData)[-1]){
-  plotData[[region]]$StripePlot <- ggplot(plotData[[region]]$tsBin,
-                                          aes(plotData[[region]]$proxyBin$x, 
-                                              rep(1, length(binvec1000)-1),
-                                              fill=plotData[[region]]$proxyBin$y)) +
+
+
+```{r}
+for (reg in regNames){
+  stripePlotData <- bin(plotData[[reg]]$proxy$time, plotData[[reg]]$proxy$values, 
+                        bin.vec=seq(ageMin,ageMax,1000), bin.fun = mean)
+  plotData[[reg]]$StripePlot <- ggplot(stripePlotData,aes(x,rep(1, 12,color=y),fill= y)) +
     scale_x_reverse(name="Age (yr BP)", limits=c(ageMax,ageMin), expand=c(0,0)) +
     scale_y_continuous(limits=c(0,1), expand=c(0,0)) +
     geom_col(width=1000,show.legend = FALSE) +
-    scale_fill_distiller(palette=colorPalette, 
-                         na.value=colorNAval, 
-                         limits=colorLimits, 
-                         breaks=colorSeq,
-                         direction=colorDir, 
-                         oob=squish, 
-                         guide=guide_coloursteps(show.limits=FALSE)) +
+    scale_fill_distiller(palette=  climVarSettings[[climVar]]$Pal, 
+                         na.value= climVarSettings[[climVar]]$NAv, 
+                         limits=   climVarSettings[[climVar]]$Lim, 
+                         breaks=   climVarSettings[[climVar]]$Seq,
+                         direction=climVarSettings[[climVar]]$Dir, 
+                         oob=squish, guide=guide_coloursteps(show.limits=FALSE)) +
     theme_void() + 
-    theme(panel.border=element_rect(color='black',fill=NA,size=0.5))
+    theme(panel.border=element_rect(color='black',fill=NA,size=1),
+          legend.position = "none")
 }
-plotData[['EAS']]$StripePlot
+
+StripePlot <- globalPlotOfRegions('StripePlot',save=FALSE)
+legendPlt <- ggplot(data=data.frame(x=leg$Seq),aes(x=x,y=x,fill=x)) + 
+  geom_point(alpha=0) +
+  scale_fill_distiller(palette=leg$Pal,na.value=leg$NAv,limits=leg$Lim,breaks=leg$Seq,direction=leg$Dir,oob=squish, 
+                       guide=guide_coloursteps(show.limits=FALSE,frame.colour = "black",frame.linewidth=1,
+                                               ticks=TRUE,ticks.colour = "black",ticks.linewidth=1)) +
+  geom_text(aes(x=0,y=1.6,label=c(leg$Lab)),color='black',size=1.5,family="sans", fontface="bold") + 
+  theme_void() + 
+   theme(plot.background=element_rect(color='black',fill='white',size=1),
+         legend.position=c(0.5,0.4), aspect.ratio = 0.12, legend.direction='horizontal',
+         legend.key.width  = (unit(40, 'points')), legend.key.height = (unit(10, 'points')),
+         legend.text =element_text(size=4,family="sans"), legend.spacing.y = unit(2, "points"),
+         legend.title=element_blank()) 
+    #       
+    #       
+StripePlot <- StripePlot + draw_plot(legendPlt, x = 0.1, y = 0.1, width=0.8,height=0.12)
+ggsave(plot=StripePlot, width = 6, height = 6*0.5072, dpi = 600,
+           filename = paste(file.path(githubDir,'Figures',''),'global_',climVar,'_StripePlot.png',sep=''))
+
 ```
+
+
+```{r warning=FALSE}
+plotlimit_set <- 5
+for (reg in regNames){
+  timeAvail <- plotTimeAvailabilityTs(plotData[[reg]]$lipd,age.range=c(ageMin,ageMax),
+                                      group.var ='Category',step=200)$dat %>%
+    group_by(yvec) %>% 
+    summarise(count=sum(value),countPct=sum(value)/length(plotData[[reg]]$lipd))
+  regionDataNA <- as.matrix(plotData[[reg]]$compMatix)
+  regionData <- regionDataNA
+  idx <- which(timeAvail$countPct<0.5)
+  if (length(idx > 0)){
+    idx <- sort(unique(idx[which(between(idx,1,length(binvec)))]))
+    regionData[idx,] <- NA 
+  }
+  plotlimit_set <- min(mean(c(max(abs(apply(regionData,1,median,na.rm=TRUE)),na.rm=TRUE),
+                              max(abs(regionData),na.rm=TRUE))),8)
+  compBands <- vector(mode='list')
+  compBands$na <- plotTimeseriesEnsRibbons(X=binvec, Y=regionDataNA, alp=0.9,line.width=0.2,
+                                             color.low='grey90',
+                                             color.high='grey50',
+                                             color.line='grey20') 
+  compBands$vals <- plotTimeseriesEnsRibbons(X=binvec, Y=regionData, alp=0.9,line.width=0.2,
+                                             color.low=climVarSettings[[climVar]]$Col[1],
+                                             color.high=climVarSettings[[climVar]]$Col[2],
+                                             color.line=climVarSettings[[climVar]]$Col[3]) 
+  compBandPlt <- ggdraw() 
+  for (plt in names(compBands)){
+    compBands[[plt]] <- compBands[[plt]] + 
+      scale_x_reverse(name = "Age (yr BP)", 
+                      limits=c(12000,0), expand=c(0,0), n.breaks=7,sec.axis = dup_axis())+
+      scale_y_continuous(name=paste('Standardized',climVar),
+                      limits=c(plotlimit_set*-1000,plotlimit_set*1000),sec.axis = dup_axis(),
+                      breaks = seq(-plotlimit_set,plotlimit_set,2))+
+      coord_cartesian(xlim=c(12000,0), 
+                      ylim=c(plotlimit_set*-1,plotlimit_set)) +
+      theme_void() +
+      theme(panel.border=element_rect(colour='Black',fill=NA,size=0.8))
+    if (plt == names(compBands)[1]){
+      compBands[[plt]] <- compBands[[plt]] + 
+        theme(panel.background=element_rect(colour='Black',fill='White',size=0.8),
+              axis.ticks=element_line(color = 'black',size=0.1),
+              axis.ticks.length=unit(-2.5,"pt"))
+    }
+    compBandPlt <- compBandPlt + draw_plot(compBands[[plt]], x = 0, y = 0, width = 1, height = 1)
+  } 
+  plotData[[reg]]$compBandPlt <- compBandPlt
+  #
+}
+
+
+compBandPlt <- globalPlotOfRegions('compBandPlt',save=FALSE)
+ggsave(plot=compBandPlt, width = 6, height = 6*0.5072, dpi = 600,
+           filename = paste(file.path(githubDir,'Figures',''),'global_',climVar,'_compBandPlt.png',sep=''))
+```
+
+
+```
+reg <- 'EAS'
+for (region in 'EAS'){
+  timeAvail <- plotTimeAvailabilityTs(plotData[[reg]]$lipd,age.range=c(ageMin,ageMax),
+                                      group.var ='Category',step=200)$dat %>%
+    group_by(yvec) %>% 
+    summarise(count=sum(value),countPct=sum(value)/length(plotData[[reg]]$lipd))
+  regionData <- as.matrix(plotData[[reg]]$compMatix)
+  regionDataNA <- regionData
+  regionDataNA[which(timeAvail$countPct>=0.5),] <- NA
+  plotlimit_set <- 4 
+  CompBands <- plotTimeseriesEnsRibbons(X=binvec, Y=regionData, alp=0.9,line.width=0.2,
+                                        color.low=climVarSettings[[climVar]]$Col[1],
+                                        color.high=climVarSettings[[climVar]]$Col[2],
+                                        color.line=climVarSettings[[climVar]]$Col[3]) 
+  CompBandsNA <- plotTimeseriesEnsRibbons(X=binvec, Y=regionDataNA, alp=0.9,line.width=0.2,
+                                          color.low='grey20',
+                                          color.high='grey40',
+                                          color.line='black')
+  plot <- CompBandsNA + 
+                                          
+                                          
+}
+    scale_x_reverse(name = "Age (yr BP)", 
+                    limits=c(ageMax,ageMin), expand=c(0,0), n.breaks=7)+
+    scale_y_continuous(name=paste('Standardized',climateVariable),
+                       limits=c(plotlimit_set*-1000,plotlimit_set*1000))+
+    coord_cartesian(xlim=c(ageMax,ageMin), 
+                    ylim=c(plotlimit_set*-1,plotlimit_set)) +
+    theme_void() +
+    theme(panel.background=element_rect(colour='Black',fill='lightgrey'),
+          panel.border=element_rect(colour='Black',fill=NA),
+          panel.grid.major=element_line(colour='Grey'))
+  #
+```
+
   
 Plot Proxy Composites ('CompBands')
 Plot Porxy Composites vs model ('ProxyModel) 
 ```{r}  
-for (region in names(compositeData)[-1]){
-  regionData <- as.matrix(plotData[[region]]$compMatix)
-  plotlimit_set <- 3.5 ##round(abs(max(plotData[[region]]$ts$values))*2)/2
-  plotData[[region]]$CompBands <- plotTimeseriesEnsRibbons(X=compositeData[['time']],
-                                                           Y=regionData,
-                                                           alp=0.9,line.width=0.2,
-                                                           color.low=compColor[1],
-                                                           color.high=compColor[2],
-                                                           color.line=compColor[3]) +
+for (reg in regNames){
+  
+  
+  ##round(abs(max(plotData[[region]]$ts$values))*2)/2
++
     scale_x_reverse(name = "Age (yr BP)", 
                     limits=c(ageMax,ageMin), expand=c(0,0), n.breaks=7)+
     scale_y_continuous(name=paste('Standardized',climateVariable),
@@ -251,11 +375,18 @@ for (region in names(compositeData)[-1]){
 
 Plot proxy slopes by timeslice ('CompBands')
 Plot proxy and model slopes comparison ('CompBands')
+
+
 ```{r}
+
+
+```
+
+```{r}
+
+
 for (region in names(compositeData)[-1]){
-  slopeData <- data.frame(barWidth= rep(1,12*nDiv),
-                  barLocation = rep(seq(1:12),nDiv),
-                  barColor=plotData[[region]]$slopeData$barColor)
+
   plotData[[region]]$SlopeFig <- ggplot(slopeData,
                                         aes(x=barLocation, y=barWidth ,fill=barColor)) +
       geom_bar(width=1, stat="identity",show.legend = FALSE) +
