@@ -35,12 +35,13 @@ refregions <-  spTransform(refregions, CRSobj = PROJ)
 #Load Lipd Files
 D_temp <- readLipd(paste("http://lipdverse.org/Temp12k/",tempVers,"/Temp12k",tempVers,".zip",sep=''))
 D_hc   <- readLipd(paste("http://lipdverse.org/HoloceneHydroclimate/",hcVers,"/HoloceneHydroclimate",hcVers,".zip",sep=''))
-D_new  <- readLipd(file.path(githubDir,'Data','LiPD','new'))
+#D_new  <- readLipd(file.path(githubDir,'Data','LiPD','new'))
 
 ###Assign tsids for data compilations based on within correct dataset and version 
 #Combine LiPD files and extract data from 2 sources without duplicates
 TS_temp <- extractTs(D_temp)
-TS_hc   <- c(extractTs(D_hc),extractTs(D_new))
+#TS_hc   <- c(extractTs(D_hc),extractTs(D_new))
+TS_hc   <- extractTs(D_hc)
 
 TS_temp <- splitInterpretationByScope(TS_temp)
 TS_hc   <- splitInterpretationByScope(TS_hc)
@@ -153,6 +154,53 @@ for (climVar in names(lipdData)){
         }
       }
     } else{lipd[[ts]]$Category <- lipd[[ts]]$paleoData_proxyGeneral}
+    #
+    if (climVar == 'HC'){
+      if (is.null(lipd[[ts]]$createdBy)){lipd[[ts]]$createdBy <- ''}
+      if (is.null(lipd[[ts]]$originalDataUrl)){lipd[[ts]]$originalDataUrl <- ''}
+      if (is.null(lipd[[ts]]$paleoData_calibration_method)){lipd[[ts]]$paleoData_calibration_method <- ''}
+      if (is.null(lipd[[ts]]$pub1_doi)){lipd[[ts]]$pub1_doi <- ''}
+      if (is.null(lipd[[ts]]$pub2_doi)){lipd[[ts]]$pub2_doi <- ''}
+      if (lipd[[ts]]$createdBy == 'http://github.com/nickmckay/oxfordLakeStatus2Lipd'){
+        lipd[[ts]]$Source = 'Oxford Lake Levels Database'
+      }
+      #  dataSource.append('Oxford Lake Status')
+      else if (lipd[[ts]]$createdBy =='sisal2lipd'){
+        lipd[[ts]]$Source = 'SISAL'
+      }
+       # dataSource.append('SISAL (Comas-Bru et al., 2020)')
+      else if (lipd[[ts]]$originalDataUrl == 'wNAm'){
+        lipd[[ts]]$Source = 'wNA'
+      }
+       # dataSource.append('wNA')
+      else if (lipd[[ts]]$originalDataUrl == 'geochange.er.usgs.gov/midden/'){
+        lipd[[ts]]$Source = 'wNA'
+      }
+       # dataSource.append('wNA')
+      else if (lipd[[ts]]$paleoData_calibration_method == 'JM18_MAT'){
+        lipd[[ts]]$Source = 'Marsicek et al. (2018)'
+      }
+       # dataSource.append('Marsicek')
+      else if (grepl('gov/paleo/study/15444',lipd[[ts]]$originalDataUrl) | '10.5194/cp-10-1605-2014' == lipd[[ts]]$pub2_doi){
+        lipd[[ts]]$Source = 'Arctic Holocene'
+      }
+        #dataSource.append('Arctic Holocene')
+      else if (substr('lipd[[ts]]$dataSetName',1,2) == 'LS'){
+        lipd[[ts]]$Source = 'iso2k'
+      }
+       # dataSource.append('iso2k')
+      else if (lipd[[ts]]$originalDataUrl == 'https://essd.copernicus.org/articles/12/2261/2020/'){
+        lipd[[ts]]$Source = 'iso2k'
+      }
+       # dataSource.append('iso2k')
+      else if (grepl('10.25921/4RY2-G808',lipd[[ts]]$originalDataUrl) | grepl('/paleo/study/27330',lipd[[ts]]$originalDataUrl)){
+        lipd[[ts]]$Source = 'Temp12k'
+      }
+        #dataSource.append('Temp12k')
+      else{
+        lipd[[ts]]$Source = 'Miscellanious'
+      }# dataSource.append('Miscellanious')
+    } else{lipd[[ts]]$Source <- 'Temp12k'}
     #
   }
   #require >0 change points for lakedeposits

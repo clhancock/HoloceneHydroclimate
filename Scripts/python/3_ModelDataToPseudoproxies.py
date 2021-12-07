@@ -1,10 +1,13 @@
+
 #Load packages
 #import pyleoclim as pyleo               # Packages for analyzing LiPD files 
 #import lipd                             # Packages for analyzing LiPD files 
+import pickle
 import numpy  as np                     # Package with useful numerical functions
 import xarray as xr                     #Package for handling file types
 import pandas as pd
 #import math
+import regionmask
 from scipy import stats                 # Packages for calculations  
 import pymannkendall as mk              # Package for trend detection
 import matplotlib.pyplot as plt         # Packages for making figures
@@ -16,38 +19,13 @@ import cartopy.crs as ccrs              # Packages for mapping in python
 import cartopy.feature as cfeature
 #import cartopy.util as cutil
 #
-dataDir  ='/Volumes/GoogleDrive/My Drive/zResearch/Data/'
-gitHubDir = '/Volumes/GoogleDrive/My Drive/zResearch/HoloceneHydroclimate/'
+dataDir  = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/'
 #
 save=False
-data_HC =  pd.read_csv(gitHubDir+'DataFiles/proxyHC.csv')
-data_T  =  pd.read_csv(gitHubDir+'DataFiles/proxyT.csv')
-#%%
-def calcTrend(timeValues,proxyValues,ageMin,ageMax,direction):    
-    divisions = 2; minset = 3; sigLevel = 0.05; CI = 0.95; method = 'lin'
-    if len(proxyValues) < 12: minset = 2
-    ageRange = (ageMax - ageMin)/divisions
-    valuedata = pd.DataFrame([timeValues,proxyValues]).transpose()
-    valuedata.columns = ['time','values']
-    valuedata = valuedata.loc[(valuedata['time'] <= ageMax) & (valuedata['time'] >= ageMin)]
-    valuedata = valuedata.dropna() 
-    check = []    
-    for timeperiod in range(divisions):
-        checkValue = len(valuedata.loc[(valuedata['time'] <= ageMin+(timeperiod+1)*ageRange) 
-                                     & (valuedata['time'] >= ageMin+(timeperiod)*ageRange)]['time'])
-        if checkValue >= minset: check.append(True)
-        else: check.append(False)   
-    if check.count(True) == divisions:
-        valuedata['time']   = valuedata['time']*-1 #To get correct forward direction
-        valuedata['values'] = valuedata['values']*direction
-        trendDirection = mk.original_test(valuedata['values']*-1,alpha=sigLevel)
-        if   method == 'lin': Slope = stats.linregress( valuedata['time'],valuedata['values'])
-        elif method == 'sen': Slope = stats.theilslopes(valuedata['values'],valuedata['time'],CI)
-        output = {'Direction':trendDirection[0],'Slope':Slope[0]*1000}
-        if output['Direction'] == 'no trend': output['SlopeSig'] = 0
-        else:                                 output['SlopeSig'] = output['Slope']
-    else: output = {'Direction':np.NaN, 'Slope':np.NaN, 'SlopeSig':np.NaN}
-    return(output)
+data_HC =  pd.read_csv(dataDir+'HoloceneHydroclimate/Data/proxyMetaData_HC.csv')
+#data_T =  pd.read_csv(gitHubDir+'DataFiles/proxyT.csv')
+
+
 #%%
 #Load Model Data
 #
@@ -77,7 +55,7 @@ for model in modelKey.keys():
              filename = modelKey[model][variable]['varName']
              if model == 'hadcm': filename = 'deglh.vn1_0.'+filename+'.monthly.'+season
              elif model=='trace': filename = 'trace.01-36.22000BP.cam2.'+filename+'.22000BP_decavg'+season+'_400BCE'
-             data = xr.open_dataset(dataDir+'Model/'+model+'/'+filename+'.nc',decode_times=False)
+             data = xr.open_dataset(dataDir+'ModelNetCDF/Model_transient/netcdf/'+model+'/'+filename+'.nc',decode_times=False)
              #For first climate variable, add lat/lon information 
              if len(dataModel[model]) == 1: 
                  dataModel[model]['lat']  = data[modelKey[model]['lat']].values
@@ -104,7 +82,264 @@ for model in modelKey.keys():
     for season in ['ANN','DJF','JJA']:
         dataModel[model]['EffM'][season] = dataModel[model]['Precip'][season] - dataModel[model]['Evap'][season] 
 #
+
+np.save(str(dataDir+'HoloceneHydroclimate/'+'Data/'+'Model/modelPy.npy'),dataModel)
+
+
+
+
+
+
+
 #%%
+dataModel = np.load(str(dataDir+'HoloceneHydroclimate/'+'Data/'+'Model/modelPy.npy'),allow_pickle=True).item()
+landmask=dict()
+landmask['hadcm'] = xr.open_dataset(str(dataDir+'ModelNetCDF/Model_transient/netcdf/'+'hadcm'+'/deglh.vn1_0.ht_mm_srf.monthly.ANN.100yr.nc'),decode_times=False)
+landmask['hadcm'] = landmask['hadcm']['ht_mm_srf'].values[249,0,:,:]
+landmask['hadcm'][landmask['hadcm'] > 0] = True
+landmask['hadcm'][landmask['hadcm'] <= 0] = False
+landmask['trace'] = xr.open_dataset(str(dataDir+'ModelNetCDF/Model_transient/netcdf/'+'trace'+'/trace.01-36.22000BP.cam2.LANDFRAC.22000BP_decavg_400BCE.nc'),decode_times=False)
+landmask['trace'] = landmask['trace']['LANDFRAC'].values[2203,:,:]
+landmask['trace'][landmask['trace'] >= 0.5] = True
+landmask['trace'][landmask['trace'] < 0.5] = False
+
+def calculatePseudoProxy(proxyDF=data_HC,
+                         dataModelDict=dataModel,
+                         variable   ='P',#Or T # Change to 'P' or 'P-E' to test assumptions about proxies
+                         season     ='annual', # Change to 'ANN' or 'Summer' to test assumptions about proxies
+                         standardize=False, #Will calculate z scores for records relative to Holocene timeseries
+                         lm=landmask):
+    output={}
+    for model in dataModelDict.keys():
+        output[model] = dict()
+        PseudoProxy = {'medianTS':pd.DataFrame()}
+        modelLandTS = {'medianTS':pd.DataFrame()}
+        for region in np.unique(proxyDF['ipccReg']):
+            regData = proxyDF.loc[proxyDF['ipccReg']==region]
+            regDF   = pd.DataFrame()
+            for i in list(regData.index):
+                #climate variable
+                if   variable == 'P':                          var = 'Precip'
+                elif variable == 'P-E':                        var = 'EffM'
+                elif variable == 'HC': 
+                    if regData['variable'][i] == 'P':          var = 'Precip'
+                    else:                                      var = 'EffM'
+                #seasonality
+                sea = ''
+                if   season == 'annual':                       sea = 'ANN'
+                elif season == 'summer':                       sea = 'JJA'
+                elif season == 'winter':                       sea = 'DJF'
+                elif season == 'proxy': 
+                    if   'ummer' in str(data_HC['season'][i]): sea = 'JJA'
+                    elif 'inter' in str(data_HC['season'][i]): sea = 'DJF'
+                    else:                                      sea = 'ANN'
+                if regData['latitude'][i] < 0:
+                    if   sea == 'JJA':                         sea = 'DJF'
+                    elif sea == 'DJF':                         sea = 'JJA'
+                #geography
+                lat=np.argmin(np.abs(dataModel[model]['lat']-regData['latitude'][i]))
+                lon=np.argmin(np.abs(dataModel[model]['lon']-regData['longitude'][i]))
+                #site timeseries
+                modelvalues = dataModel[model][var][sea][lat,lon,:]
+                #if standardize: modelvalues = stats.zscore(modelvalues)
+                #mask = [idx for idx, val in enumerate(dataModel[model]['time']) if (val < ror val > site['ageMax'])]
+                regDF[regData['tsid'][i]] = modelvalues
+            PseudoProxy[region] = regDF
+            PseudoProxy['medianTS'][region] = regDF.mean(axis=1)
+            #Full region model estimate
+            refReg = regionmask.defined_regions.ar6.all
+            refReg = refReg.mask_3D(dataModel[model]['lon'],dataModel[model]['lat'])
+            refReg = refReg.isel(region=(refReg.abbrevs == "EAN"))
+            refReg = np.array( refReg.values*lm[model],dtype='bool')
+            values = dataModel[model]['Precip']['ANN'][refReg[0,:,:]]
+            weight = np.cos(np.deg2rad(dataModel[model]['lat']))  
+            weight = np.concatenate(refReg*weight[:, np.newaxis])
+            weight = [i for i in list(np.concatenate(weight))if i != 0]
+            wavg   = list(np.average(values,axis=0,weights=weight))
+            modelLandTS['medianTS'][region] = wavg
+        output[model]['PseudoProxy'] = PseudoProxy
+        output[model]['modelLandTS'] = modelLandTS
+    return(output)
+
+
+pseudoProxy = dict()
+for v in ['P']:#,'P-E','HC']:
+    for s in ['annual']:#,'summer','proxy']:
+        name = str(v+'_'+s)
+        print(name)
+        pseudoProxy[name] =  calculatePseudoProxy(variable=v,season=s)
+
+from scipy.stats import pearsonr
+
+#%%
+reg = []
+num = []
+corT = []
+corH = []
+corMax = []
+corAvg = []
+
+for region in np.unique(data_HC['ipccReg']):
+    n = np.shape(pseudoProxy[name][model]['PseudoProxy'][region])[1]
+    if n >= 6:
+        reg.append(region)
+        model='trace'
+        x1 = list(pseudoProxy[name][model]['PseudoProxy']['medianTS'][region])
+        y1 = list(pseudoProxy[name][model]['modelLandTS']['medianTS'][region])
+        corT.append(pearsonr(x1,y1)[0])
+        model='hadcm'
+        x2 = list(pseudoProxy[name][model]['PseudoProxy']['medianTS'][region])
+        y2 = list(pseudoProxy[name][model]['modelLandTS']['medianTS'][region])
+        corH.append(pearsonr(x2,y2)[0])
+        corMax.append(max(pearsonr(x2,y2)[0],pearsonr(x1,y1)[0]))
+        corAvg.append(np.mean([pearsonr(x2,y2)[0],pearsonr(x1,y1)[0]]))
+        num.append(n)
+
+df = pd.DataFrame([reg,num,corT,corH,corMax,corAvg]).transpose()
+
+#%%
+#pseudoProxy
+#modelLandTS
+
+
+z = refReg.values
+zz =   landmask['trace']     
+np.shape(z*zz)                   
+zzz = z*zz
+            model='hadcm'
+            refReg = regionmask.defined_regions.ar6.all
+            refReg = refReg.mask_3D(dataModel[model]['lon'],dataModel[model]['lat'])
+            refReg = refReg.isel(region=(refReg.abbrevs == "EAN"))
+            refReg = np.array( refReg.values*landmask[model],dtype='bool')
+            values = dataModel[model]['Precip']['ANN'][refReg[0,:,:]]
+            weight = np.cos(np.deg2rad(dataModel[model]['lat']))  
+            weight = np.concatenate(refReg*weight[:, np.newaxis])
+            weight = [i for i in list(np.concatenate(weight))if i != 0]
+            wavg   = list(np.average(values,axis=0,weights=weight))
+
+
+for v in ['P','P-E','HC']:
+    for s in ['annual','summer','proxy']:
+        name = str(v+'_'+s)
+        print(name)
+        pseudoProxy['name'] =  calculatePseudoProxy(variable=v,season=s)
+
+
+
+pseudoProxy['P']['annual']
+#traceMask <- nc_open(file.path(githubDir,'Data','Model_transient','netcdf',
+ #                              'trace','trace.01-36.22000BP.cam2.LANDFRAC.22000BP_decavg_400BCE.nc'))
+#traceMask0 <- ncvar_get(traceMask,'LANDFRAC')[,,2204]
+#traceMask0[which(traceMask0>=0.5)] <- 1
+#traceMask0[which(traceMask0< 0.5)] <- NA
+
+#hadcmMask <- nc_open(file.path(githubDir,'Data','Model_transient','netcdf',
+ #                              'hadcm','deglh.vn1_0.ht_mm_srf.monthly.ANN.100yr.nc'))
+#hadcmMaskMask0 <- ncvar_get(hadcmMask,'ht_mm_srf')[,,250]
+#hadcmMaskMask0[which(hadcmMaskMask0> 0)] <- 1
+#hadcmMaskMask0[which(hadcmMaskMask0<=0)] <- NA
+
+
+
+
+tas_regional = data.weighted(regionMask * weights).mean(dim=("lat", "lon"))
+regionVals = z[regionMask,]
+tas_CNA = tas.where(r1)
+
+#%%
+
+    for model in dataModelDict.keys():
+            pseudoproxy={}
+            names_key    = ['TSid','Lat','Lon','Category','CategorySpecific','Interp']
+            variable_key = ['Direction','Slope','SlopeSig']
+            pseudoproxy['modelTS'] = []
+            #Set up dictionary lists to add to 
+            for time in setTime:  
+                for var in variable_key: pseudoproxy[time+var] = []
+            for name in names_key: pseudoproxy[name] = [] 
+            for age in range(ageMin,ageMax,binRes): 
+                pseudoproxy['bin'+str(int(age/binRes))+'ka'] = []
+            #Populate data from model values
+            for index, site in proxyDF.iterrows():
+                #Add metadata
+                for name in names_key: pseudoproxy[name].append(site[name])
+                #ID seasonality from proxy metadata
+                if   seasonality == 'Ann':      season = 'ANN' #assume everying annual 
+                elif seasonality == 'Summer': #summer or annual are summer
+                    if site['Season'] == 'winterOnly':
+                        if site['Lat'] > 0:     season = 'DJF'
+                        else:                   season = 'JJA'
+                    else: 
+                        if site['Lat'] > 0:     season = 'JJA'
+                        else:                   season = 'DJF'
+                elif seasonality == 'Proxy': #Use proxy metadata
+                    if site['Season'] == 'summerOnly': 
+                        if site['Lat'] > 0:     season = 'JJA'
+                        else:                   season = 'DJF'
+                    if site['Season'] == 'winterOnly':
+                        if site['Lat'] > 0:     season = 'DJF'
+                        else:                   season = 'JJA'
+                    else:                       season = 'ANN'
+                #ID appropriate climate variable for pseudoproxy
+                if   climVar == 'T':          variable = 'Temp'
+                elif climVar == 'HC':
+                    if site['Interp'] == 'P': variable = 'Precip'
+                    else:                     variable = 'EffM'
+                elif climVar == 'P':          variable = 'Precip'
+                elif climVar == 'P-E':        variable = 'EffM'
+                #ID Model grid Location for proxy site
+                lat=np.argmin(np.abs(dataModel[model]['lat']-site['Lat']))
+                lon=np.argmin(np.abs(dataModel[model]['lon']-site['Lon']))
+                #Standardize and get age range
+                modelvalues = dataModel[model][variable][season][lat,lon,:]
+                if standardize: modelvalues = stats.zscore(modelvalues)
+                mask = [idx for idx, val in enumerate(dataModel[model]['time']) if (val < site['ageMin'] or val > site['ageMax'])]
+                modelvalues[mask] = np.NaN
+                #if len(pseudoproxy['modelTS']) < 1:
+                pseudoproxy['modelTS'].append(list(modelvalues))
+                #Calculate trends
+                for time in setTime:   
+                    out = calcTrend(dataModel[model]['time'],list(modelvalues),setTime[time]['min'],setTime[time]['max'],1)               
+                    for var in variable_key: 
+                        pseudoproxy[time+var].append(out[var])
+                mask = [idx for idx, timeval in enumerate(dataModel[model]['time']) if timeval >= 0 and timeval <= 1000]
+                lipdTS_std = np.nanmean(modelvalues[mask])
+                #Calcaulte Bin values
+                for age in range(ageMin,ageMax,binRes):
+                    mask = [idx for idx, val in enumerate(dataModel[model]['time']) if val >= age and val < age+ageRes]
+                    value_ts = np.nanmean(modelvalues[mask])
+                    pseudoproxy['bin'+str(int(age/binRes))+'ka'].append((value_ts-lipdTS_std))
+            output[model] = pd.DataFrame.from_dict(pseudoproxy)
+    return(output)
+
+
+
+#%%
+def calcTrend(timeValues,proxyValues,ageMin,ageMax,direction):    
+    divisions = 2; minset = 3; sigLevel = 0.05; CI = 0.95; method = 'lin'
+    if len(proxyValues) < 12: minset = 2
+    ageRange = (ageMax - ageMin)/divisions
+    valuedata = pd.DataFrame([timeValues,proxyValues]).transpose()
+    valuedata.columns = ['time','values']
+    valuedata = valuedata.loc[(valuedata['time'] <= ageMax) & (valuedata['time'] >= ageMin)]
+    valuedata = valuedata.dropna() 
+    check = []    
+    for timeperiod in range(divisions):
+        checkValue = len(valuedata.loc[(valuedata['time'] <= ageMin+(timeperiod+1)*ageRange) 
+                                     & (valuedata['time'] >= ageMin+(timeperiod)*ageRange)]['time'])
+        if checkValue >= minset: check.append(True)
+        else: check.append(False)   
+    if check.count(True) == divisions:
+        valuedata['time']   = valuedata['time']*-1 #To get correct forward direction
+        valuedata['values'] = valuedata['values']*direction
+        trendDirection = mk.original_test(valuedata['values']*-1,alpha=sigLevel)
+        if   method == 'lin': Slope = stats.linregress( valuedata['time'],valuedata['values'])
+        elif method == 'sen': Slope = stats.theilslopes(valuedata['values'],valuedata['time'],CI)
+        output = {'Direction':trendDirection[0],'Slope':Slope[0]*1000}
+        if output['Direction'] == 'no trend': output['SlopeSig'] = 0
+        else:                                 output['SlopeSig'] = output['Slope']
+    else: output = {'Direction':np.NaN, 'Slope':np.NaN, 'SlopeSig':np.NaN}
+    return(output)
 
 #%%
 #Calc model pesuodporxy timeseries based on location, season, length, variable

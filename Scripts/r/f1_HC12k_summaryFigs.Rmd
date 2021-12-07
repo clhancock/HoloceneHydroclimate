@@ -9,6 +9,7 @@ author: chris hancock
 ```{r}
 #Set up directories and names
 githubDir <- getwd()
+figS <- c(11.5,5)
 #
 ```
 
@@ -17,6 +18,7 @@ githubDir <- getwd()
 library(cowplot)
 library(geoChronR)
 library(ggplot2)
+library(ggstar)
 library(lipdR)
 library(maptools)
 library(proj4)
@@ -48,6 +50,8 @@ lipdTSO    <- lipdData[[climVar]]
 ```{r}
 climVar <- 'HC'
 lipdTSO <- lipdData[[climVar]]
+lipdTSO[[which(pullTsVariable(lipdTSO,'geo_ipccRegion')=='SOO')]]$geo_latitude <- -18.0918 
+lipdTSO[[which(pullTsVariable(lipdTSO,'geo_ipccRegion')=='SOO')]]$geo_longitude <- -57.5627
 proxyMetaData <- tibble(dataset        = pullTsVariable(lipdTSO,'dataSetName'),
                         tsid           = pullTsVariable(lipdTSO,'paleoData_TSid'),
                         longitude      = pullTsVariable(lipdTSO,'geo_longitude'),
@@ -58,6 +62,7 @@ proxyMetaData <- tibble(dataset        = pullTsVariable(lipdTSO,'dataSetName'),
                         recordRange    = pullTsVariable(lipdTSO,'ageRange'),
                         recordRes      = pullTsVariable(lipdTSO,'ageRes'),
                         recordResPlus  = pullTsVariable(lipdTSO,'ageResPlus'))
+proxyMetaData[which(proxyMetaData[,'ipccReg']=='SOO'),'ipccReg'] <- 'SES'
 ##############################
 ###Create list of color information
 plotVals <- vector(mode='list')
@@ -76,6 +81,8 @@ plotVals$specific$colors<- c("powder blue","corn flower blue",
                             "forest green","yellowgreen","lightcoral","firebrick","darkorange")
 plotVals$specific$shapes<- c(12,21,15,5,6,13,14,1,23,11,17)
 
+plotSettings <- plotVals$specific
+
 ```
 
 Plot a histagram showing the median time difference between Holocene ages
@@ -83,28 +90,38 @@ Plot a histagram showing the median time difference between Holocene ages
 plotRes <- ggplot(proxyMetaData)+
   geom_vline(xintercept=median(proxyMetaData$recordRes),size=1.1) +
   geom_vline(xintercept=mean(proxyMetaData$recordRes),size=1.1,linetype=2) +
-  geom_histogram(aes(recordRes,fill=Category),color='Black',alpha=0.7,binwidth = 30) +
-  scale_fill_manual(values=plotVals$general$colors) +
-  scale_x_continuous(name="Median Sample Resolution Over the Holocene (binwidth = 30)" ,
+  geom_histogram(aes(recordRes,fill=CategorySpec),color='Black',alpha=0.7,binwidth = 30) +
+  scale_fill_manual(values=plotSettings$colors) +
+  scale_x_continuous(name="Median Sample Resolution (binwidth = 30 years)" ,
                      limits=c(0,1250), expand=c(0,0), breaks=seq(0,1250,150)) +
-  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,100), expand=c(0,0))+
+  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,110), expand=c(0,0))+
   theme_bw()+
-  theme(text = element_text(family='sans',size=8),
-        legend.title = element_blank(),legend.position = c(0.5,0.7))
+  theme(text = element_text(family='sans',size=20),
+        plot.background = element_rect(fill = 'white',color='Black'),
+        plot.margin = unit(c(0.25, 0.25, 0.2, 0.2), "in"),
+        legend.title = element_blank(),legend.position = 'none')# legend.position = c(0.5,0.7))
 plotRes
 ##############################
 plotResPlus <- ggplot(proxyMetaData)+
   geom_vline(xintercept=median(proxyMetaData$recordResPlus),size=1.1) +
   geom_vline(xintercept=mean(proxyMetaData$recordResPlus),size=1.1,linetype=2) +
-  geom_histogram(aes(recordResPlus,fill=Category),color='Black',alpha=0.7,binwidth = 30) +
-  scale_fill_manual(values=plotVals$general$colors) +
-  scale_x_continuous(name = "Median Sample Resolution Over the Holocene (binwidth = 30)" ,
+  geom_histogram(aes(recordResPlus,fill=CategorySpec),color='Black',alpha=0.7,binwidth = 30) +
+  scale_fill_manual(values=plotSettings$colors) +
+  scale_x_continuous(name = "Median Sample Resolution (binwidth = 30 years)" ,
                      limits=c(0,3000), expand=c(0,0), breaks=seq(0,1250,150)) +
-  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,100), expand=c(0,0))+
+  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,110), expand=c(0,0))+
   theme_bw()+
-  theme(text = element_text(family='sans',size=8),
-        legend.title = element_blank(), legend.position = c(0.5,0.7))
+  theme(text = element_text(family='sans',size=20),
+        plot.background = element_rect(fill = 'white',color='Black'),
+        plot.margin = unit(c(0.25, 0.25, 0.2, 0.2), "in"),
+        legend.title = element_blank(),legend.position = 'none')# legend.position = c(0.5,0.7))
 plotResPlus
+
+ggsave(plot=plotRes, width = figS[1], height = figS[2], dpi = 600,
+       filename = file.path(githubDir,"Figures","PlotProxyAgeRes.png"))
+ggsave(plot=plotResPlus, width = figS[1], height = figS[2], dpi = 600,
+       filename = file.path(githubDir,"Figures","PlotProxyAgeResPlus.png"))
+
 ```
 
 
@@ -113,32 +130,42 @@ Plot a histagram based on record length over the Holocene
 plotRange <- ggplot(proxyMetaData)+
   geom_vline(xintercept=median(proxyMetaData$recordRange),size=1.1) +
   geom_vline(xintercept=mean(proxyMetaData$recordRange),size=1.1,linetype=2) +
-  geom_histogram(aes(recordRange,fill=Category),color='Black',alpha=0.7,binwidth = 300) +
-  scale_fill_manual(values=plotVals$general$colors) +
-  scale_x_continuous(name = "Record Length Over the Holocene (binwidth = 300)",
+  geom_histogram(aes(recordRange,fill=CategorySpec),color='Black',alpha=0.7,binwidth = 300) +
+  scale_fill_manual(values=plotSettings$colors) +
+  scale_x_continuous(name = "Record Length (binwidth = 300 years)",
                      limits=c(3000,12000),expand=c(0,0),breaks=seq(3000,12000,1200)) +
-  scale_y_continuous(name = "Count of Records",oob=scales::squish,limits=c(0,80),expand=c(0,0)) +
+  scale_y_continuous(name = "Count of Records",oob=scales::squish,limits=c(0,120),expand=c(0,0)) +
   theme_bw()+
-  theme(text = element_text(family='sans',size=8),
-        legend.title = element_blank(), legend.position = c(0.5,0.7))
+  theme(text = element_text(family='sans',size=20),
+        plot.background = element_rect(fill = 'white',color='Black'),
+        plot.margin = unit(c(0.25, 0.25, 0.2, 0.2), "in"),
+        legend.title = element_blank(),legend.position = 'none')# legend.position = c(0.5,0.7))
+
 plotRange
+ggsave(plot=plotRange, width = figS[1], height = figS[2], dpi = 600,
+       filename = file.path(githubDir,"Figures","PlotProxyAgeRange.png"))
 ```
 
 ```{r}
 #Plot a figure showiang temporal variability over the Holocene (using geochronR)
-plotTimeData <- plotTimeAvailabilityTs(lipdTSO,age.range = c(0,12000),step=200,group='Category')
+plotTimeData <- plotTimeAvailabilityTs(lipdTSO,age.range = c(0,12000),step=100,group='CategorySpecific')
 plotTime <- ggplot(plotTimeData$data,aes(yvec,value))+
   geom_area(alpha=0.7,aes(fill=group),color='Black')+
-  scale_fill_manual(values=plotVals$general$colors) +
+  scale_fill_manual(values=plotSettings$colors) +
   scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),
                   n.breaks=7,sec.axis = sec_axis(~.,labels=NULL))+
-  scale_y_continuous(name = "Number of Records",limits=c(0,length(lipdTSO)),expand=c(0,0),
+  scale_y_continuous(name = "Count of Records",limits=c(0,length(lipdTSO)),expand=c(0,0),
                      labels=seq(0,length(lipdTSO),100), breaks=seq(0,length(lipdTSO),100))+
   theme_bw()+
-  theme(text = element_text(family='sans',size=8),
-        legend.title = element_blank())
+  theme(text = element_text(family='sans',size=20),
+        plot.background = element_rect(fill = 'white',color='Black'),
+        plot.margin = unit(c(0.25, 0.25, 0.2, 0.2), "in"),
+        legend.title = element_blank(),legend.position = 'none')# legend.position = c(0.5,0.7))
 
 plotTime
+
+ggsave(plot=plotTime, width = figS[1], height = figS[2], dpi = 600,
+       filename = file.path(githubDir,"Figures","PlotTimeAvailability.png"))
 ```
 
 
@@ -158,7 +185,7 @@ figlabels <- c(paste("<",figBreaks[1]+1),
                paste(as.character(figBreaks[-length(figBreaks)]+1),"-",
                      as.character(figBreaks[-1])),
                paste(">",figBreaks[length(figBreaks)]))
-figPalette <- c("#CCCCCC",brewer.pal(n = 7, name = "YlOrBr"))
+figPalette <- c("#CCCCCC",RColorBrewer::brewer.pal(n = 7, name = "YlOrBr"))
 
 for (region in list(levels(refrenceSubset@data[["Acronym"]]))[[1]]){
   i = which(refregions@data[["Acronym"]]==region)
@@ -183,7 +210,7 @@ for (region in list(levels(refrenceSubset@data[["Acronym"]]))[[1]]){
 ```{r}
 basemap <- ggplot() +
   #Set Border around plot - probably not the best way to do this
-  borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=2) +
+  borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=3) +
   geom_map(data=refregions, map=fortify(refregions),
            aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
   #Add Country data (basemap)
@@ -191,6 +218,48 @@ basemap <- ggplot() +
            aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
   coord_fixed(1) + 
   theme_void() 
+
+df <- as.data.frame(proxyDataPrj)
+for (i in plotSettings$names){
+  df[which(df$CategorySpec==i),"CategorySpec"] <- paste(i,'   (n=',length(which(df$CategorySpec==i)),')',sep='')
+}
+##############################
+#Plot Figure 1 proxy type for each site
+proxyMapSites <- basemap +
+  geom_map(data=refrenceSubset, map=dataTable, alpha=0.75, size=0.5, color='black' , 
+           aes(x=long, y=lat, group=group, map_id=id),fill=NA) + 
+  geom_star(data=df,aes(x=longitude.1 , y=latitude.1,starshape=CategorySpec, fill=CategorySpec),
+            size=4,color='Black',alpha=1,starstroke=0.5) + 
+  scale_fill_manual(values=plotSettings$colors,name= 'Proxy Category') +
+  scale_starshape_manual(values=plotSettings$shapes,name= 'Proxy Category') +
+  theme(legend.position = 'none')
+
+
+proxyMapSiteslegend <- proxyMapSites + 
+  theme(legend.position = c(0.5,0.5),
+        legend.background = element_rect(fill="white", size=1),
+        text = element_text(family='sans',size=20),
+        legend.margin = margin(c(0.25, 0.25, 0.2, 0.2), unit="in"))
+
+
+
+ggsave(plot=proxyMapSites, width = 19, height = 9, dpi = 600,
+       filename = file.path(githubDir,"Figures",paste('PlotProxyTypeRegion_',climVar,'.png',sep='')))
+
+ggsave(plot=proxyMapSiteslegend, width = 19, height = 9, dpi = 600,
+       filename = file.path(githubDir,"Figures",paste('PlotProxyTypeRegion_',climVar,'_legend.png',sep='')))
+```
+```{r}
+basemap <- ggplot() +
+  #Set Border around plot - probably not the best way to do this
+  borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=4) +
+  geom_map(data=refregions, map=fortify(refregions),
+           aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
+  #Add Country data (basemap)
+  geom_map(data=countries, map=fortify(countries),
+           aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
+  coord_fixed(1) + 
+  theme_void()  +
 
 ##############################
 #Plot Figure 1 proxy type for each site
@@ -200,12 +269,19 @@ proxyMapSites <- basemap +
 
 for (i in 1:length(plotVals$specific$names)){
   proxyMapSites <- proxyMapSites +
-    geom_star(data=(as.data.frame(proxyDataPrj) %>% filter(CategorySpec==plotVals$specific$names[i])),
-               aes(x=longitude.1 , y=latitude.1), size=1.5,color='Black',alpha=0.7,starstroke=0.3,
-               starshape=plotVals$specific$shapes[i], fill=plotVals$specific$colors[i])
+    geom_star(data=(as.data.frame(proxyDataPrj) %>% filter(CategorySpec==plotSettings$names[i])),
+              aes(x=longitude.1 , y=latitude.1,starshape=plotSettings$shapes[i], fill=plotSettings$colors[i]),
+              size=4,color='Black',alpha=0.7,starstroke=0.5_
+               
 }
 proxyMapSites
 
+
+
+```
+
+
+```{r}
 ##############################
 #Plot Figure 2 count by regions
 proxyMapRegions <- basemap + 
@@ -225,23 +301,19 @@ proxyMapRegions <- basemap +
         legend.key.height = (unit(5, 'pt')),
         legend.text = element_text(family='sans',size=8))
 
-proxyMapRegions
+#proxyMapRegions
+
+
+#ggsave(plot=proxyMapRegions, width = 6, height = (6/1.97+0.5), dpi = 600,
+ #      filename = file.path(githubDir,"Figures",paste('PlotCountByRegion_',climVar,'.png',sep='')))
 ```
 
 Save Figures
 ```{r}
-ggsave(plot=plotRes, width = 6.5, height = 4, dpi = 600,
-       filename = file.path(githubDir,"Figures","PlotProxyAgeRes.png"))
-ggsave(plot=plotResPlus, width = 6.5, height = 4, dpi = 600,
-       filename = file.path(githubDir,"Figures","PlotProxyAgeResPlus.png"))
-ggsave(plot=plotRange, width = 6.5, height = 4, dpi = 600,
-       filename = file.path(githubDir,"Figures","PlotProxyAgeRange.png"))
-ggsave(plot=plotTime, width = 6, height = 2.5, dpi = 600,
-       filename = file.path(githubDir,"Figures","PlotTimeAvailability.png"))
-ggsave(plot=proxyMapSites, width = 6, height = (6/1.97+0.5), dpi = 600,
-       filename = file.path(githubDir,"Figures",paste('PlotProxyTypeRegion_',climVar,'.png',sep='')))
-ggsave(plot=proxyMapRegions, width = 6, height = (6/1.97+0.5), dpi = 600,
-       filename = file.path(githubDir,"Figures",paste('PlotCountByRegion_',climVar,'.png',sep='')))
+
+
+
+
 ```
 
 
