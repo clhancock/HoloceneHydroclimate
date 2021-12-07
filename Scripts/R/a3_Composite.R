@@ -22,20 +22,20 @@ library(tidyverse)
 
 #Set up directories and names
 githubDir <- getwd()
-climVar <- 'Temp'
+climVar <- 'HC'
 #
 
 ###Load Data
 lipdData <- readRDS(file.path(githubDir,'Data','LiPD','lipdData.rds'))
 lipdTSO <- lipdData[[climVar]]
 regionNames <- sort(unique(as.character(pullTsVariable(lipdTSO,'geo_ipccRegion'))))
-climVar <- 'T'
+climVar <- 'HC'
 
 save=FALSE
 #set.seed(#) Set same sets of records which will make completely reproducable
 #
 #Set variables for composite code
-nens          <- 200  #make low to run quickly, set high to get large ensemble range (variation from standardization search range and order )
+nens          <- 5000  #make low to run quickly, set high to get large ensemble range (variation from standardization search range and order )
 binsize       <- 100 #years
 ageMin        <- -100 #age BP
 ageMax        <- 12400 #age BP

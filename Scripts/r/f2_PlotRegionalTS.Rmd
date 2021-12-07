@@ -190,7 +190,7 @@ for (reg in regNames){
     theme(panel.border=element_rect(color='black',fill=NA,size=1),
           legend.position = "none")
 }
-
+leg <- climVarSettings[[climVar]]
 StripePlot <- globalPlotOfRegions('StripePlot',save=FALSE)
 legendPlt <- ggplot(data=data.frame(x=leg$Seq),aes(x=x,y=x,fill=x)) + 
   geom_point(alpha=0) +
@@ -208,7 +208,7 @@ legendPlt <- ggplot(data=data.frame(x=leg$Seq),aes(x=x,y=x,fill=x)) +
     #       
 StripePlot <- StripePlot + draw_plot(legendPlt, x = 0.1, y = 0.1, width=0.8,height=0.12)
 ggsave(plot=StripePlot, width = 6, height = 6*0.5072, dpi = 600,
-           filename = paste(file.path(githubDir,'Figures',''),'global_',climVar,'_StripePlot.png',sep=''))
+           filename = paste(file.path(githubDir,'Figures','global'),climVar,'_StripePlot.png',sep=''))
 
 ```
 
@@ -271,7 +271,7 @@ for (reg in regNames){
 
 compBandPlt <- globalPlotOfRegions('compBandPlt',save=FALSE)
 ggsave(plot=compBandPlt, width = 6, height = 6*0.5072, dpi = 600,
-           filename = paste(file.path(githubDir,'Figures',''),'global_',climVar,'_compBandPlt.png',sep=''))
+           filename = paste(file.path(githubDir,'Figures','global'),climVar,'_compBandPlt.png',sep=''))
 ```
 
 
