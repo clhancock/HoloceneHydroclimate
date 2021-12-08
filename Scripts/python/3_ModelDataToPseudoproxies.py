@@ -3,6 +3,8 @@
 #import pyleoclim as pyleo               # Packages for analyzing LiPD files 
 #import lipd                             # Packages for analyzing LiPD files 
 import pickle
+import csv
+
 import numpy  as np                     # Package with useful numerical functions
 import xarray as xr                     #Package for handling file types
 import pandas as pd
@@ -141,7 +143,7 @@ def calculatePseudoProxy(proxyDF=data_HC,
                 lon=np.argmin(np.abs(dataModel[model]['lon']-regData['longitude'][i]))
                 #site timeseries
                 modelvalues = dataModel[model][var][sea][lat,lon,:]
-                #if standardize: modelvalues = stats.zscore(modelvalues)
+                if standardize: modelvalues = stats.zscore(modelvalues)
                 #mask = [idx for idx, val in enumerate(dataModel[model]['time']) if (val < ror val > site['ageMax'])]
                 regDF[regData['tsid'][i]] = modelvalues
             PseudoProxy[region] = regDF
@@ -168,6 +170,9 @@ for v in ['P']:#,'P-E','HC']:
         name = str(v+'_'+s)
         print(name)
         pseudoProxy[name] =  calculatePseudoProxy(variable=v,season=s)
+        for model in  pseudoProxy[name].keys():
+            df = pseudoProxy[name][model]['modelLandTS']['medianTS']
+            df.to_csv(str(dataDir+'HoloceneHydroclimate/Data/Model/PseudoProxy_FullReg/'+name+'_'+model+'.csv'))
 
 from scipy.stats import pearsonr
 

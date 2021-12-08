@@ -178,7 +178,7 @@ for (climVar in names(lipdData)){
     if (climVar == 'HC'){
       if (is.null(lipd[[ts]]$createdBy)){lipd[[ts]]$createdBy <- ''}
       if (is.null(lipd[[ts]]$originalDataUrl)){lipd[[ts]]$originalDataUrl <- ''}
-      if (is.null(lipd[[ts]]$paleoData_calibration_method)){lipd[[ts]]$paleoData_calibration_method <- ''}
+      if (is.null(lipd[[ts]]$calibration_method)){lipd[[ts]]$calibration_method <- ''}
       if (is.null(lipd[[ts]]$pub1_doi)){lipd[[ts]]$pub1_doi <- ''}
       if (is.null(lipd[[ts]]$pub2_doi)){lipd[[ts]]$pub2_doi <- ''}
       if (lipd[[ts]]$createdBy == 'http://github.com/nickmckay/oxfordLakeStatus2Lipd'){
@@ -196,7 +196,7 @@ for (climVar in names(lipdData)){
       else if (lipd[[ts]]$originalDataUrl == 'geochange.er.usgs.gov/midden/'){
         lipd[[ts]]$Source = 'wNA'
       }
-      else if (lipd[[ts]]$paleoData_calibration_method == 'JM18_MAT'){
+      else if (lipd[[ts]]$calibration_method == 'JM18_MAT'){
         lipd[[ts]]$Source = 'Marsicek et al. (2018)'
       }
       else if (grepl('gov/paleo/study/15444',lipd[[ts]]$originalDataUrl) | '10.5194/cp-10-1605-2014' == lipd[[ts]]$pub2_doi){

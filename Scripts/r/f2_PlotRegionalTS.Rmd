@@ -84,7 +84,7 @@ basemap <- ggplot() +
   coord_fixed(1) + 
   theme_void() 
   
-#basemap
+basemap
 ```
 
 
@@ -214,6 +214,16 @@ ggsave(plot=StripePlot, width = 6, height = 6*0.5072, dpi = 600,
 
 
 ```{r warning=FALSE}
+
+modelTS <- vector(mode='list')
+for (model in c('trace','hadcm')){
+  modelTS[[model]] <- read.csv(file.path(githubDir,'Data','Model','PseudoProxy_FullReg',
+                                         paste('P_annual_',model,'.csv',sep='')))
+  for (reg in regNames){
+    modelTS[[model]][,reg] <- (modelTS[[model]][,reg]-mean(modelTS[[model]][,reg]))/sd(modelTS[[model]][,reg])
+  }
+}
+
 for (reg in regNames){
   timeAvail <- plotTimeAvailabilityTs(plotData[[reg]]$lipd,age.range=c(ageMin,ageMax),
                                       group.var ='Category',step=100)$dat %>%
@@ -243,6 +253,13 @@ for (reg in regNames){
                                              color.low=climVarSettings[[climVar]]$Col[1],
                                              color.high=climVarSettings[[climVar]]$Col[2],
                                              color.line=climVarSettings[[climVar]]$Col[3]) 
+  compBands$vals <- compBands$vals + 
+      geom_line(aes(x=seq(0,12000,200),
+                    y=modelTS[['trace']][,reg]),color = 'fire brick',
+                    size=0.3,alpha=0.5) +
+      geom_line(aes(x=seq(0,12000,200),
+                    y=modelTS[['hadcm']][,reg]),color = 'goldenrod',
+                    size=0.3,alpha=0.5) 
   compBandPlt <- ggdraw() 
   for (plt in names(compBands)){
     compBands[[plt]] <- compBands[[plt]] + 
@@ -254,7 +271,8 @@ for (reg in regNames){
       coord_cartesian(xlim=c(12000,0), 
                       ylim=c(plotlimit_set*-1,plotlimit_set)) +
       theme_void() +
-      theme(panel.border=element_rect(colour='Black',fill=NA,size=0.8))
+      theme(panel.border=element_rect(colour='Black',fill=NA,size=0.8),
+            legend.position='none')
     if (plt == names(compBands)[1]){
       compBands[[plt]] <- compBands[[plt]] + 
         geom_hline(yintercept=0,size=0.15) +
@@ -268,12 +286,88 @@ for (reg in regNames){
   #
 }
 
-
+#plotData[['EAS']]$compBandPlt
 compBandPlt <- globalPlotOfRegions('compBandPlt',save=FALSE)
+compBandPlt
+
 ggsave(plot=compBandPlt, width = 6, height = 6*0.5072, dpi = 600,
            filename = paste(file.path(githubDir,'Figures','global'),climVar,'_compBandPlt.png',sep=''))
 ```
 
+```{r}
+compBandPltLegend <- ggplot() +
+      geom_line(aes(x=seq(0,12000,200),
+                    y=sample(seq(2,4,0.01),length(seq(0,12000,200))),color = '  Proxy (>50% Records)'),
+                    size=0.6,alpha=0.7) +
+      geom_line(aes(x=seq(0,12000,200),
+                    y=sample(seq(0,2,0.01),length(seq(0,12000,200))),color = ' Proxy (<50% Records)'),
+                    size=0.6,alpha=0.7) +
+      geom_line(aes(x=seq(0,12000,200),
+                    y=sample(seq(-2,0,0.01),length(seq(0,12000,200))),color = ' TraCE-21ka'),
+                    size=0.6,alpha=0.5) +
+      geom_line(aes(x=seq(0,12000,200),
+                    y=sample(seq(-4,-2,0.01),length(seq(0,12000,200))),color = 'HadCM3'),
+                    size=0.6,alpha=0.5) +
+      scale_x_reverse(name = "Age (yr BP)", 
+                      limits=c(12000,0), expand=c(0,0), n.breaks=7,sec.axis = dup_axis(name=''))+
+      scale_y_continuous(name=paste('Dry <-Std Anomaly-> Wet'),
+                      limits=c(plotlimit_set*-1000,plotlimit_set*1000),
+                      breaks = seq(-4,4,2))+
+      coord_cartesian(xlim=c(12000,0), 
+                      ylim=c(plotlimit_set*-1,plotlimit_set)) +
+      scale_color_manual(values=c(climVarSettings[[climVar]]$Col[2],'grey50','fire brick','goldenrod'),
+                         labels=c('Proxy (>50%)','Proxy (<50%)','TraCE','HadCM3')) +
+      theme_bw() + 
+      theme(text = element_text(family='sans',size=20),
+        plot.background = element_rect(fill = 'white',color='Black'),
+        plot.margin = unit(c(0.2, 0.2, 0.2, 0.2), "in"),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        legend.title = element_blank(),
+        legend.key.height = unit(0.7, "in"),
+        legend.key.width = unit(0.4, "in"))
+ggsave(plot=compBandPltLegend, width = 8, height = 5, dpi = 600,
+           filename = paste(file.path(githubDir,'Figures','global'),climVar,'_compBandPltLegend.png',sep=''))
+#plotData[['EAS']]$compBandPlt + theme(legend.position=c(0,0)) 
+```
+
+```{r}
+
+
+for (reg in c('EAS')){
+  print(reg)
+  compBandPltModel <- plotData[[reg]]$compBandPlt
+  for (model in c('trace')){
+    if (model == 'trace'){
+      lc <- 'firebrick'
+    } else if (model == 'hadcm'){
+      lc <- 'goldenrod'
+    }
+    modelTSreg <- ggplot() + 
+      geom_line(aes(x=seq(0,12000,100),
+                    y=(modelTS[[model]][,reg]-mean(modelTS[[model]][,reg]))/sd(modelTS[[model]][,reg])),
+                    color = lc, size=1,alpha=0.5) +
+      scale_x_reverse(name = "Age (yr BP)", 
+                          limits=c(12000,0), expand=c(0,0), n.breaks=7,sec.axis = dup_axis())+
+      scale_y_continuous(name=paste('Standardized',climVar),
+                          limits=c(plotlimit_set*-1000,plotlimit_set*1000),sec.axis = dup_axis(),
+                          breaks = seq(-4,4,2))+
+      coord_cartesian(xlim=c(12000,0), 
+                          ylim=c(plotlimit_set*-1,plotlimit_set)) +
+      theme_void() +
+      theme(panel.border=element_rect(colour='Black',fill=NA,size=0.8))
+    #
+    compBandPltModel<-compBandPltModel + draw_plot(modelTSreg, x = 0, y = 0, width = 1, height = 1)
+  }
+  plotData[[reg]]$compBandPltModel <- compBandPltModel
+}
+
+
+compBandPltModel <- globalPlotOfRegions('compBandPltModel',save=FALSE)
+#compBandPltModel
+ggsave(plot=compBandPltModel, width = 6, height = 6*0.5072, dpi = 600,
+      filename = paste(file.path(githubDir,'Figures','global'),climVar,'_compBandPltModel',sep=''))
+             
+```
 
 ```
 reg <- 'EAS'

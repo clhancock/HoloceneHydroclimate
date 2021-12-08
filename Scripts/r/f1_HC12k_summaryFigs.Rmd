@@ -87,6 +87,45 @@ plotSettings <- plotVals$specific
 
 ```
 
+```{r}
+pieData <- proxyMetaData %>% group_by(source) %>% summarise(n = n())  
+pieData[which(pieData$source=='Arctic Holocene'),'source'] <- 'Arctic Holocene (Sundqvist et al., 2014)'
+pieData[which(pieData$source=='iso2k'),'source'] <- 'Iso2k (Konecky et al., 2020)'
+pieData[which(pieData$source=='Other'),'source'] <- 'Miscellaneous'
+pieData[which(pieData$source=='SISAL'),'source'] <- 'SISAL (Comas-Bru et al., 2020)'
+pieData[which(pieData$source=='Oxford Lake Levels Database')
+        ,'source'] <- 'Lake-Level Database (Street-Perrott et al., 1989)'
+pieData[which(pieData$source=='Temp12k'),'source'] <- 'Temp12k (Kaufman et al., 2020)'
+pieData[which(pieData$source=='wNA'),'source']  <- 'Western North America (Routson et al., 2021)'
+pieData <- pieData %>% arrange(source)
+pieData2 <- pieData %>% 
+  mutate(csum = rev(cumsum(rev(n))), 
+         pos = n/2 + lead(csum, 1),
+         pos = if_else(is.na(pos), n/2, pos))
+
+#install.packages("ggrepel")
+library(ggrepel)
+z <- ggplot(pieData2,aes(x="", y=n, fill=source)) +
+  geom_bar(stat="identity", width=1, color= 'black') +
+  coord_polar("y", start=0) +
+  geom_label_repel(data = pieData2,
+                   aes(y = pos, label = n,fill='White'),
+                   size = 4.5, nudge_x = 0.1, show.legend = FALSE) +
+  scale_fill_manual(values=c("powder blue","dark blue","corn flower blue","forest green",
+                             "grey","firebrick","yellowgreen","grey40","White"),name='Data Source') +
+  theme_void() + 
+  theme(text = element_text(family='sans',size=20),
+        plot.background = element_rect(fill = 'white',color='Black'),
+        plot.margin = unit(c(0.22, 0.2, 0.2, 0.2), "in"),
+        legend.key.height = unit(0.4, "in"),
+        legend.key.width = unit(0.4, "in"))
+        #legend.title = element_blank())#,legend.position = 'none')# legend.position = c(0.5,0.7))
+ggsave(plot=z , width = figS[1], height = figS[2], dpi = 600,
+       filename = file.path(githubDir,"Figures","PlotProxySource.png"))
+
+```
+
+
 Plot a histagram showing the median time difference between Holocene ages
 ```{r}
 plotRes <- ggplot(proxyMetaData)+
