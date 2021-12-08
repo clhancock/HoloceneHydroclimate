@@ -8,7 +8,7 @@ author: chris hancock
 ###Settings in script
 ```{r}
 #Set up directories and names
-githubDir <- getwd()
+githubDir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #getwd()
 figS <- c(11.5,5)
 #
 ```
@@ -50,19 +50,21 @@ lipdTSO    <- lipdData[[climVar]]
 ```{r}
 climVar <- 'HC'
 lipdTSO <- lipdData[[climVar]]
-lipdTSO[[which(pullTsVariable(lipdTSO,'geo_ipccRegion')=='SOO')]]$geo_latitude <- -18.0918 
-lipdTSO[[which(pullTsVariable(lipdTSO,'geo_ipccRegion')=='SOO')]]$geo_longitude <- -57.5627
-proxyMetaData <- tibble(dataset        = pullTsVariable(lipdTSO,'dataSetName'),
-                        tsid           = pullTsVariable(lipdTSO,'paleoData_TSid'),
-                        longitude      = pullTsVariable(lipdTSO,'geo_longitude'),
-                        latitude       = pullTsVariable(lipdTSO,'geo_latitude'),
-                        ipccReg        = pullTsVariable(lipdTSO,'geo_ipccRegion'),
-                        Category       = pullTsVariable(lipdTSO,'Category'),
-                        CategorySpec   = pullTsVariable(lipdTSO,'CategorySpecific'),
-                        recordRange    = pullTsVariable(lipdTSO,'ageRange'),
-                        recordRes      = pullTsVariable(lipdTSO,'ageRes'),
-                        recordResPlus  = pullTsVariable(lipdTSO,'ageResPlus'))
-proxyMetaData[which(proxyMetaData[,'ipccReg']=='SOO'),'ipccReg'] <- 'SES'
+proxyMetaData <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
+                        tsid          = pullTsVariable(lipdTSO,'paleoData_TSid'),
+                        longitude     = pullTsVariable(lipdTSO,'geo_longitude'),
+                        latitude      = pullTsVariable(lipdTSO,'geo_latitude'),
+                        ipccReg       = pullTsVariable(lipdTSO,'geo_ipccRegion'),
+                        Category      = pullTsVariable(lipdTSO,'Category'),
+                        CategorySpec  = pullTsVariable(lipdTSO,'CategorySpecific'),
+                        recordRange   = pullTsVariable(lipdTSO,'ageRange'),
+                        recordRes     = pullTsVariable(lipdTSO,'ageRes'),
+                        recordResPlus = pullTsVariable(lipdTSO,'ageResPlus'),
+                        season        = pullTsVariable(lipdTSO,'climateInterpretation1_seasonalityGeneral'),
+                        climInterp    = pullTsVariable(lipdTSO,'climateInterpretation1_variable'),
+                        source        = pullTsVariable(lipdTSO,'Source'))
+
+write.csv(proxyMetaData,file=file.path(githubDir,'Data',paste('proxyMetaData_',climVar,'.csv',sep='')))
 ##############################
 ###Create list of color information
 plotVals <- vector(mode='list')
@@ -271,7 +273,7 @@ for (i in 1:length(plotVals$specific$names)){
   proxyMapSites <- proxyMapSites +
     geom_star(data=(as.data.frame(proxyDataPrj) %>% filter(CategorySpec==plotSettings$names[i])),
               aes(x=longitude.1 , y=latitude.1,starshape=plotSettings$shapes[i], fill=plotSettings$colors[i]),
-              size=4,color='Black',alpha=0.7,starstroke=0.5_
+              size=4,color='Black',alpha=0.7,starstroke=0.5)
                
 }
 proxyMapSites

@@ -35,13 +35,14 @@ refregions <-  spTransform(refregions, CRSobj = PROJ)
 #Load Lipd Files
 D_temp <- readLipd(paste("http://lipdverse.org/Temp12k/",tempVers,"/Temp12k",tempVers,".zip",sep=''))
 D_hc   <- readLipd(paste("http://lipdverse.org/HoloceneHydroclimate/",hcVers,"/HoloceneHydroclimate",hcVers,".zip",sep=''))
-#D_new  <- readLipd(file.path(githubDir,'Data','LiPD','new'))
+D_new  <- readLipd(file.path(githubDir,'Data','LiPD','new'))
+
 
 ###Assign tsids for data compilations based on within correct dataset and version 
 #Combine LiPD files and extract data from 2 sources without duplicates
 TS_temp <- extractTs(D_temp)
-#TS_hc   <- c(extractTs(D_hc),extractTs(D_new))
-TS_hc   <- extractTs(D_hc)
+TS_hc   <- c(extractTs(D_hc),extractTs(D_new))
+#TS_hc   <- extractTs(D_hc)
 
 TS_temp <- splitInterpretationByScope(TS_temp)
 TS_hc   <- splitInterpretationByScope(TS_hc)
@@ -90,6 +91,10 @@ for (climVar in names(lipdData)){
     }
     #
     #Add Ipcc regions to metdata
+    if (climVar == 'HC' & lipd[[ts]]$geo_latitude==-57.5627 & lipd[[ts]]$geo_longitude==-18.0918){
+      lipd[[ts]]$geo_latitude <--18.0918
+      lipd[[ts]]$geo_longitude<--57.5627
+    }
     pointData <- data.frame(longitude=c(lipd[[ts]]$geo_longitude),latitude=c(lipd[[ts]]$geo_latitude))
     pointData <- SpatialPointsDataFrame(coords=pointData,data = pointData, 
                                         proj4string = CRS(PROJorig))
@@ -106,6 +111,21 @@ for (climVar in names(lipdData)){
     lipd[[ts]]$ageRange   <- diff(range(tso$age))
     lipd[[ts]]$ageRes     <- median(diff(tso$age))
     lipd[[ts]]$ageResPlus <- median(diff(tso$age[which(diff(tso$values) != 0)]))
+    #
+    if (climVar == 'HC'){
+      if (is.null(lipd[[ts]]$climateInterpretation1_seasonalityGeneral)){
+        lipd[[ts]]$climateInterpretation1_seasonalityGeneral <- 'Annual'
+      } else if (grepl('ummer',lipd[[ts]]$climateInterpretation1_seasonalityGeneral)){
+        lipd[[ts]]$climateInterpretation1_seasonalityGeneral <- 'Summer'
+      } else if (grepl('inter',lipd[[ts]]$climateInterpretation1_seasonalityGeneral)){
+        lipd[[ts]]$climateInterpretation1_seasonalityGeneral <- 'Winter'
+      } else {
+        lipd[[ts]]$climateInterpretation1_seasonalityGeneral <- 'Annual'
+      }
+      if (lipd[[ts]]$climateInterpretation1_variable == 'M'){
+        lipd[[ts]]$climateInterpretation1_variable <- 'P-E'
+      }
+    }
     #
     #Add category information
     if (climVar == 'HC'){
@@ -176,41 +196,31 @@ for (climVar in names(lipdData)){
       else if (lipd[[ts]]$originalDataUrl == 'geochange.er.usgs.gov/midden/'){
         lipd[[ts]]$Source = 'wNA'
       }
-       # dataSource.append('wNA')
       else if (lipd[[ts]]$paleoData_calibration_method == 'JM18_MAT'){
         lipd[[ts]]$Source = 'Marsicek et al. (2018)'
       }
-       # dataSource.append('Marsicek')
       else if (grepl('gov/paleo/study/15444',lipd[[ts]]$originalDataUrl) | '10.5194/cp-10-1605-2014' == lipd[[ts]]$pub2_doi){
         lipd[[ts]]$Source = 'Arctic Holocene'
       }
-        #dataSource.append('Arctic Holocene')
       else if (substr('lipd[[ts]]$dataSetName',1,2) == 'LS'){
         lipd[[ts]]$Source = 'iso2k'
       }
-       # dataSource.append('iso2k')
       else if (lipd[[ts]]$originalDataUrl == 'https://essd.copernicus.org/articles/12/2261/2020/'){
         lipd[[ts]]$Source = 'iso2k'
       }
-       # dataSource.append('iso2k')
       else if (grepl('10.25921/4RY2-G808',lipd[[ts]]$originalDataUrl) | grepl('/paleo/study/27330',lipd[[ts]]$originalDataUrl)){
         lipd[[ts]]$Source = 'Temp12k'
-      }
-        #dataSource.append('Temp12k')
-      else{
-        lipd[[ts]]$Source = 'Miscellanious'
-      }# dataSource.append('Miscellanious')
+      } else{lipd[[ts]]$Source = 'Other'}
     } else{lipd[[ts]]$Source <- 'Temp12k'}
     #
   }
   #require >0 change points for lakedeposits
   lipd                <- lipd[which(!is.na(pullTsVariable(lipd,"ageResPlus")))]
   lipdData[[climVar]] <- lipd[which(pullTsVariable(lipd,"climateInterpretation1_seasonalityGeneral") %in% c('summer+','winter+') == FALSE)]
-  
 }
 
-print(paste("Temp:",length(lipdData$Temp)))
-print(paste("HC:",length(lipdData$HC)))
+print(paste("Temp:",length(lipdData$Temp))) #810
+print(paste("HC:",length(lipdData$HC))) #664
 
 ###Save
 saveRDS(lipdData, file.path(githubDir,'Data','LiPD','lipdData.rds'))
