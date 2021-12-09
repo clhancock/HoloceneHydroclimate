@@ -48,7 +48,7 @@ lipdTSO    <- lipdData[[climVar]]
 
 ###Add information about proxy categories
 ```{r}
-climVar <- 'HC'
+climVar <- 'Temp'
 lipdTSO <- lipdData[[climVar]]
 proxyMetaData <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
                         tsid          = pullTsVariable(lipdTSO,'paleoData_TSid'),
@@ -64,7 +64,7 @@ proxyMetaData <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
                         climInterp    = pullTsVariable(lipdTSO,'climateInterpretation1_variable'),
                         source        = pullTsVariable(lipdTSO,'Source'))
 
-write.csv(proxyMetaData,file=file.path(githubDir,'Data',paste('proxyMetaData_',climVar,'.csv',sep='')))
+write.csv(proxyMetaData,file=file.path(githubDir,'Data',paste('proxyMetaData_','T','.csv',sep='')))
 ##############################
 ###Create list of color information
 plotVals <- vector(mode='list')
@@ -225,7 +225,7 @@ figBreaks <- c(5,10,20,30,40,60,80)
 figlabels <- c(paste("<",figBreaks[1]+1),
                paste(as.character(figBreaks[-length(figBreaks)]+1),"-",
                      as.character(figBreaks[-1])),
-               paste(">",figBreaks[length(figBreaks)]))
+                      paste(">",figBreaks[length(figBreaks)]))
 figPalette <- c("#CCCCCC",RColorBrewer::brewer.pal(n = 7, name = "YlOrBr"))
 
 for (region in list(levels(refrenceSubset@data[["Acronym"]]))[[1]]){

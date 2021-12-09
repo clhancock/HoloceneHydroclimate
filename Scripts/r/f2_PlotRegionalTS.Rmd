@@ -18,6 +18,7 @@ library(cowplot)
 library(geoChronR)
 library(maptools)
 library(ncdf4)
+library(lipdR)
 library(rkt)
 library(rworldmap)
 library(scales)
@@ -62,7 +63,7 @@ climVarSettings$HC$Seq <- seq(-2.2,2.2,0.4)
 
 ##############################
 regionComposite <- vector(mode='list')
-regionComposite$proxy <- read.csv(file.path(githubDir,'Data','RegionComposites/',climVar,'MedianTSbyRegion.csv'))
+regionComposite$proxy <- read.csv(file.path(githubDir,'Data','RegionComposites',climVar,'MedianTSbyRegion.csv'))
 regionComposite$trace <- readRDS(file.path(githubDir,'Data','Model','trace.rds'))
 regionComposite$hadcm <- readRDS(file.path(githubDir,'Data','Model','hadcm.rds'))
 regNames <- names(regionComposite$proxy)[-1]
@@ -72,9 +73,10 @@ ageMax <- max(binvec)
 
 refrenceSubset <- subset(refregions, Acronym %in% regNames)
 
+
 basemap <- ggplot() +
   #Set Border around plot - probably not the best way to do this
-  borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=2) +
+  borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=3) +
   geom_map(data=refregions, map=fortify(refregions),
            aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
   #Add Country data (basemap)
@@ -93,6 +95,11 @@ basemap
 xSize <- 0.085
 ySize <- 0.06
 nudgeVals <- data.frame(region=regNames,x=rep(0,length(regNames)),y=rep(0,length(regNames)))
+nudgeVals[which(regNames=='ARO'),'x'] <- 0.025
+nudgeVals[which(regNames=='ARO'),'y'] <- -0.01
+nudgeVals[which(regNames=='CAF'),'x'] <- -0.04
+nudgeVals[which(regNames=='CAR'),'x'] <- 0.007
+nudgeVals[which(regNames=='CAR'),'y'] <- 0.04
 nudgeVals[which(regNames=='NWN'),'x'] <- 0.0115
 nudgeVals[which(regNames=='NWN'),'y'] <- 0.007
 nudgeVals[which(regNames=='NEN'),'y'] <- -0.022
@@ -103,6 +110,10 @@ nudgeVals[which(regNames=='CNA'),'x'] <- 0.0035
 nudgeVals[which(regNames=='ENA'),'x'] <- 0.042
 nudgeVals[which(regNames=='SAM'),'y'] <- -0.02
 nudgeVals[which(regNames=='NES'),'y'] <- 0.02
+nudgeVals[which(regNames=='NSA'),'x'] <- 0.025
+nudgeVals[which(regNames=='NSA'),'y'] <- 0.04
+nudgeVals[which(regNames=='NAO'),'y'] <- -0.03
+nudgeVals[which(regNames=='NAO'),'x'] <- 0.004
 nudgeVals[which(regNames=='NEU'),'x'] <- 0.004
 nudgeVals[which(regNames=='NEU'),'y'] <- 0.01
 nudgeVals[which(regNames=='WCE'),'x'] <- -0.005
@@ -112,6 +123,8 @@ nudgeVals[which(regNames=='WCA'),'x'] <- -0.01
 nudgeVals[which(regNames=='ESB'),'y'] <- 0.004
 nudgeVals[which(regNames=='ESB'),'x'] <- -0.01
 nudgeVals[which(regNames=='ECA'),'y'] <- 0.013
+nudgeVals[which(regNames=='RFE'),'x'] <- -0.04
+nudgeVals[which(regNames=='EPO'),'x'] <- -0.04
 nudgeVals[which(regNames=='SAS'),'y'] <- -0.002
 nudgeVals[which(regNames=='SAS'),'x'] <- -0.005
 nudgeVals[which(regNames=='EAS'),'x'] <- 0.003
@@ -201,7 +214,7 @@ legendPlt <- ggplot(data=data.frame(x=leg$Seq),aes(x=x,y=x,fill=x)) +
   theme_void() + 
    theme(plot.background=element_rect(color='black',fill='white',size=1),
          legend.position=c(0.5,0.4), aspect.ratio = 0.12, legend.direction='horizontal',
-         legend.key.width  = (unit(40, 'points')), legend.key.height = (unit(10, 'points')),
+         legend.key.width  =(unit(40, 'points')), legend.key.height = (unit(10, 'points')),
          legend.text =element_text(size=4,family="sans"), legend.spacing.y = unit(2, "points"),
          legend.title=element_blank()) 
     #       
@@ -214,13 +227,18 @@ ggsave(plot=StripePlot, width = 6, height = 6*0.5072, dpi = 600,
 
 
 ```{r warning=FALSE}
+climVarSettings$T$Col  <- c("#B2DFDB","#00796B","#004D40") #reds
 
-modelTS <- vector(mode='list')
-for (model in c('trace','hadcm')){
-  modelTS[[model]] <- read.csv(file.path(githubDir,'Data','Model','PseudoProxy_FullReg',
-                                         paste('P_annual_',model,'.csv',sep='')))
-  for (reg in regNames){
-    modelTS[[model]][,reg] <- (modelTS[[model]][,reg]-mean(modelTS[[model]][,reg]))/sd(modelTS[[model]][,reg])
+climVarSettings$T$Col  <- c("#FFEBEE","#FFCDD2","#EF9A9A") #reds
+model_onoff <- TRUE
+if (model_onoff){
+  modelTS <- vector(mode='list')
+  for (model in c('trace','hadcm')){
+    modelTS[[model]] <- read.csv(file.path(githubDir,'Data','Model','PseudoProxy_FullReg',
+                                           paste('T_annual_',model,'.csv',sep='')))
+    for (reg in regNames){
+      modelTS[[model]][,reg] <- (modelTS[[model]][,reg]-mean(modelTS[[model]][,reg]))/sd(modelTS[[model]][,reg])
+    }
   }
 }
 
@@ -253,13 +271,15 @@ for (reg in regNames){
                                              color.low=climVarSettings[[climVar]]$Col[1],
                                              color.high=climVarSettings[[climVar]]$Col[2],
                                              color.line=climVarSettings[[climVar]]$Col[3]) 
+  if (model_onoff){
   compBands$vals <- compBands$vals + 
       geom_line(aes(x=seq(0,12000,200),
                     y=modelTS[['trace']][,reg]),color = 'fire brick',
-                    size=0.3,alpha=0.5) +
+                    size=0.4,alpha=0.5) +
       geom_line(aes(x=seq(0,12000,200),
                     y=modelTS[['hadcm']][,reg]),color = 'goldenrod',
-                    size=0.3,alpha=0.5) 
+                    size=0.4,alpha=0.5) 
+  }
   compBandPlt <- ggdraw() 
   for (plt in names(compBands)){
     compBands[[plt]] <- compBands[[plt]] + 
@@ -277,8 +297,8 @@ for (reg in regNames){
       compBands[[plt]] <- compBands[[plt]] + 
         geom_hline(yintercept=0,size=0.15) +
         theme(panel.background=element_rect(colour='Black',fill='White',size=0.8),
-              axis.ticks=element_line(color = 'black',size=0.15),
-              axis.ticks.length=unit(-2,"pt"))
+              axis.ticks=element_line(color = 'black',size=0.2),
+              axis.ticks.length=unit(-4,"pt"))
     }
     compBandPlt <- compBandPlt + draw_plot(compBands[[plt]], x = 0, y = 0, width = 1, height = 1)
   } 
@@ -290,7 +310,7 @@ for (reg in regNames){
 compBandPlt <- globalPlotOfRegions('compBandPlt',save=FALSE)
 compBandPlt
 
-ggsave(plot=compBandPlt, width = 6, height = 6*0.5072, dpi = 600,
+ggsave(plot=compBandPlt, width = 19, height = 9, dpi = 600,
            filename = paste(file.path(githubDir,'Figures','global'),climVar,'_compBandPlt.png',sep=''))
 ```
 
@@ -310,22 +330,22 @@ compBandPltLegend <- ggplot() +
                     size=0.6,alpha=0.5) +
       scale_x_reverse(name = "Age (yr BP)", 
                       limits=c(12000,0), expand=c(0,0), n.breaks=7,sec.axis = dup_axis(name=''))+
-      scale_y_continuous(name=paste('Dry <-Std Anomaly-> Wet'),
+      scale_y_continuous(name=paste('Standardized Anomaly'),
                       limits=c(plotlimit_set*-1000,plotlimit_set*1000),
-                      breaks = seq(-4,4,2))+
+                      breaks = seq(-4,4,2),sec.axis = dup_axis(name='Wet <-     -> Dry'))+
       coord_cartesian(xlim=c(12000,0), 
                       ylim=c(plotlimit_set*-1,plotlimit_set)) +
       scale_color_manual(values=c(climVarSettings[[climVar]]$Col[2],'grey50','fire brick','goldenrod'),
-                         labels=c('Proxy (>50%)','Proxy (<50%)','TraCE','HadCM3')) +
+                         labels=c('Proxy (>50%)','Proxy (<50%)','TraCE (Ann P)','HadCM3 (Ann P)')) +
       theme_bw() + 
-      theme(text = element_text(family='sans',size=20),
+      theme(text = element_text(family='sans',size=18),
         plot.background = element_rect(fill = 'white',color='Black'),
         plot.margin = unit(c(0.2, 0.2, 0.2, 0.2), "in"),
         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         legend.title = element_blank(),
-        legend.key.height = unit(0.7, "in"),
+        legend.key.height = unit(0.6, "in"),
         legend.key.width = unit(0.4, "in"))
-ggsave(plot=compBandPltLegend, width = 8, height = 5, dpi = 600,
+ggsave(plot=compBandPltLegend, width = 9, height = 4, dpi = 600,
            filename = paste(file.path(githubDir,'Figures','global'),climVar,'_compBandPltLegend.png',sep=''))
 #plotData[['EAS']]$compBandPlt + theme(legend.position=c(0,0)) 
 ```
@@ -333,7 +353,7 @@ ggsave(plot=compBandPltLegend, width = 8, height = 5, dpi = 600,
 ```{r}
 
 
-for (reg in c('EAS')){
+for (reg in regNames)){
   print(reg)
   compBandPltModel <- plotData[[reg]]$compBandPlt
   for (model in c('trace')){
@@ -368,6 +388,95 @@ ggsave(plot=compBandPltModel, width = 6, height = 6*0.5072, dpi = 600,
       filename = paste(file.path(githubDir,'Figures','global'),climVar,'_compBandPltModel',sep=''))
              
 ```
+
+
+
+
+```{r}
+
+pc <- 2
+dataTable <- fortify(refrenceSubset)
+dataTable$Count     <- NA
+for (reg in list(levels(refrenceSubset@data[["Acronym"]]))[[1]]){
+  i = which(refregions@data[["Acronym"]]==reg)
+  loading <- apply(pca[["loadings"]][,pc,],1,median,na.rm=TRUE)[which(regNames==reg)]
+  dataTable$Count[which(dataTable$id==as.character(i-1))] <- loading
+}
+  
+pcMapplot <- basemap + 
+  #Add refrence regions boundaries
+  geom_map(data=refrenceSubset, map=dataTable, alpha=0.75, size=0.5, color='black' , 
+           aes(x=long, y=lat, group=group, map_id=id,fill=dataTable$Count)) +
+  scale_fill_binned(type = "viridis",name =paste('Loading (PC',pc,')',sep='')) + 
+  theme(text = element_text(family='sans',size=12),
+        plot.background = element_rect(fill = 'white',color='White'),
+        plot.margin = unit(c(0.25, 0.25, 0.2, 0.2), "in"),
+        legend.position = c(0.5,0.12),
+        legend.direction='horizontal',
+        legend.box.background=element_rect(fill = 'white',color='Black'),
+        legend.box.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"),
+        legend.key.width=unit(30, 'points'),
+        legend.key.height=unit(8, 'points'))
+
+pcTSplot <- ggplot() + 
+  geom_line(aes(x=pca[["age"]]/1000,y=apply(pca[["PCs"]][,pc,],1,median,na.rm=TRUE)),
+            color='Black',size=1)+
+  labs(x='Age (yr BP)',y='Wet <    > Dry',subtitle=paste('PC',pc,sep='')) +
+  theme_bw() +
+  scale_x_reverse(name = "Age (ka BP)", 
+                  limits=c(12,0), expand=c(0,0), n.breaks=7) +
+  theme(text = element_text(family='sans',size=18),
+        plot.background = element_rect(fill = 'white',color='White'),
+        plot.margin = unit(c(0.25, 0.25, 0.2, 0.2), "in")) 
+  
+ggsave(plot=pcTSplot, width = 6, height = 3, dpi = 600,
+      filename = paste(file.path(githubDir,'Figures','global_PC'),pc,'_TS.png',sep=''))
+ggsave(plot=pcMapplot, width = 6, height = 3.5, dpi = 600,
+      filename = paste(file.path(githubDir,'Figures','global_PC'),pc,'_Map.png',sep=''))
+
+#which(regNames=reg)
+
+
+#Load PCA data
+#pca <- readRDS(file.path(githubDir,'Data','RegionComposites','PCA','pcaHC12k.rds'))
+ # plotPcaEns(pca)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```
 reg <- 'EAS'

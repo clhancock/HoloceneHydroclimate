@@ -24,7 +24,7 @@ import cartopy.feature as cfeature
 dataDir  = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/'
 #
 save=False
-data_HC =  pd.read_csv(dataDir+'HoloceneHydroclimate/Data/proxyMetaData_HC.csv')
+data_HC =  pd.read_csv(dataDir+'HoloceneHydroclimate/Data/proxyMetaData_T.csv')
 #data_T =  pd.read_csv(gitHubDir+'DataFiles/proxyT.csv')
 
 
@@ -32,7 +32,7 @@ data_HC =  pd.read_csv(dataDir+'HoloceneHydroclimate/Data/proxyMetaData_HC.csv')
 #Load Model Data
 #
 #Set time variables and resolution of data
-ageMin=0; ageMax=12000; ageRes=100
+ageMin=0; ageMax=12000; ageRes=200
 timebin = [*range(ageMin,ageMax+1,ageRes)]
 
 #Model variable names and conversion to common time/variable units (generally mm/day)
@@ -49,7 +49,7 @@ modelKey = {'trace':{'lat':'lat','lon':'lon',
 dataModel = {}
 for model in modelKey.keys():
     dataModel[model] = {}
-    for variable in ['Precip','Evap']: #',Temp'
+    for variable in ['Precip','Evap','Temp']: #',Temp'
         dataModel[model][variable] = {}
         for season in ['ANN','DJF','JJA']:
              print(model+variable+season)
@@ -117,6 +117,7 @@ def calculatePseudoProxy(proxyDF=data_HC,
         PseudoProxy = {'medianTS':pd.DataFrame()}
         modelLandTS = {'medianTS':pd.DataFrame()}
         for region in np.unique(proxyDF['ipccReg']):
+            print(region)
             regData = proxyDF.loc[proxyDF['ipccReg']==region]
             regDF   = pd.DataFrame()
             for i in list(regData.index):
@@ -126,6 +127,7 @@ def calculatePseudoProxy(proxyDF=data_HC,
                 elif variable == 'HC': 
                     if regData['variable'][i] == 'P':          var = 'Precip'
                     else:                                      var = 'EffM'
+                else: var = 'Temp'
                 #seasonality
                 sea = ''
                 if   season == 'annual':                       sea = 'ANN'
@@ -143,7 +145,7 @@ def calculatePseudoProxy(proxyDF=data_HC,
                 lon=np.argmin(np.abs(dataModel[model]['lon']-regData['longitude'][i]))
                 #site timeseries
                 modelvalues = dataModel[model][var][sea][lat,lon,:]
-                if standardize: modelvalues = stats.zscore(modelvalues)
+                #if standardize: modelvalues = stats.zscore(modelvalues)
                 #mask = [idx for idx, val in enumerate(dataModel[model]['time']) if (val < ror val > site['ageMax'])]
                 regDF[regData['tsid'][i]] = modelvalues
             PseudoProxy[region] = regDF
@@ -151,11 +153,12 @@ def calculatePseudoProxy(proxyDF=data_HC,
             #Full region model estimate
             refReg = regionmask.defined_regions.ar6.all
             refReg = refReg.mask_3D(dataModel[model]['lon'],dataModel[model]['lat'])
-            refReg = refReg.isel(region=(refReg.abbrevs == "EAN"))
-            refReg = np.array( refReg.values*lm[model],dtype='bool')
-            values = dataModel[model]['Precip']['ANN'][refReg[0,:,:]]
+            refReg = refReg.isel(region=(refReg.abbrevs == region))
+            refReg = np.array( refReg.values,dtype='bool')#*lm[model]*1
+            values = dataModel[model][var][sea][refReg[0,:,:]]
             weight = np.cos(np.deg2rad(dataModel[model]['lat']))  
             weight = np.concatenate(refReg*weight[:, np.newaxis])
+            if sum(sum(weight)) == 0: continue
             weight = [i for i in list(np.concatenate(weight))if i != 0]
             wavg   = list(np.average(values,axis=0,weights=weight))
             modelLandTS['medianTS'][region] = wavg
@@ -165,7 +168,7 @@ def calculatePseudoProxy(proxyDF=data_HC,
 
 
 pseudoProxy = dict()
-for v in ['P']:#,'P-E','HC']:
+for v in ['T']:#,'P-E','HC']:
     for s in ['annual']:#,'summer','proxy']:
         name = str(v+'_'+s)
         print(name)
