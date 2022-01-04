@@ -88,7 +88,6 @@ for (regNo in as.numeric(refregions@data[["Acronym"]])){
                                    time.var = "age",
                                    color.var =  "CategorySpecific",
                                    invert.var = 'climateInterpretation1_interpDirection',
-                                   scale.factor= 0.1,
                                    color.ramp = stackColors) + 
     scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),
                     n.breaks=7,sec.axis = sec_axis(~.,labels=NULL)) 

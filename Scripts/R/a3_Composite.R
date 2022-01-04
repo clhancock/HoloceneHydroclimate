@@ -1,24 +1,19 @@
 #---
-#goal: create regional composits based on ipcc regions. works with either temp or hc
-#input: LiPD files, csv file from python script to filter TSids with
-#output: individual csv for each region where columns repersent iterations. Also summary with each column as the regional median timeseries
+#goal: create regional composits based on ipcc regions using either temp or hc
+#in:   LiPD files
+#out:  individual csv for each region where columns repersent iterations. 
+#      summary table with each column as the regional median timeseries
 #---
-#Changed minN from 8 to 3 in standardize function to accomodate lake deposits
-#   this is the number of measurments neaded to be located withing the search range
+library(compositeR)
+library(doParallel)
+library(dplyr)
+library(foreach)
 library(geoChronR)
 library(lipdR)
-#library(scales)
-#library(cowplot)
-library(purrr)
-library(dplyr)
 library(magrittr)
-#library(ggplot2)
-library(compositeR)
-library(foreach)
-library(doParallel)
+library(purrr)
 library(tidyverse)
-#library(abind)
-#library(ncdf4)
+
 
 #Set up directories and names
 githubDir <- getwd()
@@ -27,78 +22,95 @@ climVar <- 'HC'
 
 ###Load Data
 lipdData <- readRDS(file.path(githubDir,'Data','LiPD','lipdData.rds'))
-lipdTSO <- lipdData[[climVar]]
-regionNames <- sort(unique(as.character(pullTsVariable(lipdTSO,'geo_ipccRegion'))))
-climVar <- 'HC'
+lipdTSO  <- lipdData[[climVar]]
+regNames <- sort(unique(as.character(pullTsVariable(lipdTSO,'geo_ipccRegion'))))
+climVar  <- 'HC'
 
-save=FALSE
-#set.seed(#) Set same sets of records which will make completely reproducable
+save=TRUE
+set.seed(5) #make reproducible
 #
 #Set variables for composite code
-nens          <- 5000  #make low to run quickly, set high to get large ensemble range (variation from standardization search range and order )
-binsize       <- 100 #years
-ageMin        <- -100 #age BP
+nens          <- 1000    #lower = faster
+binsize       <- 100   #years (median resolution = 107yrs)
+ageMin        <- -100  #age BP
 ageMax        <- 12400 #age BP
-searchDuration<- 3500 #yrs
-minNrecords   <- 6 #num of records
-samplePct <- 0.75
-#
+searchDur     <- 3500  #yrs (for 3 lake deposit data points)
+nThresh       <- 6     #minimum # of records, else skip #arbitrary
+samplePct     <- 0.75  #arbitrary
+
+
+
+
+#Set bin vectors
 binvec   <- seq(ageMin-binsize/2, to = ageMax+binsize/2, by = binsize)
 binYears <- rowMeans(cbind(binvec[-1],binvec[-length(binvec)]))
 
-#Set up data to add once
+#Set up data to add once regional composite is calculated
 compositeEns      <- vector(mode="list")
 medianCompositeTS <- data_frame(time=binYears)
-#Do the compositing (by region)
-for (region in regionNames) {
+#Loop to composite (by region)
+for (reg in regNames) {
   #Filter the TS by cluster name and make sure have enough values
-  lipdRegion <- filterTs(lipdTSO,paste('geo_ipccRegion ==',region))
+  lipdReg <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
+  regCount   <- length(lipdReg)
   #Skip if number of records is too few
-  if(length(lipdRegion)<minNrecords|sum(pullTsVariable(lipdRegion,'archiveType')!="LakeDeposits")<=2)next
+  if(regCount < nThresh) next
   #
-  timeAvail <- plotTimeAvailabilityTs(lipdRegion,age.range=c(0,12000),
-                                      group.var ='Category',step=binsize)$dat %>%
+  #Calculate data density throughout the Holocene 
+  timeN <- plotTimeAvailabilityTs(lipdReg,
+                                  age.range=c(0,12000),
+                                  group.var ='Category',
+                                  step=binsize)$dat %>%
     group_by(yvec) %>% 
-    summarise(count=sum(value),countPct=sum(value)/length(lipdRegion))
-  idx <- which(timeAvail$countPct<=0.5)
-  idx_MH <- which(timeAvail$yvec==6000)
-  if (length(idx > 0)){
-    idx <- c(max(which(timeAvail$countPct[1:idx_MH]<=0.5),
-                 which(timeAvail$yvec==0)),
-             min(which(timeAvail$countPct[idx_MH:length(timeAvail$countPct)]<=0.5)+idx_MH,
-                 which(timeAvail$yvec==10000)))
-  } else{idx <- c(which(timeAvail$yvec==0),which(timeAvail$yvec==10000))}
-  searchAgeMin  <- timeAvail$yvec[idx[1]] #age BP
-  searchAgeMax  <- timeAvail$yvec[idx[2]] #age BP
-  #setup and run ensemble ########## This is the main part of the code to edit ##########
+    summarise(count=sum(value),countPct=sum(value)/regCount)
+  #Determine search range based on 0-10ka with >50% proxy coverage
+  MH <- which(timeN$yvec==6000)
+  if (length(which(timeN$countPct<=0.5) > 0)){
+    idx <- c(max(which(timeN$countPct[1:MH]<=0.5),
+                 which(timeN$yvec==0)),
+             min(which(timeN$countPct[MH:length(timeN$countPct)]<=0.5)+MH,
+                 which(timeN$yvec==10000)))
+  } else{
+    idx <- c(which(timeN$yvec==0),which(timeN$yvec==10000))
+  }
+  searchMin  <- timeN$yvec[idx[1]] #age BP
+  searchMax  <- timeN$yvec[idx[2]] #age BP
+  #
+  #setup and run ensemble ##### This is the main part of the code to edit ##### 
   compEns <- matrix(NA,nrow = length(binYears),ncol=nens)
   for (i in 1:nens){
-    weights <- pullTsVariable(lipdRegion,'ageRange') / pullTsVariable(lipdRegion,'ageResPlus')
-    weights[which(is.na(weights))] <- mean(weights,na.rm=TRUE)
-    lipdRegionSample <- sample(x    = pullTsVariable(lipdRegion,'paleoData_TSid'),
-                               size = length(lipdRegion)*samplePct,
-                               prob = weights / sum(weights))
-    lipdRegionSample <- lipdRegion[which(pullTsVariable(lipdRegion,'paleoData_TSid') %in% lipdRegionSample)]
-    tc <- compositeR::compositeEnsembles(lipdRegionSample,
-                                         binvec,
-                                         stanFun = standardizeMeanIteratively,
-                                         minN = 3,
-                                         ageVar  = "age",
+    #Sample from full region
+    wght <- pullTsVariable(lipdReg,'ageRange')/pullTsVariable(lipdReg,'ageResPlus')
+    wght[which(is.na(wght))] <- mean(wght,na.rm=TRUE)
+    lipdRegSample <- sample(x    = pullTsVariable(lipdReg,'paleoData_TSid'),
+                            size = length(lipdReg) * samplePct,
+                            prob = wght / sum(wght))
+    sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% lipdRegSample)
+    lipdRegSample <- lipdReg[sample]
+    #Composite
+    tc <- compositeR::compositeEnsembles(fTS      = lipdRegSample,
+                                         ageVar   = "age",
+                                         scope    = "climate",
+                                         spread   = TRUE,
+                                         binvec   = binvec,
+                                         binFun   = simpleBinTs,
+                                         stanFun  = standardizeMeanIteratively,
+                                         duration = searchDur,
+                                         minN     = 3,
+                                         searchRange = c(searchMin,searchMax),
                                          alignInterpDirection = TRUE,
-                                         spread      = TRUE,
-                                         duration    = searchDuration,
-                                         searchRange = c(searchAgeMin,searchAgeMax),
-                                         normalizeVariance = TRUE,
-                                         scope = "climate",
-                                         binFun = simpleBinTs) #sampleEnsembleThenBinTs
+                                         normalizeVariance    = TRUE) 
     compEns[,i] <- tc$composite
   }
   #
   # Return reconstruction and additional data for plotting
-  compositeEns[[region]]      <- compEns
-  medianCompositeTS[[region]] <- apply(compEns,1,median,na.rm=TRUE)
+  compositeEns[[reg]]      <- compEns
+  medianCompositeTS[[reg]] <- apply(compEns,1,median,na.rm=TRUE)
 }
 
+
+
+#Save
 if(save){
   write.csv(medianCompositeTS, row.names = FALSE,
             file = file.path(githubDir,'Data','RegionComposites',climVar,'MedianTSbyRegion.csv'))
@@ -111,4 +123,83 @@ if(save){
 
 
 
+####
 
+
+
+reg <- 'GIC'
+#Filter the TS by cluster name and make sure have enough values
+lipdReg <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
+regCount   <- length(lipdReg)
+#Skip if number of records is too few
+#if(regCount < nThresh) next
+#
+#Calculate data density throughout the Holocene 
+timeN <- plotTimeAvailabilityTs(lipdReg,
+                                age.range=c(0,12000),
+                                group.var ='Category',
+                                step=binsize)$dat %>%
+  group_by(yvec) %>% 
+  summarise(count=sum(value),countPct=sum(value)/regCount)
+#Determine search range based on 0-10ka with >50% proxy coverage
+MH <- which(timeN$yvec==6000)
+if (length(which(timeN$countPct<=0.5) > 0)){
+  idx <- c(max(which(timeN$countPct[1:MH]<=0.5),
+               which(timeN$yvec==0)),
+           min(which(timeN$countPct[MH:length(timeN$countPct)]<=0.5)+MH,
+               which(timeN$yvec==10000)))
+} else{
+  idx <- c(which(timeN$yvec==0),which(timeN$yvec==10000))
+}
+searchMin  <- timeN$yvec[idx[1]] #age BP
+searchMax  <- timeN$yvec[idx[2]] #age BP
+
+compositeEns      <- vector(mode="list")
+medianCompositeTS <- data_frame(time=binYears)
+nens <- 100
+for (n in c(3:10,regCount)){
+  #
+  #setup and run ensemble ##### This is the main part of the code to edit ##### 
+  compEns <- matrix(NA,nrow = length(binYears),ncol=nens)
+  #Sample from full region
+  #wght <- pullTsVariable(lipdReg,'ageRange')/pullTsVariable(lipdReg,'ageResPlus')
+  #wght[which(is.na(wght))] <- mean(wght,na.rm=TRUE)
+  lipdRegSample <- sample(x    = pullTsVariable(lipdReg,'paleoData_TSid'),
+                          size = n)
+                   #       prob = wght / sum(wght))
+  sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% lipdRegSample)
+  lipdRegSample <- lipdReg[sample]
+  for (i in 1:nens){
+    #Composite
+    tc <- compositeR::compositeEnsembles(fTS      = lipdRegSample,
+                                         ageVar   = "age",
+                                         scope    = "climate",
+                                         spread   = TRUE,
+                                         binvec   = binvec,
+                                         binFun   = simpleBinTs,
+                                         stanFun  = standardizeMeanIteratively,
+                                         duration = searchDur,
+                                         minN     = 3,
+                                         searchRange = c(searchMin,searchMax),
+                                         alignInterpDirection = TRUE,
+                                         normalizeVariance    = TRUE) 
+    compEns[,i] <- tc$composite
+  }
+  compositeEns[[n]] <- compEns
+}
+  #
+
+for (n in c(3:10)){ 
+  corout <- corEns(time.1   = binYears,
+                   values.1 = compositeEns[[n]],
+                   time.2   = binYears,
+                   values.2 = compositeEns[[length(lipdReg)]],
+                   bin.step = 100,
+                   max.ens  = 100,
+                   isopersistent  = TRUE,
+                   isospectral    = TRUE,
+                   gaussianize    = TRUE)
+  print(n)
+  print(mean(corout[["cor.stats"]][["r"]]))
+}
+  
