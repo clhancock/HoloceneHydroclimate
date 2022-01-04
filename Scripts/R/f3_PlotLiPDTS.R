@@ -15,25 +15,8 @@ library(rworldmap)
 library(scales)
 library(sp)
 library(tidyverse)
-
-#Catergory settings from f1 rmd file
-plotVals <- vector(mode='list')
-plotVals$general  <- vector(mode='list')
-plotVals$specific <- vector(mode='list')
-
-plotVals$general$names  <- sort(unique(proxyMetaData$Category))
-plotVals$general$colors <- c("powder blue","corn flower blue",
-                             "dark blue","dark orchid","grey",
-                             "forest green","firebrick")
-plotVals$general$shapes <- c(12,21,15,5,13,14,11)
-
-plotVals$specific$names <- sort(unique(proxyMetaData$CategorySpec))
-plotVals$specific$colors<- c("powder blue","corn flower blue",
-                             "dark blue","dark orchid","grey40","grey",
-                             "forest green","yellowgreen","lightcoral","firebrick","darkorange")
-plotVals$specific$shapes<- c(12,21,15,5,6,13,14,1,23,11,17)
-
 githubDir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #getwd()
+githubDir <- getwd()
 #Settings 
 plotSettings <- plotVals$specific
 climVar <- 'HC'
@@ -53,10 +36,31 @@ proxyMetaData <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
                         climInterp    = pullTsVariable(lipdTSO,'climateInterpretation1_variable'),
                         source        = pullTsVariable(lipdTSO,'Source'))
 
-#write.csv(proxyMetaData,file=file.path(githubDir,'Data',paste('proxyMetaData_','T','.csv',sep='')))
+#Catergory settings from f1 rmd file
+plotVals <- vector(mode='list')
+plotVals$general  <- vector(mode='list')
+plotVals$specific <- vector(mode='list')
+
+plotVals$general$names  <- sort(unique(proxyMetaData$Category))
+plotVals$general$colors <- c("powder blue","corn flower blue",
+                             "dark blue","dark orchid","grey",
+                             "forest green","firebrick")
+plotVals$general$shapes <- c(12,21,15,5,13,14,11)
+
+plotVals$specific$names <- sort(unique(proxyMetaData$CategorySpec))
+plotVals$specific$colors<- c("powder blue","corn flower blue",
+                             "dark blue","dark orchid","grey40","grey",
+                             "forest green","yellowgreen","lightcoral","firebrick","darkorange")
+plotVals$specific$shapes<- c(12,21,15,5,6,13,14,1,23,11,17)
+
+plotSettings <- plotVals$specific
+
+PROJ       <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+PROJorig   <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 refregions <- readShapePoly(file.path(githubDir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
                             proj4string=CRS(PROJorig))
 refregions <-  spTransform(refregions, CRSobj = PROJ)
+
 countries  <- getMap("less islands")
 countries  <- spTransform(countries,  CRSobj = PROJ)
 
@@ -77,7 +81,8 @@ for (regNo in as.numeric(refregions@data[["Acronym"]])){
   stackColors <- c()
   #Get colors for categories within region
   for (category in unique(stack.df$CategorySpecific)){
-    stackColors <- c(stackColors,plotSettings$colors[which(plotSettings$names == category)])
+    stackColors <- c(stackColors,
+                     plotSettings$colors[which(plotSettings$names == category)])
   }
   stackPlot <- plotTimeseriesStack(stack.df,
                                    time.var = "age",
@@ -112,16 +117,16 @@ for (regNo in as.numeric(refregions@data[["Acronym"]])){
     scale_fill_manual(values=plotSettings$colors[idx],name= 'Proxy Category') +
     scale_starshape_manual(values=plotSettings$shapes[idx],name= 'Proxy Category') +
     theme_void() + 
-    theme(legend.position = 'none',
-          plot.background = element_rect(fill = 'white',color='Black')) 
-  regMap
+    theme(legend.position = 'none') 
   ggsave(file.path(githubDir,'Figures','Dashboard','_Summary',
                    paste(count,'_',reg,'__regMap.png',sep='')),
          plot=regMap,device='png',width=5,height=5,units='in')
   ggsave(file.path(githubDir,'Figures','Dashboard','_Summary',
                    paste(count,'_',reg,'__stackPlot.png',sep='')),
          plot=stackPlot,device='png',width=8.5,height=11,units='in')
-  
+  #
+  #
+  #
   for (i in 1:length(unique(proxyDFprj$paleoData_TSid))){
     df <- proxyDFprj %>% filter(paleoData_TSid==unique(proxyDFprj$paleoData_TSid)[i])
     ts <- lipdTSO[[which(pullTsVariable(lipdTSO,'paleoData_TSid')==unique(proxyDFprj$paleoData_TSid)[i])]]
@@ -167,13 +172,13 @@ for (regNo in as.numeric(refregions@data[["Acronym"]])){
     txt <- txt + scale_x_continuous(limits=c(0,0.6)) + theme_void() 
     bkg <- ggplot()+
       theme_void() +
-      theme(plot.background = element_rect(fill = 'white',color='Black'))
+      theme(plot.background = element_rect(fill = NA,color='Black'))
     summary <- ggdraw() + 
-      draw_plot(bkg, x = 0, y = 0, width = 1, height = 1) +
       draw_plot(plt, x = 0, y = 0.5, width = 1, height = 0.5) +
       draw_plot(map, x = 0, y = 0, width = 0.5, height = 0.5) +
-      draw_plot(txt, x = 0.5, y = 0, width = 0.5, height = 0.5)
-    ggsave(file.path(localDir,'Figures','Dashboard',
+      draw_plot(txt, x = 0.5, y = 0, width = 0.5, height = 0.5) +
+      draw_plot(bkg, x = 0, y = 0, width = 1, height = 1) 
+    ggsave(file.path(githubDir,'Figures','Dashboard',
                      paste(count,'_',
                            unique(df[,'geo_ipccRegion']),'_',
                            unique(df[,'geo_latitude']),'_',
