@@ -235,7 +235,7 @@ if (model_onoff){
   modelTS <- vector(mode='list')
   for (model in c('trace','hadcm')){
     modelTS[[model]] <- read.csv(file.path(githubDir,'Data','Model','PseudoProxy_FullReg',
-                                           paste('T_annual_',model,'.csv',sep='')))
+                                           paste('P_annual_',model,'.csv',sep='')))
     for (reg in regNames){
       modelTS[[model]][,reg] <- (modelTS[[model]][,reg]-mean(modelTS[[model]][,reg]))/sd(modelTS[[model]][,reg])
     }
@@ -421,7 +421,7 @@ pcMapplot <- basemap +
 pcTSplot <- ggplot() + 
   geom_line(aes(x=pca[["age"]]/1000,y=apply(pca[["PCs"]][,pc,],1,median,na.rm=TRUE)),
             color='Black',size=1)+
-  labs(x='Age (yr BP)',y='Wet <    > Dry',subtitle=paste('PC',pc,sep='')) +
+  labs(x='Age (yr BP)',y='Dry <    > Wet',subtitle=paste('PC',pc,sep='')) +
   theme_bw() +
   scale_x_reverse(name = "Age (ka BP)", 
                   limits=c(12,0), expand=c(0,0), n.breaks=7) +
@@ -438,8 +438,8 @@ ggsave(plot=pcMapplot, width = 6, height = 3.5, dpi = 600,
 
 
 #Load PCA data
-#pca <- readRDS(file.path(githubDir,'Data','RegionComposites','PCA','pcaHC12k.rds'))
- # plotPcaEns(pca)
+pca <- readRDS(file.path(githubDir,'Data','RegionComposites','PCA','pcaHC12k.rds'))
+  #plotPcaEns(pca)
 
 
 
