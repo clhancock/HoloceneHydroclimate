@@ -168,7 +168,7 @@ def calculatePseudoProxy(proxyDF=data_HC,
 
 
 pseudoProxy = dict()
-for v in ['T']:#,'P-E','HC']:
+for v in ['P-E']:#,'P-E','HC']:
     for s in ['annual']:#,'summer','proxy']:
         name = str(v+'_'+s)
         print(name)
