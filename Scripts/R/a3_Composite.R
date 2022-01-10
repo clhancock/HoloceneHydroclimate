@@ -30,7 +30,7 @@ save=TRUE
 set.seed(5) #make reproducible
 #
 #Set variables for composite code
-nens          <- 1000    #lower = faster
+nens          <- 500    #lower = faster
 binsize       <- 100   #years (median resolution = 107yrs)
 ageMin        <- -100  #age BP
 ageMax        <- 12400 #age BP
@@ -82,9 +82,10 @@ for (reg in regNames) {
     #Sample from full region
     wght <- pullTsVariable(lipdReg,'ageRange')/pullTsVariable(lipdReg,'ageResPlus')
     wght[which(is.na(wght))] <- mean(wght,na.rm=TRUE)
-    lipdRegSample <- sample(x    = pullTsVariable(lipdReg,'paleoData_TSid'),
-                            size = length(lipdReg) * samplePct,
-                            prob = wght / sum(wght))
+    lipdRegSample  <- pullTsVariable(lipdReg,'paleoData_TSid')
+   # lipdRegSample <- sample(x    = pullTsVariable(lipdReg,'paleoData_TSid'),
+     #                       size = length(lipdReg) * samplePct,
+     #                       prob = wght / sum(wght))
     sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% lipdRegSample)
     lipdRegSample <- lipdReg[sample]
     #Composite
