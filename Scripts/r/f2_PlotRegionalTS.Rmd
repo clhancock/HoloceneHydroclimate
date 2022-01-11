@@ -158,6 +158,31 @@ globalPlotOfRegions <- function(plotName,data=plotData,basemapPlot=basemap,regio
 ```
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```{r}
 #Create vector for adding plots for each region
 #Load proxy and model data for each region
@@ -181,48 +206,6 @@ for (reg in regNames){
   #                                          values=modelReconstruction[[model]][[region]])
   #}
 }
-```
-
-
-
-```{r}
-for (reg in regNames){
-  stripePlotData <- bin(plotData[[reg]]$proxy$time, plotData[[reg]]$proxy$values, 
-                        bin.vec=seq(ageMin,ageMax,1000), bin.fun = mean)
-  plotData[[reg]]$StripePlot <- ggplot(stripePlotData,aes(x,rep(1, 12,color=y),fill= y)) +
-    scale_x_reverse(name="Age (yr BP)", limits=c(ageMax,ageMin), expand=c(0,0)) +
-    scale_y_continuous(limits=c(0,1), expand=c(0,0)) +
-    geom_col(width=1000,show.legend = FALSE) +
-    scale_fill_distiller(palette=  climVarSettings[[climVar]]$Pal, 
-                         na.value= climVarSettings[[climVar]]$NAv, 
-                         limits=   climVarSettings[[climVar]]$Lim, 
-                         breaks=   climVarSettings[[climVar]]$Seq,
-                         direction=climVarSettings[[climVar]]$Dir, 
-                         oob=squish, guide=guide_coloursteps(show.limits=FALSE)) +
-    theme_void() + 
-    theme(panel.border=element_rect(color='black',fill=NA,size=1),
-          legend.position = "none")
-}
-leg <- climVarSettings[[climVar]]
-StripePlot <- globalPlotOfRegions('StripePlot',save=FALSE)
-legendPlt <- ggplot(data=data.frame(x=leg$Seq),aes(x=x,y=x,fill=x)) + 
-  geom_point(alpha=0) +
-  scale_fill_distiller(palette=leg$Pal,na.value=leg$NAv,limits=leg$Lim,breaks=leg$Seq,direction=leg$Dir,oob=squish, 
-                       guide=guide_coloursteps(show.limits=FALSE,frame.colour = "black",frame.linewidth=1,
-                                               ticks=TRUE,ticks.colour = "black",ticks.linewidth=1)) +
-  geom_text(aes(x=0,y=1.6,label=c(leg$Lab)),color='black',size=1.5,family="sans", fontface="bold") + 
-  theme_void() + 
-   theme(plot.background=element_rect(color='black',fill='white',size=1),
-         legend.position=c(0.5,0.4), aspect.ratio = 0.12, legend.direction='horizontal',
-         legend.key.width  =(unit(40, 'points')), legend.key.height = (unit(10, 'points')),
-         legend.text =element_text(size=4,family="sans"), legend.spacing.y = unit(2, "points"),
-         legend.title=element_blank()) 
-    #       
-    #       
-StripePlot <- StripePlot + draw_plot(legendPlt, x = 0.1, y = 0.1, width=0.8,height=0.12)
-ggsave(plot=StripePlot, width = 6, height = 6*0.5072, dpi = 600,
-           filename = paste(file.path(githubDir,'Figures','global'),climVar,'_StripePlot.png',sep=''))
-
 ```
 
 
@@ -349,6 +332,91 @@ ggsave(plot=compBandPltLegend, width = 9, height = 4, dpi = 600,
            filename = paste(file.path(githubDir,'Figures','global'),climVar,'_compBandPltLegend.png',sep=''))
 #plotData[['EAS']]$compBandPlt + theme(legend.position=c(0,0)) 
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+for (reg in regNames){
+  stripePlotData <- bin(plotData[[reg]]$proxy$time, plotData[[reg]]$proxy$values, 
+                        bin.vec=seq(ageMin,ageMax,1000), bin.fun = mean)
+  plotData[[reg]]$StripePlot <- ggplot(stripePlotData,aes(x,rep(1, 12,color=y),fill= y)) +
+    scale_x_reverse(name="Age (yr BP)", limits=c(ageMax,ageMin), expand=c(0,0)) +
+    scale_y_continuous(limits=c(0,1), expand=c(0,0)) +
+    geom_col(width=1000,show.legend = FALSE) +
+    scale_fill_distiller(palette=  climVarSettings[[climVar]]$Pal, 
+                         na.value= climVarSettings[[climVar]]$NAv, 
+                         limits=   climVarSettings[[climVar]]$Lim, 
+                         breaks=   climVarSettings[[climVar]]$Seq,
+                         direction=climVarSettings[[climVar]]$Dir, 
+                         oob=squish, guide=guide_coloursteps(show.limits=FALSE)) +
+    theme_void() + 
+    theme(panel.border=element_rect(color='black',fill=NA,size=1),
+          legend.position = "none")
+}
+leg <- climVarSettings[[climVar]]
+StripePlot <- globalPlotOfRegions('StripePlot',save=FALSE)
+legendPlt <- ggplot(data=data.frame(x=leg$Seq),aes(x=x,y=x,fill=x)) + 
+  geom_point(alpha=0) +
+  scale_fill_distiller(palette=leg$Pal,na.value=leg$NAv,limits=leg$Lim,breaks=leg$Seq,direction=leg$Dir,oob=squish, 
+                       guide=guide_coloursteps(show.limits=FALSE,frame.colour = "black",frame.linewidth=1,
+                                               ticks=TRUE,ticks.colour = "black",ticks.linewidth=1)) +
+  geom_text(aes(x=0,y=1.6,label=c(leg$Lab)),color='black',size=1.5,family="sans", fontface="bold") + 
+  theme_void() + 
+   theme(plot.background=element_rect(color='black',fill='white',size=1),
+         legend.position=c(0.5,0.4), aspect.ratio = 0.12, legend.direction='horizontal',
+         legend.key.width  =(unit(40, 'points')), legend.key.height = (unit(10, 'points')),
+         legend.text =element_text(size=4,family="sans"), legend.spacing.y = unit(2, "points"),
+         legend.title=element_blank()) 
+    #       
+    #       
+StripePlot <- StripePlot + draw_plot(legendPlt, x = 0.1, y = 0.1, width=0.8,height=0.12)
+ggsave(plot=StripePlot, width = 6, height = 6*0.5072, dpi = 600,
+           filename = paste(file.path(githubDir,'Figures','global'),climVar,'_StripePlot.png',sep=''))
+
+```
+
+
+
+
+
+
+
 
 ```{r}
 

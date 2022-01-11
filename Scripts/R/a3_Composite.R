@@ -82,17 +82,17 @@ for (reg in regNames) {
     #Sample from full region
     wght <- pullTsVariable(lipdReg,'ageRange')/pullTsVariable(lipdReg,'ageResPlus')
     wght[which(is.na(wght))] <- mean(wght,na.rm=TRUE)
-    lipdRegSample  <- pullTsVariable(lipdReg,'paleoData_TSid')
-   # lipdRegSample <- sample(x    = pullTsVariable(lipdReg,'paleoData_TSid'),
-     #                       size = length(lipdReg) * samplePct,
-     #                       prob = wght / sum(wght))
+    lipdRegSample <- sample(x    = pullTsVariable(lipdReg,'paleoData_TSid'),
+                            #prob = wght / sum(wght)
+                            size = length(lipdReg) * samplePct)
+    #sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% pullTsVariable(lipdReg,'paleoData_TSid'))
     sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% lipdRegSample)
     lipdRegSample <- lipdReg[sample]
     #Composite
     tc <- compositeR::compositeEnsembles(fTS      = lipdRegSample,
                                          ageVar   = "age",
                                          scope    = "climate",
-                                         spread   = TRUE,
+                                         spread   = FALSE,
                                          binvec   = binvec,
                                          binFun   = simpleBinTs,
                                          stanFun  = standardizeMeanIteratively,
@@ -126,81 +126,79 @@ if(save){
 
 ####
 
-
-
-reg <- 'GIC'
-#Filter the TS by cluster name and make sure have enough values
-lipdReg <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
-regCount   <- length(lipdReg)
-#Skip if number of records is too few
-#if(regCount < nThresh) next
-#
-#Calculate data density throughout the Holocene 
-timeN <- plotTimeAvailabilityTs(lipdReg,
-                                age.range=c(0,12000),
-                                group.var ='Category',
-                                step=binsize)$dat %>%
-  group_by(yvec) %>% 
-  summarise(count=sum(value),countPct=sum(value)/regCount)
-#Determine search range based on 0-10ka with >50% proxy coverage
-MH <- which(timeN$yvec==6000)
-if (length(which(timeN$countPct<=0.5) > 0)){
-  idx <- c(max(which(timeN$countPct[1:MH]<=0.5),
-               which(timeN$yvec==0)),
-           min(which(timeN$countPct[MH:length(timeN$countPct)]<=0.5)+MH,
-               which(timeN$yvec==10000)))
-} else{
-  idx <- c(which(timeN$yvec==0),which(timeN$yvec==10000))
-}
-searchMin  <- timeN$yvec[idx[1]] #age BP
-searchMax  <- timeN$yvec[idx[2]] #age BP
-
-compositeEns      <- vector(mode="list")
-medianCompositeTS <- data_frame(time=binYears)
-nens <- 100
-for (n in c(3:10,regCount)){
+skip <- FALSE
+if(skip){
+  reg <- 'GIC'
+  #Filter the TS by cluster name and make sure have enough values
+  lipdReg <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
+  regCount   <- length(lipdReg)
+  #Skip if number of records is too few
+  #if(regCount < nThresh) next
   #
-  #setup and run ensemble ##### This is the main part of the code to edit ##### 
-  compEns <- matrix(NA,nrow = length(binYears),ncol=nens)
-  #Sample from full region
-  #wght <- pullTsVariable(lipdReg,'ageRange')/pullTsVariable(lipdReg,'ageResPlus')
-  #wght[which(is.na(wght))] <- mean(wght,na.rm=TRUE)
-  lipdRegSample <- sample(x    = pullTsVariable(lipdReg,'paleoData_TSid'),
-                          size = n)
-                   #       prob = wght / sum(wght))
-  sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% lipdRegSample)
-  lipdRegSample <- lipdReg[sample]
-  for (i in 1:nens){
-    #Composite
-    tc <- compositeR::compositeEnsembles(fTS      = lipdRegSample,
-                                         ageVar   = "age",
-                                         scope    = "climate",
-                                         spread   = TRUE,
-                                         binvec   = binvec,
-                                         binFun   = simpleBinTs,
-                                         stanFun  = standardizeMeanIteratively,
-                                         duration = searchDur,
-                                         minN     = 3,
-                                         searchRange = c(searchMin,searchMax),
-                                         alignInterpDirection = TRUE,
-                                         normalizeVariance    = TRUE) 
-    compEns[,i] <- tc$composite
+  #Calculate data density throughout the Holocene 
+  timeN <- plotTimeAvailabilityTs(lipdReg,
+                                  age.range=c(0,12000),
+                                  group.var ='Category',
+                                  step=binsize)$dat %>%
+    group_by(yvec) %>% 
+    summarise(count=sum(value),countPct=sum(value)/regCount)
+  #Determine search range based on 0-10ka with >50% proxy coverage
+  MH <- which(timeN$yvec==6000)
+  if (length(which(timeN$countPct<=0.5) > 0)){
+    idx <- c(max(which(timeN$countPct[1:MH]<=0.5),
+                 which(timeN$yvec==0)),
+             min(which(timeN$countPct[MH:length(timeN$countPct)]<=0.5)+MH,
+                 which(timeN$yvec==10000)))
+  } else{
+    idx <- c(which(timeN$yvec==0),which(timeN$yvec==10000))
   }
-  compositeEns[[n]] <- compEns
-}
-  #
-
-for (n in c(3:10)){ 
-  corout <- corEns(time.1   = binYears,
-                   values.1 = compositeEns[[n]],
-                   time.2   = binYears,
-                   values.2 = compositeEns[[length(lipdReg)]],
-                   bin.step = 100,
-                   max.ens  = 100,
-                   isopersistent  = TRUE,
-                   isospectral    = TRUE,
-                   gaussianize    = TRUE)
-  print(n)
-  print(mean(corout[["cor.stats"]][["r"]]))
-}
+  searchMin  <- timeN$yvec[idx[1]] #age BP
+  searchMax  <- timeN$yvec[idx[2]] #age BP
   
+  compositeEns      <- vector(mode="list")
+  medianCompositeTS <- data_frame(time=binYears)
+  nens <- 100
+  for (n in c(3:10,regCount)){
+    #
+    #setup and run ensemble ##### This is the main part of the code to edit ##### 
+    compEns <- matrix(NA,nrow = length(binYears),ncol=nens)
+    #Sample from full region
+    #wght <- pullTsVariable(lipdReg,'ageRange')/pullTsVariable(lipdReg,'ageResPlus')
+    #wght[which(is.na(wght))] <- mean(wght,na.rm=TRUE)
+    lipdRegSample <- sample(x    = pullTsVariable(lipdReg,'paleoData_TSid'),
+                            size = n)
+    #       prob = wght / sum(wght))
+    sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% lipdRegSample)
+    lipdRegSample <- lipdReg[sample]
+    for (i in 1:nens){
+      #Composite
+      tc <- compositeR::compositeEnsembles(fTS      = lipdRegSample,
+                                           ageVar   = "age",
+                                           scope    = "climate",
+                                           spread   = TRUE,
+                                           binvec   = binvec,
+                                           binFun   = simpleBinTs,
+                                           stanFun  = standardizeMeanIteratively,
+                                           duration = searchDur,
+                                           minN     = 3,
+                                           searchRange = c(searchMin,searchMax),
+                                           alignInterpDirection = TRUE,
+                                           { 
+                                             corout <- corEns(time.1   = binYears,
+                                                              values.1 = compositeEns[[n]],
+                                                              time.2   = binYears,
+                                                              values.2 = compositeEns[[length(lipdReg)]],
+                                                              bin.step = 100,
+                                                              max.ens  = 100,
+                                                              isopersistent  = TRUE,
+                                                              isospectral    = TRUE,
+                                                              gaussianize    = TRUE)
+                                             print(n)
+                                             print(mean(corout[["cor.stats"]][["r"]]))
+                                           }                                     normalizeVariance    = TRUE) 
+      compEns[,i] <- tc$composite
+    }
+    compositeEns[[n]] <- compEns
+  }
+}  #
+
