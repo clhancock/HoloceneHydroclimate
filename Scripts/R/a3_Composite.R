@@ -83,16 +83,16 @@ for (reg in regNames) {
     wght <- pullTsVariable(lipdReg,'ageRange')/pullTsVariable(lipdReg,'ageResPlus')
     wght[which(is.na(wght))] <- mean(wght,na.rm=TRUE)
     lipdRegSample <- sample(x    = pullTsVariable(lipdReg,'paleoData_TSid'),
-                            #prob = wght / sum(wght)
+                            prob = wght / sum(wght),
                             size = length(lipdReg) * samplePct)
-    #sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% pullTsVariable(lipdReg,'paleoData_TSid'))
+    sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% pullTsVariable(lipdReg,'paleoData_TSid'))
     sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% lipdRegSample)
     lipdRegSample <- lipdReg[sample]
     #Composite
     tc <- compositeR::compositeEnsembles(fTS      = lipdRegSample,
                                          ageVar   = "age",
                                          scope    = "climate",
-                                         spread   = FALSE,
+                                         spread   = TRUE,
                                          binvec   = binvec,
                                          binFun   = simpleBinTs,
                                          stanFun  = standardizeMeanIteratively,
