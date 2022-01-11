@@ -28,6 +28,8 @@ library(tidyverse)
 ###Input Data
 ```{r, warning=FALSE}
 lipdData <- readRDS(file=file.path(githubDir,'Data','LiPD','lipdData.rds'))
+climVar    <- 'HC'
+lipdTSO    <- lipdData[[climVar]]
 
 PROJ       <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
 PROJorig   <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
@@ -42,9 +44,6 @@ countries  <- spTransform(countries,  CRSobj = PROJ)
 
 #Set settings based on climate variable (HC or T)
 ```{r}
-climVar    <- 'HC'
-lipdTSO    <- lipdData[[climVar]]
-
 climVarSettings    <- vector(mode='list')
 climVarSettings$T  <- vector(mode='list')
 climVarSettings$HC <- vector(mode='list')
@@ -200,19 +199,11 @@ for (reg in regNames){
   Shp <- refregions@polygons[[which(refregions@data[["Acronym"]]==reg)]]@Polygons[[1]]
   plotData[[reg]]$plotLat <- Shp@labpt[2]
   plotData[[reg]]$plotLon <- Shp@labpt[1]
-  #Load model data
- # for (model in c('trace','hadcm')){
-  #  plotData[[region]][[model]]<-data.frame(time=binvec100,
-  #                                          values=modelReconstruction[[model]][[region]])
-  #}
 }
 ```
 
 
 ```{r warning=FALSE}
-climVarSettings$T$Col  <- c("#B2DFDB","#00796B","#004D40") #reds
-
-climVarSettings$T$Col  <- c("#FFEBEE","#FFCDD2","#EF9A9A") #reds
 model_onoff <- TRUE
 if (model_onoff){
   modelTS <- vector(mode='list')

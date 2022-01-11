@@ -27,19 +27,16 @@ regNames <- sort(unique(as.character(pullTsVariable(lipdTSO,'geo_ipccRegion'))))
 climVar  <- 'HC'
 
 save=TRUE
-set.seed(5) #make reproducible
+set.seed(66) #make reproducible
 #
 #Set variables for composite code
-nens          <- 500    #lower = faster
+nens          <- 200    #lower = faster
 binsize       <- 100   #years (median resolution = 107yrs)
 ageMin        <- -100  #age BP
 ageMax        <- 12400 #age BP
 searchDur     <- 3500  #yrs (for 3 lake deposit data points)
 nThresh       <- 6     #minimum # of records, else skip #arbitrary
 samplePct     <- 0.75  #arbitrary
-
-
-
 
 #Set bin vectors
 binvec   <- seq(ageMin-binsize/2, to = ageMax+binsize/2, by = binsize)
@@ -48,11 +45,12 @@ binYears <- rowMeans(cbind(binvec[-1],binvec[-length(binvec)]))
 #Set up data to add once regional composite is calculated
 compositeEns      <- vector(mode="list")
 medianCompositeTS <- data_frame(time=binYears)
+
 #Loop to composite (by region)
 for (reg in regNames) {
   #Filter the TS by cluster name and make sure have enough values
-  lipdReg <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
-  regCount   <- length(lipdReg)
+  lipdReg  <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
+  regCount <- length(lipdReg)
   #Skip if number of records is too few
   if(regCount < nThresh) next
   #
@@ -85,9 +83,9 @@ for (reg in regNames) {
     lipdRegSample <- sample(x    = pullTsVariable(lipdReg,'paleoData_TSid'),
                             prob = wght / sum(wght),
                             size = length(lipdReg) * samplePct)
-    sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% pullTsVariable(lipdReg,'paleoData_TSid'))
+    #sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% pullTsVariable(lipdReg,'paleoData_TSid'))
     sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% lipdRegSample)
-    lipdRegSample <- lipdReg[sample]
+    lipdRegSample <- lipdReg#[sample]
     #Composite
     tc <- compositeR::compositeEnsembles(fTS      = lipdRegSample,
                                          ageVar   = "age",
@@ -121,6 +119,85 @@ if(save){
   }
   print("csv files saved")
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -175,7 +252,7 @@ if(skip){
       tc <- compositeR::compositeEnsembles(fTS      = lipdRegSample,
                                            ageVar   = "age",
                                            scope    = "climate",
-                                           spread   = TRUE,
+                                           spread   = FALSE,
                                            binvec   = binvec,
                                            binFun   = simpleBinTs,
                                            stanFun  = standardizeMeanIteratively,
