@@ -199,7 +199,7 @@ for (reg in regNames){
   pltData[[reg]]$proxy    <- tibble(values=regionData$proxy[[reg]], time=regionData$proxy[['time']])
   #Get Lat/Lon information for labels associated with region and add to cluster dictionary
   Shp <- refregions@polygons[[which(refregions@data[["Acronym"]]==reg)]]@Polygons[[1]]
-  pltData[[reg]]$plotLat<- Shp@labpt[2]
+  pltData[[reg]]$plotLat <- Shp@labpt[2]
   pltData[[reg]]$plotLon <- Shp@labpt[1]
 }
 
@@ -221,12 +221,13 @@ if (!is.na(modelVar)){
 }
 
 for (reg in regNames){
-  timeAvail <- plotTimeAvailabilityTs(pltData[[reg]]$lipd,age.range=c(ageMin,ageMax),
+  timeAvail <- plotTimeAvailabilityTs(pltData[[reg]]$lipd,age.range=c(0,12000),
                                       group.var ='Category',step=100)$dat %>%
     group_by(yvec) %>% 
     summarise(count=sum(value),countPct=sum(value)/length(pltData[[reg]]$lipd))
   regEnsNA <- as.matrix(pltData[[reg]]$proxyEns)
   regEnsNA <- regEnsNA - as.numeric(apply(regEnsNA[1:10,],2,mean,na.rm=TRUE))
+  regEnsNA <- regEnsNA/10
   regEns    <- regEnsNA
   idx <- which(timeAvail$countPct<=0.5)
   idx_MH <- which(timeAvail$yvec==6000)
@@ -240,30 +241,28 @@ for (reg in regNames){
   }
   plotlimit_set <- min(mean(c(max(abs(apply(regEns,1,median,na.rm=TRUE)),na.rm=TRUE),
                               max(abs(regEns),na.rm=TRUE))),8)
-  plotlimit_set <- 5
+  plotlimit_set <- 0.5
   compBands <- vector(mode='list')
-  compBands$na   <- plotTimeseriesEnsRibbons(X=binvec, Y=regEnsNA, alp=0.9,line.width=0.2,
+  compBands$na   <- plotTimeseriesEnsRibbons(X=binvec[2:122], Y=regEnsNA, alp=0.9,line.width=0.2,
                                              color.low='grey90',
                                              color.high='grey50',
                                              color.line='grey20') 
-  compBands$vals <- plotTimeseriesEnsRibbons(X=binvec, Y=regEns, alp=0.9,line.width=0.2,
+  compBands$vals <- plotTimeseriesEnsRibbons(X=binvec[2:122], Y=regEns, alp=0.9,line.width=0.2,
                                              color.low=climVarSettings[[climVar]]$Col[1],
                                              color.high=climVarSettings[[climVar]]$Col[2],
                                              color.line=climVarSettings[[climVar]]$Col[3]) 
   if (!is.na(modelVar)){
-    for (model in c('trace','hadcm')){
-      modelTS <- pltData[[reg]][[model]]
-      modelTS$values <- modelTS$values - mean(modelTS$values[0:4],na.rm=TRUE)
-      modelTS$values <- modelTS$values / sd(modelTS$values,na.rm=TRUE)
-      if (model == 'trace'){
-        color = 'fire brick'
-      } else if (model == 'hadcm'){
-        color = 'goldenrod'
-      }
+      hadcmTS <- pltData[[reg]][['hadcm']]
+      hadcmTS$values <- 1*(hadcmTS$values - hadcmTS$values[1]) #/ ((hadcmTS$values[1])/1)
       compBands$vals <- compBands$vals + 
-        geom_line(aes(x=modelTS$time,y=modelTS$values),color=color,size=0.4,alpha=0.5)
-    }
+        geom_line(aes(x=hadcmTS$time,y=hadcmTS$values),color='darkgreen',size=0.4,alpha=0.8)
+      #
+      traceTS <- pltData[[reg]][['trace']]
+      traceTS$values <- 1*(traceTS$values - traceTS$values[1])# / ((traceTS$values[1])/1)
+      compBands$vals <- compBands$vals + 
+        geom_line(aes(x=traceTS$time,y=traceTS$values),color='firebrick4',size=0.4,alpha=0.8)
   }
+  compBands$vals <- compBands$vals + geom_boxplot(aes(x=6000,y=pltData[[reg]][['cmip']]),width=1000)
   #compBands$vals
   compBandPlt <- ggdraw() 
   for (plt in names(compBands)){

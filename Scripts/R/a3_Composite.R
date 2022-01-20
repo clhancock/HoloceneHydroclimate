@@ -16,21 +16,21 @@ library(tidyverse)
 
 
 #Set up directories and names
-githubDir <- getwd()
+dataDir <- getwd()
 climVar <- 'HC'
 #
 
 ###Load Data
-lipdData <- readRDS(file.path(githubDir,'Data','LiPD','lipdData.rds'))
+lipdData <- readRDS(file.path(dataDir,'Data','LiPD','lipdData.rds'))
 lipdTSO  <- lipdData[[climVar]]
 regNames <- sort(unique(as.character(pullTsVariable(lipdTSO,'geo_ipccRegion'))))
 climVar  <- 'HC'
 
 save=TRUE
-set.seed(66) #make reproducible
+set.seed(5) #make reproducible
 #
 #Set variables for composite code
-nens          <- 200    #lower = faster
+nens          <- 1000    #lower = faster
 binsize       <- 100   #years (median resolution = 107yrs)
 ageMin        <- -100  #age BP
 ageMax        <- 12400 #age BP
@@ -50,9 +50,17 @@ medianCompositeTS <- data_frame(time=binYears)
 for (reg in regNames) {
   #Filter the TS by cluster name and make sure have enough values
   lipdReg  <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
+  if (reg == 'SAS'){lipdReg <- lipdReg[-which(pullTsVariable(lipdReg,'paleoData_TSid') == 'WEBaf733834')]}
+  if (reg == 'SAM'){lipdReg <- lipdReg[-which(pullTsVariable(lipdReg,'paleoData_TSid') == 'WEBeab5d1e0')]}
+  #if (reg == 'SAM'){lipdReg <- lipdReg[-which(pullTsVariable(lipdReg,'paleoData_TSid') == 'WEB3a01bea5')]}
   regCount <- length(lipdReg)
   #Skip if number of records is too few
   if(regCount < nThresh) next
+  for (i in 1:regCount){
+    if (lipdReg[[i]]$climateInterpretation1_interpDirection == 'negative'){
+      lipdReg[[i]]$paleoData_values <- lipdReg[[i]]$paleoData_values*-1
+    }
+  }
   #
   #Calculate data density throughout the Holocene 
   timeN <- plotTimeAvailabilityTs(lipdReg,
@@ -67,9 +75,9 @@ for (reg in regNames) {
     idx <- c(max(which(timeN$countPct[1:MH]<=0.5),
                  which(timeN$yvec==0)),
              min(which(timeN$countPct[MH:length(timeN$countPct)]<=0.5)+MH,
-                 which(timeN$yvec==10000)))
+                 which(timeN$yvec==12000)))
   } else{
-    idx <- c(which(timeN$yvec==0),which(timeN$yvec==10000))
+    idx <- c(which(timeN$yvec==0),which(timeN$yvec==12000))
   }
   searchMin  <- timeN$yvec[idx[1]] #age BP
   searchMax  <- timeN$yvec[idx[2]] #age BP
@@ -81,54 +89,52 @@ for (reg in regNames) {
     wght <- pullTsVariable(lipdReg,'ageRange')/pullTsVariable(lipdReg,'ageResPlus')
     wght[which(is.na(wght))] <- mean(wght,na.rm=TRUE)
     lipdRegSample <- sample(x    = pullTsVariable(lipdReg,'paleoData_TSid'),
-                            prob = wght / sum(wght),
+                            #prob = wght / sum(wght),
                             size = length(lipdReg) * samplePct)
     #sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% pullTsVariable(lipdReg,'paleoData_TSid'))
     sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% lipdRegSample)
     lipdRegSample <- lipdReg#[sample]
     #Composite
     tc <- compositeR::compositeEnsembles(fTS      = lipdRegSample,
-                                         ageVar   = "age",
-                                         scope    = "climate",
-                                         spread   = TRUE,
                                          binvec   = binvec,
-                                         binFun   = simpleBinTs,
                                          stanFun  = standardizeMeanIteratively,
+                                         binFun   = simpleBinTs,
+                                         ageVar   = "age",
+                                         alignInterpDirection = FALSE,
+                                         spread   = TRUE,
                                          duration = searchDur,
-                                         minN     = 3,
                                          searchRange = c(searchMin,searchMax),
-                                         alignInterpDirection = TRUE,
-                                         normalizeVariance    = TRUE) 
+                                         normalizeVariance    = TRUE,
+                                         scope    = "climate",
+                                         minN     = 3) 
     compEns[,i] <- tc$composite
   }
   #
   # Return reconstruction and additional data for plotting
-  compositeEns[[reg]]      <- compEns
+  compositeEns[[reg]]      <- compEns[which(binYears==0):which(binYears==12000),]
   medianCompositeTS[[reg]] <- apply(compEns,1,median,na.rm=TRUE)
 }
 
 
 
-#Save
 if(save){
   write.csv(medianCompositeTS, row.names = FALSE,
-            file = file.path(githubDir,'Data','RegionComposites',climVar,'MedianTSbyRegion.csv'))
+            file = file.path(dataDir,'Data','RegionComposites',climVar,'MedianTSbyRegion.csv'))
   for (region in names(compositeEns)){
     write.csv(compositeEns[[region]], row.names = FALSE,
-              file = file.path(githubDir,'Data','RegionComposites',climVar,paste(region,'.csv',sep='')))
+              file = file.path(dataDir,'Data','RegionComposites',climVar,paste(region,'.csv',sep='')))
   }
   print("csv files saved")
 }
 
 
 
+names(medianCompositeTS)
 
 
 
 
-
-
-
+3
 
 
 

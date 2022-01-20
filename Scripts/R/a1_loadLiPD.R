@@ -65,6 +65,7 @@ for (ts in TS_all){
         if (sum(!is.na(ts$paleoData_values[which(ts$age < 12000)])) >= lakeDeposNo){
           tsidListHC <- c(tsidListHC,ts$paleoData_TSid)
         }
+        
       }
     }
     compNo <- compNo+1
