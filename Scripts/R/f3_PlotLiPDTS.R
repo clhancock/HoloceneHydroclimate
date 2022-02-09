@@ -64,7 +64,37 @@ refregions <-  spTransform(refregions, CRSobj = PROJ)
 countries  <- getMap("less islands")
 countries  <- spTransform(countries,  CRSobj = PROJ)
 
+refregions <- readShapePoly(file.path(githubDir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
+                            proj4string=CRS(PROJorig))
 
+vals <- matrix(NA,length(levels(refregions@data[["Acronym"]])),3)
+for (regNo in as.numeric(refregions@data[["Acronym"]])){
+  reg <- levels(refregions@data[["Acronym"]])[regNo]
+  print(reg)
+  regTs <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
+  if (length(regTs) < 6){next}
+  sign <- 0
+  count <- 0
+  for (i in 1:length(regTs)){
+    ka0  <- regTs[[i]]$paleoData_values[which(between(regTs[[i]]$age,0,1000))]
+    ka6  <- regTs[[i]]$paleoData_values[which(between(regTs[[i]]$age,5500,6500))]
+    diff <- mean(ka6, na.rm = TRUE) - mean(ka0, na.rm = TRUE) 
+    if (is.nan(diff)){next}
+    if (regTs[[i]]$climateInterpretation1_interpDirection == 'negative'){
+      diff <- diff*-1
+    }
+    count <- count+1
+    if (diff>0){sign <- sign+1}
+  }
+  vals[regNo,] <- c(reg,count,sign)
+}
+vals <- vals[which(!is.na(vals[,1])),]
+write.csv(vals,file.path(dataDir,"midHCpct.csv"))
+  #
+
+  
+  
+  
 for (regNo in as.numeric(refregions@data[["Acronym"]])){
   reg <- levels(refregions@data[["Acronym"]])[regNo]
   print(reg)

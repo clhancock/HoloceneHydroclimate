@@ -52,6 +52,8 @@ seasons = {'ANN':[0,1,2,3,4,5,6,7,8,9,10,11],'DJF':[0,1,11],'JJA':[5,6,7]}
 
 #%% Calculate midHolocene - pi differences for each climate variable
 mhAnom = {}
+scale = '_regrid'
+
 for model in CMIP6['mh'].keys():
     print(model)
     mhAnom[model] = {}
@@ -61,13 +63,13 @@ for model in CMIP6['mh'].keys():
         for var in ['pre','evp','tas']:
             #Id model variable name and conversion to degC or mm/day
             if   var == 'pre': 
-                varName    = 'pr'
+                varName    = 'pr'+scale
                 conversion = [((1/1000)*(60*60*24*1000)),0] #converts kg/m2/s to m/s to mm/day
             elif var == 'evp': 
-                varName    = 'evspsbl'
+                varName    = 'evspsbl'+scale
                 conversion = [((1/1000)*(60*60*24*1000)),0] #converts kg/m2/s to m/s to mm/day
             elif var == 'tas': 
-                varName    = 'tas'
+                varName    = 'tas'+scale
                 conversion = [1,-273.15] #converts K to degC
             #Load values for mh - pi using best units 
             mhVals = mh[varName][seasons[szn]] * conversion[0] + conversion[1] 
@@ -75,11 +77,68 @@ for model in CMIP6['mh'].keys():
             mhVals = mhVals.weighted(mh['days_per_month'][seasons[szn]]).mean(dim=("month"))
             piVals = piVals.weighted(pi['days_per_month'][seasons[szn]]).mean(dim=("month"))
             #Save difference between mh - pi
-            mhAnom[model][var+'_'+szn] = (mhVals-piVals) / (piVals+mhVals)/2
+            mhAnom[model][var+'_'+szn] = (mhVals-piVals) 
         mhAnom[model]['p-e_'+szn] = mhAnom[model]['pre_'+szn] - mhAnom[model]['evp_'+szn]
-    mhAnom[model]['lats'] = mh.lat
-    mhAnom[model]['lons'] = mh['lon']
-    
+    mhAnom[model]['lats'] = mh['lat'+scale]
+    mhAnom[model]['lons'] = mh['lon'+scale]
+
+#%%Calculate % agreement within CMIP
+
+
+z = pd.read_csv(dataDir+'midHCpct.csv')[['V1','V2','V3']]
+text_kws = dict(
+    bbox=dict(color="none"),
+    path_effects=[pe.withStroke(linewidth=0, foreground="w")],
+    color="#67000d",
+    fontsize=0,
+)
+
+
+lats = mhAnom[model]['lats']
+lons = mhAnom[model]['lons']
+for climVar in ['p-e_ANN']:
+    vals = np.zeros((len(lats),len(lons)))
+    for model in CMIP6['mh'].keys():
+        #vals += mhAnom[model][climVar].data
+        vals += np.sign(mhAnom[model][climVar].data)
+
+#land   = regionmask.defined_regions.natural_earth.land_110
+#land   = land.mask_3D(lons,lats).data.squeeze()
+vals=(vals/2+6)/12
+#vals=vals/12
+
+#vals[vals==0]=['nan']
+refReg =     regionmask.defined_regions.ar6.land
+z = pd.read_csv(dataDir+'midHCpct.csv')[['V1','V2','V3']]
+plats = []
+plons = []
+for i in z['V1']: 
+    loc = refReg.centroids[refReg.abbrevs.index(i)]
+    plats.append(loc[1])
+    plons.append(loc[0])
+
+plt.style.use('ggplot')
+plt.figure(figsize=(20,10)); plt.rcParams['axes.facecolor'] ='white'
+plt.rcParams['axes.linewidth'] = 1; plt.rcParams['axes.edgecolor'] = 'k'
+ax1 = regReg.plot(projection=ccrs.Robinson(), label="abbrev", add_ocean=True, text_kws=text_kws)
+ax1.spines['geo'].set_edgecolor('black')
+ax1.set_global()
+ax1.coastlines()
+ax1.add_feature(cfeature.LAND,facecolor='whitesmoke',edgecolor='k')
+ax1.add_feature(cfeature.LAKES,facecolor='none',edgecolor='k')
+model_contour = plt.pcolormesh(lons, lats,vals,
+                    transform=ccrs.PlateCarree(),vmin=0,vmax=1,
+                    cmap=plt.cm.get_cmap('BrBG',5),alpha=0.8)
+proxy_scatter = ax1.scatter(plons,plats,c=list((z['V3']/z['V2'])*100),
+        s=list(z['V2']**0.5*80),edgecolor='k',lw=3,alpha=1,cmap=plt.cm.get_cmap('BrBG',5),
+        transform=ccrs.PlateCarree(),vmin=0,vmax=100)
+ax1.add_feature(cfeature.OCEAN,facecolor='white',edgecolor='k')
+plt.title('ANN p-e '+str(ka)+'ka-0.5ka',fontsize=20)
+plt.colorbar(model_contour,cax=inset_axes(ax1,width='60%',height="4%",loc=8),
+                         orientation="horizontal").set_label('% wet',fontsize=12,c='black')
+           
+
+
 #%%Calculate weighted average by region
 for climVar in ['pre_ANN','p-e_ANN','tas_ANN','pre_JJA','p-e_JJA','tas_JJA']:
     df = pd.DataFrame()

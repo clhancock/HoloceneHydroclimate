@@ -61,7 +61,7 @@ countries  <- spTransform(countries,  CRSobj = PROJ)
 regionData <- vector(mode='list')
 regionData$proxy <- read.csv(file.path(dataDir,'Data','RegionComposites',climVar,'MedianTSbyRegion.csv'))
 for (model in c('trace','hadcm','cmip')){
-  for (var in c('p-e_ANN','pre_ANN','tas_ANN')){
+  for (var in c('p-e_ANN','pre_ANN','tas_ANN','p-e_JJA','pre_JJA','tas_JJA')){
     regionData[[model]][[var]] <- read.csv(file.path(dataDir,'Data','Model',
                                                      paste(var,'_',model,'.csv',sep='')))
   }
@@ -207,7 +207,7 @@ for (reg in regNames){
 
 
 ```{r warning=FALSE}
-modelVar <- 'pre'
+modelVar <- 'p-e'
 if (!is.na(modelVar)){
   for (model in c('trace','hadcm')){
     modelData <- regionData[[model]][[paste(modelVar,'_ANN',sep='')]]
@@ -217,7 +217,7 @@ if (!is.na(modelVar)){
   }
   for (reg in regNames){ 
     pltData[[reg]]$cmip <- regionData$cmip[[paste(modelVar,'_ANN',sep='')]][,reg]
-  }
+  } 
 }
 
 for (reg in regNames){
@@ -227,7 +227,7 @@ for (reg in regNames){
     summarise(count=sum(value),countPct=sum(value)/length(pltData[[reg]]$lipd))
   regEnsNA <- as.matrix(pltData[[reg]]$proxyEns)
   regEnsNA <- regEnsNA - as.numeric(apply(regEnsNA[1:10,],2,mean,na.rm=TRUE))
-  regEnsNA <- regEnsNA/10
+  regEnsNA <- regEnsNA
   regEns    <- regEnsNA
   idx <- which(timeAvail$countPct<=0.5)
   idx_MH <- which(timeAvail$yvec==6000)
@@ -241,7 +241,7 @@ for (reg in regNames){
   }
   plotlimit_set <- min(mean(c(max(abs(apply(regEns,1,median,na.rm=TRUE)),na.rm=TRUE),
                               max(abs(regEns),na.rm=TRUE))),8)
-  plotlimit_set <- 0.5
+  plotlimit_set <- 5
   compBands <- vector(mode='list')
   compBands$na   <- plotTimeseriesEnsRibbons(X=binvec[2:122], Y=regEnsNA, alp=0.9,line.width=0.2,
                                              color.low='grey90',
@@ -253,16 +253,18 @@ for (reg in regNames){
                                              color.line=climVarSettings[[climVar]]$Col[3]) 
   if (!is.na(modelVar)){
       hadcmTS <- pltData[[reg]][['hadcm']]
-      hadcmTS$values <- 1*(hadcmTS$values - hadcmTS$values[1]) #/ ((hadcmTS$values[1])/1)
+      hadcmTS$values <- 30*(hadcmTS$values - mean(hadcmTS$values[1:10],na.rm = TRUE))#/mean(hadcmTS$values[1:10],na.rm = TRUE) #/ ((hadcmTS$values[1])/1)
       compBands$vals <- compBands$vals + 
-        geom_line(aes(x=hadcmTS$time,y=hadcmTS$values),color='darkgreen',size=0.4,alpha=0.8)
+        geom_line(aes(x=hadcmTS$time,y=hadcmTS$values),color='#827717',size=0.4,alpha=0.8)
       #
       traceTS <- pltData[[reg]][['trace']]
-      traceTS$values <- 1*(traceTS$values - traceTS$values[1])# / ((traceTS$values[1])/1)
+      traceTS$values <- 30*(traceTS$values - mean(traceTS$values[1:10],na.rm = TRUE))#/mean(traceTS$values[1:10],na.rm = TRUE)
       compBands$vals <- compBands$vals + 
         geom_line(aes(x=traceTS$time,y=traceTS$values),color='firebrick4',size=0.4,alpha=0.8)
+      compBands$vals <- compBands$vals + geom_boxplot(aes(x=6000,y=pltData[[reg]][['cmip']]*30),width=1000,fill=NA)
+      plotlimit_set <- max(c(max(abs(traceTS$values[1:121]),abs(hadcmTS$values[1:121]))))
   }
-  compBands$vals <- compBands$vals + geom_boxplot(aes(x=6000,y=pltData[[reg]][['cmip']]),width=1000)
+  #
   #compBands$vals
   compBandPlt <- ggdraw() 
   for (plt in names(compBands)){
@@ -295,7 +297,7 @@ compBandPlt <- globalPlotOfRegions('compBandPlt',save=FALSE)
 #compBandPlt
 
 ggsave(plot=compBandPlt, width = 19, height = 9, dpi = 600,
-           filename = paste(file.path(dataDir,'Figures','global'),climVar,'_compBandPlt.png',sep=''))
+           filename = paste(file.path(dataDir,'Figures','global'),modelVar,'_compBandPlt.png',sep=''))
 ```
 
 ```{r}
