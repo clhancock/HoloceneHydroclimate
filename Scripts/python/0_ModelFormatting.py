@@ -4,7 +4,6 @@
 
 #Load Packages
 import numpy  as np
-import pandas as pd
 import xarray as xr
 
 #%% 2 Settings and names
