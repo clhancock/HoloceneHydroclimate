@@ -3,8 +3,10 @@
 #Data are not on the same grid (other than CMIP)
 
 #Load Packages
-import numpy  as np
-import xarray as xr
+import numpy      as np
+import pandas     as pd
+import regionmask as rm
+import xarray     as xr
 
 #%% 2 Settings and names
 dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/'
@@ -75,9 +77,10 @@ for time in ['mh','pi']:
     for model in cmip6[time].keys():
         print(model)
         data = xr.open_dataset((dataDir+'cmip6/'+time+cmip6[time][model]))
-        data = data.drop(['tas','pr','evspsbl','climatology_bnds','lat','lon'])
-        data = data.rename({'pr_regrid':'pre','evspsbl_regrid':'evp','tas_regrid':'tas',
-                            'lat_regrid':'lat','lon_regrid':'lon'})
+        data = data.rename({'pr_regrid':'pre_regrid','pr':'pre',
+                            'evspsbl_regrid':'evp_regrid','evspsbl':'evp',
+                            'tas_regrid':'tas_regrid','tas':'tas'})
+        data = data.drop('climatology_bnds')
         for szn in ens.keys():
             idx = seasons[szn] #index for season
             vals = data*1 #data management
@@ -86,19 +89,26 @@ for time in ['mh','pi']:
                 if   var == 'pre': conversion = [((1/1000)*(60*60*24*1000)),0] #converts kg/m2/s to m/s to mm/day
                 elif var == 'evp': conversion = [((1/1000)*(60*60*24*1000)),0] #converts kg/m2/s to m/s to mm/day
                 elif var == 'tas': conversion = [1,-273.15] #converts K to degC
-                vals[var] = vals[var] * conversion[0] + conversion[1] #convert
-                vals[var] = vals[var][idx,:,:].weighted(vals['days_per_month'][idx]).mean(dim=("month")) #weighted avg for season
-                vals['p-e'] = vals['pre'] - vals['evp'] #calculate p-e
+                for scale in ['','_regrid']:
+                    vals[var+scale] = vals[var+scale] * conversion[0] + conversion[1] #convert
+                    vals[var+scale] = vals[var+scale][idx,:,:].weighted(vals['days_per_month'][idx]).mean(dim=("month")) #weighted avg for season
+                    vals['p-e'+scale] = vals['pre'+scale] - vals['evp'+scale] #calculate p-e
             vals = vals.drop('days_per_month')#data management
             ens[szn].append(vals) #save
     for szn in ens.keys(): # combine models into a single xarray for each season
         ens[szn] = xr.concat(ens[szn],dim='model')
         ens[szn] = ens[szn].assign_coords(model=list(cmip6[time].keys()))
         cmipEns[szn].append(ens[szn])
+#%% 
 for szn in ens.keys(): #combine pi and mh into single xarray with time dim
     cmipEns[szn] = xr.concat(cmipEns[szn],dim='time')
     cmipEns[szn] = cmipEns[szn].assign_coords(time=['mh','pi'])
-    cmipEns[szn].to_netcdf(saveDir+'Data/Model/cmip6_'+szn+'.nc')
+
+#np.save(saveDir+'Data/Model/cmip6_modelPy.npy',cmipEns)
+#%% 
+for szn in ens.keys(): #combine pi and mh into single xarray with time dim
+    cmipEns[szn] = cmipEns[szn].drop(['pre','evp','tas','lat','lon'])
+    cmipEns[szn].to_netcdf(saveDir+'Data/Model/cmip6'+'_'+szn+'.nc')
 
 
 #%% 4. Load Michael's netcdf files and convert to uniform units/nameing
@@ -139,10 +149,42 @@ for model in key.keys():
         sznData['p-e'] = sznData.pre - sznData.evp
         sznData.to_netcdf(saveDir+'Data/Model/'+model+'_'+szn+'.nc')
         modelData[model][szn] = sznData
-        
-np.save(str(saveDir+'Data/Model_/'+'HoloceneHydroclimate_modelPy.npy'),modelData)
 
+#%% 5. Calculate regional timeseries and cmip mh anomolies
 
-#%%
-       
+def maskmodeldata(values,lats,lons):
+    #Lat weights
+    wghts  = np.cos(np.deg2rad(lats))
+    #IPCC ref regions
+    refReg = rm.defined_regions.ar6.land
+    refReg = refReg.mask_3D(lons,lats)   
+    #Land mask
+    land   = rm.defined_regions.natural_earth.land_110
+    land   = land.mask_3D(lons,lats)   
+    land   = np.array([land.squeeze('region').data]*np.shape(refReg)[0])
+    #3d mask with land and refRegions
+    mask = refReg*land
+    #Average value by region
+    out = values.weighted(mask * wghts).mean(dim=("lat", "lon")).data
+    if sum(np.shape(out)) == 46: 
+        out = pd.DataFrame(out) 
+        out.index = list(mask.abbrevs.data)
+    else: out = pd.DataFrame(out, columns = list(mask.abbrevs.data))
+    return(out)
 
+for model in ['hadcm','trace','cmip6']:
+    for szn in ['ANN','JJA','DJF']:
+        data = xr.open_dataset(saveDir+'Data/Model/'+model+'_'+szn+'.nc',decode_times=False)
+        for var in ['pre','p-e','tas']:
+            if model == 'cmip6':
+                df = pd.DataFrame()
+                for n in range(len(data.model)):
+                    vals = data[var][0,n,:,:]-data[var][1,n,:,:]
+                    x = [i for i, w in enumerate(np.nanmean(vals,axis=0)) if np.isnan(w) == False]
+                    y = [i for i, w in enumerate(np.nanmean(vals,axis=1)) if np.isnan(w) == False]
+                    vals = vals[y,x]
+                    df[str(data.model[n].data)] = maskmodeldata(vals,vals.lat,vals.lon)[0]
+                df=df.transpose()
+            else: df = maskmodeldata(data[var],data[var].lat,data[var].lon)
+            df.to_csv(saveDir+'Data/Model/RegionTS/'+'regional_'+var+'_'+szn+'_'+model+'.csv')
+            

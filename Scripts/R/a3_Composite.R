@@ -1,4 +1,4 @@
-#---
+#Purpose-----
 #goal: create regional composits based on ipcc regions using either temp or hc
 #in:   LiPD files
 #out:  individual csv for each region where columns repersent iterations. 
@@ -50,9 +50,6 @@ medianCompositeTS <- data_frame(time=binYears)
 for (reg in regNames) {
   #Filter the TS by cluster name and make sure have enough values
   lipdReg  <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
-  if (reg == 'SAS'){lipdReg <- lipdReg[-which(pullTsVariable(lipdReg,'paleoData_TSid') == 'WEBaf733834')]}
-  if (reg == 'SAM'){lipdReg <- lipdReg[-which(pullTsVariable(lipdReg,'paleoData_TSid') == 'WEBeab5d1e0')]}
-  #if (reg == 'SAM'){lipdReg <- lipdReg[-which(pullTsVariable(lipdReg,'paleoData_TSid') == 'WEB3a01bea5')]}
   regCount <- length(lipdReg)
   #Skip if number of records is too few
   if(regCount < nThresh) next

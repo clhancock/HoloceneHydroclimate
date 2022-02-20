@@ -58,7 +58,7 @@ for model in key.keys():
                                 key[model]['lat']:             'lat', 
                                 key[model]['lon']:             'lon', 
                                 key[model][var]['varName']   : var})
-            #Make uniform size    
+            #Make uniform shape    
             if model == 'hadcm': data = data.squeeze('surface')
             #Value Conversion
             conversion = key[model][var]['conv']
