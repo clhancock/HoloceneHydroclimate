@@ -93,6 +93,14 @@ text_kws = dict(
     fontsize=0,
 )
 
+refReg =     regionmask.defined_regions.ar6.land
+z = pd.read_csv(dataDir+'midHCpct.csv')[['V1','V2','V3']]
+plats = []
+plons = []
+for i in z['V1']: 
+    loc = refReg.centroids[refReg.abbrevs.index(i)]
+    plats.append(loc[1])
+    plons.append(loc[0])
 
 lats = mhAnom[model]['lats']
 lons = mhAnom[model]['lons']

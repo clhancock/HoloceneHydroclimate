@@ -24,13 +24,21 @@ for model in ['hadcm','trace','cmip6']:
 #%% 3 MH anoms
 #Settings
 save = False
-var = 'p-e'
+var = 'pre'
+if var == 'tas': 
+    cramp = 'RdBu_r'
+    units = 'degC'
+    mlevels = np.array([i /100 for i in list(range(-220,221,40))])
+else: 
+    cramp = 'BrBG'
+    units = 'mm/day'
+    mlevels = np.array([i /100 for i in list(range(-55,56,10))])
 ka = [0.5,6]
-models  = ['trace','hadcm','cmip6']
+models  = ['cmip6']#['trace','hadcm','cmip6']
 seasons = ['ANN','JJA','DJF'] 
 modelAnom = {}
 s = 3
-mlevels = np.array([i /100 for i in list(range(-55,56,10))])
+
 #Calculate anoms
 for model in ['hadcm','trace']:
     for szn in seasons:
@@ -68,16 +76,16 @@ for model in models:
         data_cyclic,lon_cyclic = cutil.add_cyclic_point(data,coord=data.lon.data)
         model_contour = plt.contourf(lon_cyclic, data.lat.data, 
                                      data_cyclic,transform=ccrs.PlateCarree(),
-                                     levels=mlevels,extend='both',cmap='BrBG')
+                                     levels=mlevels,extend='both',cmap=cramp)
         plt.title(model+' '+szn,fontsize=8)
 ax1 = plt.subplot(gs[len(seasons)*s:len(seasons)*s+1,0:len(models)*s])
 ax1.axis('off')
 plt.colorbar(model_contour,cax=inset_axes(ax1,width='90%',height="20%",loc="center"),
-            orientation="horizontal").set_label('mm/day',fontsize=8,c='black')
+            orientation="horizontal").set_label(units,fontsize=8,c='black')
 plt.tick_params(labelsize=8)
 plt.title(var+' Mid-Holocone (6ka) Anomalies Relative to PI (0.5ka)',fontsize=10)
 #Save or show
-if save: plt.savefig(dataDir+'Figures/midHoloceneModeledAnoms_'+var+'.png',
+if save: plt.savefig(dataDir+'Figures/Model/midHoloceneModeledAnoms_'+var+'.png',
                      dpi=400,format='png',bbox_inches='tight')       
 else: plt.show()
 
@@ -100,7 +108,7 @@ for model in ['hadcm','trace']:
 #Calculate %
 dataPct = (((data+14)/2)/14)*100
 #Load Proxy Data and get geographic position of regionmask labels
-refReg = regionmask.defined_regions.ar6.land
+refReg = rm.defined_regions.ar6.land
 proxy = pd.read_csv(dataDir+'Data/midHCpct.csv')[['V1','V2','V3']]
 plats = []
 plons = []
@@ -136,7 +144,7 @@ plt.colorbar(model_contour,cax=inset_axes(ax1,width='70%',height="4%",loc="lower
              orientation="horizontal").set_label('% positive (wet '+var+') mid-Holocene anomaly',fontsize=8,c='black')
 plt.tick_params(labelsize=8)
 #Save or show
-if save: plt.savefig(dataDir+'Figures/midHoloceneAgreement_'+var+'.png',
+if save: plt.savefig(dataDir+'Figures/Model/midHoloceneAgreement_'+var+'.png',
                      dpi=400,format='png',bbox_inches='tight')       
 else: plt.show()
 
@@ -144,14 +152,22 @@ else: plt.show()
 
 #%% 5 Transient Trends
 #Settings
-save = False
-var = 'p-e'
+save = True
+var = 'tas'
+if var == 'tas': 
+    cramp = 'RdBu_r'
+    units = 'degC'
+    mlevels = np.array([i /100 for i in list(range(-110,111,20))])
+else: 
+    cramp = 'BrBG'
+    units = 'mm/day'
+    mlevels = np.array([i /100 for i in list(range(-11,12,1))])
 ka = [0,6,12]
 models  = ['trace','hadcm']
 szn = 'ANN'
 modelTrends = {}
 s = 3
-mlevels = np.array([i /100 for i in list(range(-11,12,1))])
+
 #Calculate model trends
 for model in ['hadcm','trace']:
     for t in range(len(ka)-1):
@@ -190,28 +206,29 @@ for model in models:
         data_cyclic,lon_cyclic = cutil.add_cyclic_point(data,coord=lons)
         model_contour = plt.contourf(lon_cyclic, lats, 
                                      data_cyclic,transform=ccrs.PlateCarree(),
-                                     levels=mlevels,extend='both',cmap='BrBG')
+                                     levels=mlevels,extend='both',cmap=cramp)
         plt.title(model+'_'+str(ka[t+1])+'to'+str(ka[t]),fontsize=8)
 ax1 = plt.subplot(gs[6:7,0:len(models)*s])
 ax1.axis('off')
 plt.colorbar(model_contour,cax=inset_axes(ax1,width='90%',height="20%",loc="center"),
-            orientation="horizontal").set_label('mm/day/ka',fontsize=8,c='black')
+            orientation="horizontal").set_label(units+'/ka',fontsize=8,c='black')
 plt.tick_params(labelsize=8)
 #plt.set_ticklabels(mlevels)
 plt.title(var+' '+szn+' Holocene Trends',fontsize=10)
-if save: plt.savefig(dataDir+'Figures/HoloceneTrends_'+var+'_'+szn+'.png',
+if save: plt.savefig(dataDir+'Figures/Model/HoloceneTrends_'+var+'_'+szn+'.png',
                      dpi=400,format='png',bbox_inches='tight')       
 else: plt.show()
 
 #%% 6 Plot correlation between 2 transient models? 
-times = [6,12]
+times = [0,12]
 var = 'p-e'
-szn = 'ANN'
-#Load data
+szn = 'DJF'
+#Load data 
+#lon
 dataHa = modelData['hadcm'][szn][var]
 dataTr = modelData['trace'][szn][var]
 modelR = np.full(np.shape(dataTr)[1:3],np.NaN)
-land = rm.defined_regions.natural_earth.land_110.mask_3D(data.lon,data.lat).squeeze('region').data
+land = rm.defined_regions.natural_earth.land_110.mask_3D(dataTr.lon,dataTr.lat).squeeze('region').data
 t0 = np.argmin(np.abs(times[0]*1000 - dataHa.time.data))   
 t1 = np.argmin(np.abs(times[1]*1000 - dataHa.time.data))  
 #reGrid 
@@ -225,66 +242,40 @@ for lat in range(len(dataTr.lat)):
 mlevels = np.array([i /10 for i in list(range(-10,11,2))])
 
 plt.style.use('ggplot')
-plt.figure(figsize=(6,4))
+plt.figure(figsize=(6,6))
 plt.rcParams['axes.facecolor'] ='white'
 plt.rcParams['axes.linewidth'] = 1
 plt.rcParams['axes.edgecolor'] = 'k'
-gs = gridspec.GridSpec(6,2)
-ax1 = plt.subplot(gs[0:6,0:2],projection=ccrs.Robinson()) 
-ax1.spines['geo'].set_edgecolor('black')
-ax1.set_global()
-ax1.coastlines()
-ax1.add_feature(cfeature.LAND,facecolor='whitesmoke',edgecolor='k')
-ax1.add_feature(cfeature.LAKES,facecolor='none',edgecolor='k') #dataSlP= dataSl
+gs = gridspec.GridSpec(7,4)
+ax = plt.subplot(gs[0:5,0:4],projection=ccrs.Robinson()) 
+ax.spines['geo'].set_edgecolor('black')
+ax.set_global()
+ax.coastlines()
+ax.add_feature(cfeature.LAND,facecolor='whitesmoke',edgecolor='k')
+ax.add_feature(cfeature.LAKES,facecolor='none',edgecolor='k') #dataSlP= dataSl
 data_cyclic,lon_cyclic = cutil.add_cyclic_point(modelR,coord=dataTr.lon.data)
 model_contour = plt.contourf(lon_cyclic, dataTr.lat.data, 
                              data_cyclic,transform=ccrs.PlateCarree(),
-                             levels=mlevels,cmap='RdBu_r') 
+                             levels=mlevels,cmap='RdGy_r') 
 plt.title('Correlation between hadcm/trace ('+var+' '+szn+') ('+str(times[0])+'-'+str(times[1])+'ka)',fontsize=12)
-plt.colorbar(model_contour,cax=inset_axes(ax1,width='60%',height="4%",loc=8),
+plt.colorbar(model_contour,cax=inset_axes(ax,width='70%',height="4%",loc=8),
              orientation="horizontal").set_label('r-value (pearsons correlation)',fontsize=12,c='black')
-plt.show()
-#%% 
-mlevels = np.array([-1,-2/3,-1/3,-0.1,0.1,1/3,2/3,1])
+ax = plt.subplot(gs[5:7,0:4]) 
 
-for climVar in ['p-e_ANN']:#,'pre_JJA','p-e_ANN','p-e_JJA']:#,'pre_DJF','pre_JJA']:
-    var  = climVar[:3]
-    szn  = climVar[len(climVar)-3:]
-    dataTr = modelData['trace'][szn][var].groupby_bins('time',range(0,6001,100)).mean(dim="time")
-    dataHa = modelData['hadcm'][szn][var].groupby_bins('time',range(0,6001,100)).mean(dim="time")
-    hadaRg = np.full(np.shape(dataTr)[1:3],np.NaN)
-    land   = regionmask.defined_regions.natural_earth.land_110
-    land   = land.mask_3D(dataTr.lon,dataTr.lat)  
-    for i in range(np.shape(dataTr)[1]):
-        for j in range(np.shape(dataTr)[2]):
-            if land.data[0,i,j] == True:
-                lat = np.argmin(np.abs(dataTr.lat.data[i] - dataHa.lat.data))                  
-                lon = np.argmin(np.abs(dataTr.lon.data[j] - dataHa.lon.data))
-                hadaRg[i,j] = pearsonr(dataTr[:,i,j].data,dataHa[:,lat,lon].data)[0]
-    plt.style.use('ggplot')
-    plt.figure(figsize=(12,20))
-    plt.rcParams['axes.facecolor'] ='white'
-    plt.rcParams['axes.linewidth'] = 1
-    plt.rcParams['axes.edgecolor'] = 'k'
-    plt.title(climVar,fontsize=12)
-    gs = gridspec.GridSpec(6,2)
-    ax1 = plt.subplot(gs[n-1:n,0:1],projection=ccrs.Robinson()) 
-    ax1.spines['geo'].set_edgecolor('black')
-    ax1.set_global()
-    ax1.coastlines()
-    ax1.add_feature(cfeature.LAND,facecolor='whitesmoke',edgecolor='k')
-    ax1.add_feature(cfeature.LAKES,facecolor='none',edgecolor='k')
-    #dataSlP= dataSl
-    data_cyclic,lon_cyclic = cutil.add_cyclic_point(hadaRg,
-                                                            coord=dataTr.lon.data)
-    model_contour = plt.contourf(lon_cyclic, dataTr.lat.data, 
-                                         data_cyclic,transform=ccrs.PlateCarree(),
-                                         levels=mlevels,extend='both',cmap='BrBG') 
-    plt.title('agreement between hadcm/trace '+climVar,fontsize=12)
-    plt.colorbar(model_contour,cax=inset_axes(ax1,width='60%',height="4%",loc=8),ticks=range(0,13),
-                 orientation="horizontal").set_label('ka',fontsize=12,c='black')
-    plt.show()
-print(np.nanmean(hadaRg))
+cm = plt.cm.get_cmap('RdGy_r',10)
+n, bins, patches = ax.hist(modelR.flatten(), range = [-1,1],
+                           bins=10, alpha=1, density=True,
+            label='All Gridcells',edgecolor='k',lw= 1)
+for i, p in enumerate(patches):
+    plt.setp(p, 'facecolor', cm(i/10)) # notice the i/25
+
+ax.set_xlim([-1,1])
+ax.axvline(x=np.mean(modelR),c='k')
+ax.axvline(x=np.mean(modelR[land]),c='k',linestyle='--')
+if save: plt.savefig(dataDir+'Figures/Model/HoloceneCorrelations_'+var+'_'+szn+
+                      '('+str(times[0])+'_'+str(times[1])+'ka).png',
+                     dpi=400,format='png',bbox_inches='tight')       
+else: plt.show()
 
 #%% 7 When is the wettest century
 save = True

@@ -105,10 +105,14 @@ for szn in ens.keys(): #combine pi and mh into single xarray with time dim
     cmipEns[szn] = cmipEns[szn].assign_coords(time=['mh','pi'])
 
 #np.save(saveDir+'Data/Model/cmip6_modelPy.npy',cmipEns)
+
 #%% 
 for szn in ens.keys(): #combine pi and mh into single xarray with time dim
     cmipEns[szn] = cmipEns[szn].drop(['pre','evp','tas','lat','lon'])
+    cmipEns[szn] = cmipEns[szn].drop_dims(['lat','lon'])
     cmipEns[szn].to_netcdf(saveDir+'Data/Model/cmip6'+'_'+szn+'.nc')
+
+
 
 
 #%% 4. Load Michael's netcdf files and convert to uniform units/nameing
