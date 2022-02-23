@@ -1,0 +1,120 @@
+---
+goal: Convert netcdf data from model simulations into common time, units, and variable names 
+input: model netcdf files; LiPD files; refRegions;
+output: rdata for trace and hadcm
+author: chris hancock
+---
+
+setwd(githubDir)
+###Settings in script
+
+
+###Load Packages
+```{r}
+library(dplyr)
+library(lipdR)
+library(maptools)
+library(ncdf4) 
+library(proj4)
+library(sf)
+library(sp)
+library(tidyverse)
+```
+
+```{r}
+#Set up directories and names
+githubDir <- getwd()
+ageres   <- 200
+binyears <- seq(0,12000,ageres)
+```
+
+
+###Define model names and convesions in a constant form
+```{r}
+modelDict <- vector(mode="list")
+#TRACE
+modelDict$trace <- vector(mode="list")
+modelDict$trace$name   <- c('/trace.01-36.22000BP.cam2.','.22000BP_decavg','_400BCE.nc')
+modelDict$trace$precip <- c(name='PRECT',
+                            slope=(60*60*24*1000),
+                            intercept=0) #converts m/s to mm/day
+modelDict$trace$evap   <- c(name='QFLX',
+                            slope=(1/1000)*(60*60*24*1000),
+                            intercept=0) #converts kg/m2/s to m/s to mm/day
+modelDict$trace$temp   <- c(name='TREFHT',
+                            slope=1,
+                            intercept=-273.15)  #converts K to degC
+modelDict$trace$time   <- c(name='time',
+                            slope=-1000,
+                            intercept=0) #To 0-12ka Holocene
+modelDict$trace$lat    <- c(name='lat',
+                            slope=1,
+                            intercept=0)
+modelDict$trace$lon    <- c(name='lon',
+                            slope=1,
+                            intercept=0)
+#HADCM
+modelDict$hadcm <- vector(mode="list")
+modelDict$hadcm$name   <- c('/deglh.vn1_0.','.monthly.','.nc')
+modelDict$hadcm$precip <- c(name='precip_mm_srf',
+                            slope=(1/1000)*(60*60*24*1000),
+                            intercept=0) #converts kg/m2/s to m/s to mm/day
+modelDict$hadcm$evap   <- c(name='totalEvap_mm_srf',
+                            slope=1,
+                            intercept=0) #already in mm/day
+modelDict$hadcm$temp   <- c(name='temp_mm_1_5m',
+                            slope=1,
+                            intercept=-273.15)  #converts K to degC
+modelDict$hadcm$time   <- c(name='t',
+                            slope=-1,
+                            intercept=2000) #To 0-12ka Holocene
+modelDict$hadcm$lat    <- c(name='latitude',slope=1,intercept=0)
+modelDict$hadcm$lon    <- c(name='longitude',slope=1,intercept=0)
+```
+
+###Load netcdf file and standardize names/units... into list format and save
+```{r}
+for (model in names(modelDict)){
+  modelData<-vector(mode='list')
+  for (season in c('ANN','DJF','JJA')){
+    data <- vector(mode="list")
+    print(season)
+    for (variable in c('precip','evap','temp')){
+      variableData <- nc_open(file.path(githubDir,'data','Model_transient','netcdf',model,
+                              paste(modelDict[[model]]$name[1],
+                                    modelDict[[model]][[variable]]['name'],
+                                    modelDict[[model]]$name[2],
+                                    season,
+                                    modelDict[[model]]$name[3],
+                                    sep='')))
+      data[[variable]] <- ncvar_get(variableData, modelDict[[model]][[variable]]['name'])
+    }
+    data$lon  <- ncvar_get(variableData, modelDict[[model]]$lon['name'])
+    data$lon  <- ifelse(data$lon > 180, -360 + data$lon, data$lon)
+    data$lat  <- ncvar_get(variableData, modelDict[[model]]$lat['name'])
+    data$time <- ncvar_get(variableData, modelDict[[model]]$time['name'])
+    for (variable in names(modelDict[[model]][-1])){
+      slope     <- as.numeric(modelDict[[model]][[variable]][['slope']])
+      intersept <- as.numeric(modelDict[[model]][[variable]][['intercept']])
+      data[[variable]] <- data[[variable]]* slope + intersept
+    }
+    data$pe <- data$precip - data$evap
+    for (variable in c('precip','evap','pe','temp')){
+      dataBinned <- array(dim=c(length(data$lon),length(data$lat),length(binyears)))
+      for (age in binyears){
+        idx <- which(between(data$time,age-ageres/2,age+ageres/2))
+        dataBinned[,,which(binyears==age)] <- apply(data[[variable]][,,idx],c(1,2),mean,na.rm=TRUE)
+      }
+      data[[variable]] <- dataBinned
+    }
+    data$time <- binyears
+    print(dim(dataBinned))
+    modelData[[season]] <- data 
+  }
+  saveRDS(modelData, 
+          file.path(githubDir,'Data','Model_transient','rData','raw',paste(model,'rds',sep='.')))
+}
+```
+
+
+

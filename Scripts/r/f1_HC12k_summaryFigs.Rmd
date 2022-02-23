@@ -8,7 +8,7 @@ author: chris hancock
 ###Settings in script
 ```{r}
 #Set up directories and names
-githubDir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #getwd()
+dataDir <-getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/' #
 figSize <- c(5,2.5)
 figFont <- 'sans'
 figText <- 8
@@ -33,23 +33,23 @@ library(tidyverse)
 
 ###Input Data
 ```{r, warning=FALSE}
-lipdData <- readRDS(file=file.path(githubDir,'Data','LiPD','lipdData.rds'))
+lipdData <- readRDS(file=file.path(dataDir,'Data','LiPD','lipdData.rds'))
 
 PROJ       <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
 PROJorig   <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-refregions <- readShapePoly(file.path(githubDir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
+refregions <- readShapePoly(file.path(dataDir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
                             proj4string=CRS(PROJorig))
 refregions <-  spTransform(refregions, CRSobj = PROJ)
 
 countries  <- getMap("less islands")
 countries  <- spTransform(countries,  CRSobj = PROJ)
 
-climVar    <- 'HC'
-lipdTSO    <- lipdData[[climVar]]
+
 ```
 
 ###Add information about proxy categories
 ```{r}
+climVar    <- 'HC'
 lipdTSO <- lipdData[[climVar]]
 proxyMetaData <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
                         tsid          = pullTsVariable(lipdTSO,'paleoData_TSid'),
@@ -63,9 +63,24 @@ proxyMetaData <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
                         recordResPlus = pullTsVariable(lipdTSO,'ageResPlus'),
                         season        = pullTsVariable(lipdTSO,'climateInterpretation1_seasonalityGeneral'),
                         climInterp    = pullTsVariable(lipdTSO,'climateInterpretation1_variable'),
-                        source        = pullTsVariable(lipdTSO,'Source'))
+                        source        = pullTsVariable(lipdTSO,'Source'),
+                        ka_0.5 =  rep(NA, length(lipdTSO)),
+                        ka_6   =  rep(NA, length(lipdTSO))
+                        )
 
-write.csv(proxyMetaData,file=file.path(githubDir,'Data',paste('proxyMetaData_',climVar,'.csv',sep='')))
+for (tso in lipdTSO){
+  for (ka in c(0.5,6)){
+    proxyMetaData[which(proxyMetaData$tsid == tso$paleoData_TSid),paste('ka',ka,sep='_')] <-
+      round(mean(tso$paleoData_values[which(between(tso$age,1000*ka-500,1000*ka+500))],na.rm = TRUE),3)
+  }
+}
+
+write.csv(proxyMetaData,file=file.path(dataDir,'Data',paste('proxyMetaData_',climVar,'.csv',sep='')))
+```
+
+```{r}
+
+
 ##############################
 ###Create list of color information
 plotVals <- vector(mode='list')
@@ -121,7 +136,7 @@ pie <- ggplot(pieData2,aes(x="", y=n, fill=source)) +
         #legend.title = element_blank())#,legend.position = 'none')# legend.position = c(0.5,0.7))
 if (save) {
   ggsave(plot=pie , width = figSize[1], height = figSize[2], units='in', dpi = 600,
-       filename = file.path(githubDir,"Figures","PlotProxySource.png"))
+       filename = file.path(dataDir,"Figures","PlotProxySource.png"))
 }
 pie
 ```
@@ -165,9 +180,9 @@ plotResPlus
 
 if (save) {
   ggsave(plot=plotRes, width = figSize[1], height = figSize[2], units='in', dpi = 600,
-         filename = file.path(githubDir,"Figures","PlotProxyAgeRes.png"))
+         filename = file.path(dataDir,"Figures","PlotProxyAgeRes.png"))
   ggsave(plot=plotResPlus, width = figSize[1], height = figSize[2], dpi = 600,
-         filename = file.path(githubDir,"Figures","PlotProxyAgeResPlus.png"))
+         filename = file.path(dataDir,"Figures","PlotProxyAgeResPlus.png"))
 }
 ```
 
@@ -193,7 +208,7 @@ plotRange <- ggplot(proxyMetaData)+
 plotRange
 if (save) {
   ggsave(plot=plotRange, width = figSize[1], height = figSize[2], units='in', dpi = 600,
-         filename = file.path(githubDir,"Figures","PlotProxyAgeRange.png"))
+         filename = file.path(dataDir,"Figures","PlotProxyAgeRange.png"))
 }
 ```
 
@@ -218,7 +233,7 @@ plotTime <- ggplot(plotTimeData$data,aes(yvec,value))+
 plotTime
 if (save) {
   ggsave(plot=plotTime, width = figSize[1], height = figSize[2], units='in', dpi = 600,
-         filename = file.path(githubDir,"Figures","PlotTimeAvailability.png"))
+         filename = file.path(dataDir,"Figures","PlotTimeAvailability.png"))
 }
 ```
 
@@ -304,7 +319,7 @@ proxyMapSites <- basemap +
 
 
 ggsave(plot=proxyMapSites, width = 6, height = 3.5, dpi = 600,
-       filename = file.path(githubDir,"Figures",paste('PlotProxyTypeRegion_',climVar,'.png',sep='')))
+       filename = file.path(dataDir,"Figures",paste('PlotProxyTypeRegion_',climVar,'.png',sep='')))
 
 ```
 ```{r}
@@ -314,7 +329,7 @@ map <- ggarrange(proxyMapSites+theme(legend.position = c(0.05,0.3)),
                  ncol=1,widths=c(6),heights=c(3.5,1.5))
 
 ggsave(plot=map, width = 6, height = 5, dpi = 600,
-       filename = file.path(githubDir,"Figures",paste('PlotProxyTypeRegion_',climVar,'_withTime.png',sep='')))
+       filename = file.path(dataDir,"Figures",paste('PlotProxyTypeRegion_',climVar,'_withTime.png',sep='')))
 ```
 
 
@@ -342,7 +357,7 @@ proxyMapRegions
 
 
 ggsave(plot=proxyMapRegions, width = 6, height = (6/1.97+0.5), dpi = 600,
-       filename = file.path(githubDir,"Figures",paste('PlotCountByRegion_',climVar,'.png',sep='')))
+       filename = file.path(dataDir,"Figures",paste('PlotCountByRegion_',climVar,'.png',sep='')))
 ```
 
 
