@@ -10,7 +10,7 @@ library(proj4)
 library(sp)
 dataDir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
 var     <- 'HC'
-
+project = FALSE
 #Load Data----
 #Projections
 PROJ     <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
@@ -18,10 +18,10 @@ PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 #Refrence Region Shapefiles
 refReg   <- readShapePoly(file.path(dataDir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
                           proj4string=CRS(PROJorig))
-refReg   <-  spTransform(refReg, CRSobj = PROJ)
+if (project){refReg   <-  spTransform(refReg, CRSobj = PROJ)}
 #Countries for basemap
 countries  <- getMap("less islands")
-countries  <- spTransform(countries,  CRSobj = PROJ)
+if (project){countries  <- spTransform(countries,  CRSobj = PROJ)}
 #Load Proxy Information
 regPlts  <- read.csv(file.path(dataDir,'Data','RegionComposites',var,'MedianTSbyRegion.csv'))
 regnames <- as.character(refReg@data[["Acronym"]])[which(refReg@data[["Acronym"]]%in%names(regPlts))]
@@ -58,7 +58,7 @@ CatNames <- c("Glacier Ice","Lake Deposits",'Lake Sediment (Î´18O)','Leaf Wax (Î
 CatShape <- c(12,21,15,5, 6,13, 14,1, 23,11,17)
 
 #Create Plots-----
-sample = 2
+sample = 1
 if (var == 'HC'){
   if (sample == 1){regNames <- c('NWN','WNA','NEN','CNA','GIC','ENA','NEU','ESB','WCE','ECA','MED','WCA','SAU','NZ')
   } else{          regNames <- c('NCA','SCA','SAH','EAS','NEAF','TIB','SEAF','SAS','ESAF','SEA','WSAF','NES','NWS','SAM')}
@@ -69,8 +69,8 @@ if (var == 'HC'){
 
 for (reg in regNames){
   #Load Data for Region
-  regTso   <- filterTs(lipdTso,paste('geo_ipccRegion ==',reg))
-  name <- as.character(refReg@data[["Name"]])[which(refReg@data[["Acronym"]]==reg)]
+  regTso <- filterTs(lipdTso,paste('geo_ipccRegion ==',reg))
+  name   <- as.character(refReg@data[["Name"]])[which(refReg@data[["Acronym"]]==reg)]
   df <- tibble(dataset       = pullTsVariable(regTso,'dataSetName'),
                tsid          = pullTsVariable(regTso,'paleoData_TSid'),
                longitude     = pullTsVariable(regTso,'geo_longitude'),
@@ -79,15 +79,16 @@ for (reg in regNames){
                Category      = pullTsVariable(regTso,'Category'),
                CategorySpec  = pullTsVariable(regTso,'CategorySpecific'))
   df <- SpatialPointsDataFrame(df[,c("longitude", "latitude")], df, proj4string=CRS(PROJorig))
-  df <- as.data.frame(spTransform(df, CRSobj = PROJ))
+  if (project){df <- spTransform(df, CRSobj = PROJ)}
+  df <- as.data.frame(df)
   idx <- which(CatNames %in% unique(df$CategorySpec))
   regEnsNA <- read.csv(file.path(dataDir,'Data','RegionComposites',var,paste(reg,'.csv',sep='')))
   #Standardize mean at 0
   regEnsNA <- as.matrix(regEnsNA - as.numeric(apply(regEnsNA,2,mean,na.rm=TRUE)))
   regEnsNA <- regEnsNA / as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
   regEns   <- matrix(NA,nrow(regEnsNA),ncol(regEnsNA))
-  RegShp   <- subset(refReg, Acronym ==reg)
   #RegionMap
+  RegShp   <- subset(refReg, Acronym ==reg)
   regMap <-  ggplot() +
     geom_map(data=countries, map=fortify(countries),fill = "grey80",color="grey30",size=0.4,
              aes(x=long, y=lat, group=group, map_id=id)) +
@@ -95,14 +96,15 @@ for (reg in regNames){
              aes(x=long, y=lat, group=group, map_id=id)) +
     geom_star(data=df,size=1.7,color='Black',alpha=0.8,starstroke=0.4,
               aes(x=longitude.1,y=latitude.1,starshape=CategorySpec,fill=CategorySpec)) +
-    coord_fixed(xlim=range(fortify(RegShp)$lon)+diff(range(fortify(RegShp)$lon))*c(-0.05,0.05),
-                ylim=range(fortify(RegShp)$lat)+diff(range(fortify(RegShp)$lon))*c(-0.2,0.2))+
+    coord_fixed(xlim=range(fortify(RegShp)$lon)+80*c(-0.1,0.1),#diff(range(fortify(RegShp)$lon))
+                ylim=range(fortify(RegShp)$lat)+80*c(-0.2,0.2))+
     scale_fill_manual(values=CatColor[idx],name= 'Proxy Category') +
     scale_starshape_manual(values=CatShape[idx],name= 'Proxy Category') +
     theme_void() + 
     theme(panel.border    = element_rect(colour='Black',fill=NA,size=0.75),
           plot.background = element_rect(colour='White',fill='White'),
-          plot.margin     = unit(c(0, 0, 0,0.05), "in"),
+          panel.background = element_rect(colour='Black',fill='aliceblue'),
+          plot.margin     = unit(c(0.05, 0, 0.05,0.05), "in"),
           legend.position = 'none') 
   #Plot Time Availability for region
   pltT <- plotTimeAvailabilityTs(regTso,age.range=c(0,12000),group.var ='CategorySpecific',step=100)
@@ -110,7 +112,8 @@ for (reg in regNames){
     geom_area(alpha=1,aes(fill=group),color='Black',size=0.2) +
     scale_fill_manual(values=CatColor[idx],name= 'Proxy Category') +
     scale_x_reverse(limits=c(12000,0),expand=c(0,0),n.breaks=7)+
-    scale_y_continuous(limits=c(0,max(length(regTso)*1.25,10),expand=c(0,0)),labels=seq(0,8,8),breaks=seq(0,8,8))+
+    scale_y_continuous(limits=c(0,max(length(regTso)*1.25,10),expand=c(0,0)),
+                       labels=c(0,length(regTso)),breaks=c(0,length(regTso)),expand=c(0,0))+
     theme_bw()+ 
     theme(panel.background=element_rect(colour='Black',fill=NA),
           panel.border    =element_rect(colour='Black',color=,fill=NA),
@@ -132,21 +135,20 @@ for (reg in regNames){
     regEns[idx[1]:idx[2],] <- regEnsNA[idx[1]:idx[2],]                  
   } else{regEns<-regEnsNA}
   plotlimit_set <- 5
-  compBands <- vector(mode='list')
-  compBands$na <- plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEnsNA, alp=0.8,line.width=0.2,
+  compBands <- vector(mode = 'list')
+  compBands$na <-  plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEnsNA, alp=0.8,line.width=0.2,
                                            color.low='grey90',
                                            color.high='grey50',
-                                           color.line='grey20') 
+                                           color.line='grey20')
   compBands$ts <- plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=0.8,line.width=0.2,
                                            color.low=settings[[var]]$Col[1],
                                            color.high=settings[[var]]$Col[2],
-                                           color.line=settings[[var]]$Col[3]) 
-  compBandPlt <- ggdraw() 
+                                           color.line=settings[[var]]$Col[3])
   for (plt in names(compBands)){
     compBands[[plt]] <- compBands[[plt]] + 
       geom_hline(yintercept=0,size=0.2,color='black') +
       scale_x_reverse(limits=c(12000,0), expand=c(0,0), n.breaks=7)+ 
-      scale_y_continuous(limits=c(plotlimit_set*c(-1000,1000)),breaks=seq(-4,4,2),labels=abs(seq(-4,4,2)))+
+      scale_y_continuous(limits=c(plotlimit_set*c(-1000,1000)),breaks=seq(-4,4,2),labels=seq(-4,4,2))+
       coord_cartesian(xlim=c(12000,0), ylim=c(plotlimit_set*c(-1,1))) +
       ggtitle(paste(name,' (',reg,')',sep='')) + 
       theme_bw() +
@@ -156,23 +158,24 @@ for (reg in regNames){
             axis.ticks      = element_line(color = 'black', size=0.4), 
             axis.ticks.length = unit(-3,"pt"),
             axis.text.x = element_blank(),
-            plot.title = element_text(hjust = 0.5,vjust=-0.3,family='sans',size=10),
+            plot.title = element_text(hjust = 0.5,vjust=-0.3,family='sans',size=8),
             axis.title      = element_blank(),
             panel.grid      = element_blank(),
             plot.margin     = unit(c(0.05, 0.05, 0, 0.05), "in"),
             text = element_text(family='sans',size=8),
             legend.position='none')
-    if (plt == names(compBands)[1]){
-      compBands[[plt]] <- compBands[[plt]]+
-        theme(plot.background= element_rect(colour='White',fill='White'),
-              panel.grid.major=element_line(colour='light Grey',size=0.2))
-    } else{compBands[[plt]] <- compBands[[plt]]}
-    compBandPlt <- compBandPlt + draw_plot(compBands[[plt]], x = 0.3, y = 0.3, width = 0.7, height = 0.7)
-  }  #
-  regPlts[[reg]] <- compBandPlt + 
-    draw_plot(pltTime, x = 0.3, y = 0, width = 0.7, height = 0.3) + 
-    draw_plot(regMap,  x = 0,   y = 0, width = 0.3, height = 0.8)
+  }
+  compBands$na <- compBands$na +
+    theme(plot.background= element_rect(colour='White',fill='White'),
+        panel.border    =element_rect(colour='Black',fill=NA),
+        panel.grid.major=element_line(colour='light Grey',size=0.2))
+  regPlts[[reg]] <- ggdraw(ggplot() + theme(plot.background= element_rect(colour='White',fill='White'),
+                                            panel.background = element_rect(colour='White',fill='White')))+
+    draw_plot(ggarrange(compBands$na, pltTime, nrow = 2,heights=c(0.7,0.3)), x = 0.25, y = 0, width = 0.7, height = 1) +
+    draw_plot(ggarrange(compBands$ts, pltTime, nrow = 2,heights=c(0.7,0.3)), x = 0.25, y = 0, width = 0.7, height = 1) + 
+    draw_plot(regMap,  x = 0,   y = 0, width = 0.25, height = 0.8)
 }
+
 
 #Save Summary Plot-----
 plt <- ggplot() + theme(plot.background = element_rect(colour='White',fill='White'),

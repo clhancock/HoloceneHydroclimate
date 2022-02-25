@@ -51,31 +51,52 @@ countries  <- spTransform(countries,  CRSobj = PROJ)
 ```{r}
 climVar    <- 'HC'
 lipdTSO <- lipdData[[climVar]]
-proxyMetaData <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
-                        tsid          = pullTsVariable(lipdTSO,'paleoData_TSid'),
-                        longitude     = pullTsVariable(lipdTSO,'geo_longitude'),
-                        latitude      = pullTsVariable(lipdTSO,'geo_latitude'),
-                        ipccReg       = pullTsVariable(lipdTSO,'geo_ipccRegion'),
-                        Category      = pullTsVariable(lipdTSO,'Category'),
-                        CategorySpec  = pullTsVariable(lipdTSO,'CategorySpecific'),
-                        recordRange   = pullTsVariable(lipdTSO,'ageRange'),
-                        recordRes     = pullTsVariable(lipdTSO,'ageRes'),
-                        recordResPlus = pullTsVariable(lipdTSO,'ageResPlus'),
-                        season        = pullTsVariable(lipdTSO,'climateInterpretation1_seasonalityGeneral'),
-                        climInterp    = pullTsVariable(lipdTSO,'climateInterpretation1_variable'),
-                        source        = pullTsVariable(lipdTSO,'Source'),
-                        ka_0.5 =  rep(NA, length(lipdTSO)),
-                        ka_6   =  rep(NA, length(lipdTSO))
-                        )
+proxyDf <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
+                  tsid          = pullTsVariable(lipdTSO,'paleoData_TSid'),
+                  longitude     = pullTsVariable(lipdTSO,'geo_longitude'),
+                  latitude      = pullTsVariable(lipdTSO,'geo_latitude'),
+                  ipccReg       = pullTsVariable(lipdTSO,'geo_ipccRegion'),
+                  #Category      = pullTsVariable(lipdTSO,'Category'),
+                  #CategorySpec  = pullTsVariable(lipdTSO,'CategorySpecific'),
+                  recordRange   = pullTsVariable(lipdTSO,'ageRange'),
+                  recordRes     = pullTsVariable(lipdTSO,'ageRes'),
+                  recordResPlus = pullTsVariable(lipdTSO,'ageResPlus'),
+                  season        = pullTsVariable(lipdTSO,'climateInterpretation1_seasonalityGeneral'),
+                  climInterp    = pullTsVariable(lipdTSO,'climateInterpretation1_variable'),
+                  source        = pullTsVariable(lipdTSO,'Source'),
+                  direction     = pullTsVariable(lipdTSO,'climateInterpretation1_interpDirection'),
+                  ka_0.5        = rep(NA, length(lipdTSO)),
+                  ka_6          = rep(NA, length(lipdTSO)),
+                  maxValAge     = rep(NA, length(lipdTSO)),
+                  minValAge     = rep(NA, length(lipdTSO)),
+                  )
 
 for (tso in lipdTSO){
+  i = which(proxyDf$tsid == tso$paleoData_TSid)
+  vals = tso$paleoData_values[which(between(tso$age,0,12000))]
+  ages =              tso$age[which(between(tso$age,0,12000))]
   for (ka in c(0.5,6)){
-    proxyMetaData[which(proxyMetaData$tsid == tso$paleoData_TSid),paste('ka',ka,sep='_')] <-
-      round(mean(tso$paleoData_values[which(between(tso$age,1000*ka-500,1000*ka+500))],na.rm = TRUE),3)
+    proxyDf[i,paste('ka',ka,sep='_')]<-round(mean(vals[which(between(ages,1000*ka-500,1000*ka+500))],na.rm=TRUE),3)
   }
+  if (proxyDf[i,'direction']=='negative'){vals=vals*-1}
+  proxyDf[i,'maxValAge'] <- mean(ages[which(vals==max(vals,na.rm=TRUE))])
+  proxyDf[i,'minValAge'] <- mean(ages[which(vals==min(vals,na.rm=TRUE))])
 }
 
-write.csv(proxyMetaData,file=file.path(dataDir,'Data',paste('proxyMetaData_',climVar,'.csv',sep='')))
+
+write.csv(proxyDf,file=file.path(dataDir,'Data',paste('proxyMetaData_',climVar,'.csv',sep='')))
+```
+
+
+```{r}
+for (tso in lipdTSO[1:10]){
+  vals = tso$paleoData_values[which(between(tso$age,0,12000))]
+  ages = tso$age[which(between(tso$age,0,12000))]
+    proxyDf[i,minValAge] <-mean(ages[which(vals==max(vals,na.rm=TRUE))]))
+  proxyDf[i,minValAge] <-mean(ages[which(vals==max(vals,na.rm=TRUE))]))
+}
+
+  
 ```
 
 ```{r}

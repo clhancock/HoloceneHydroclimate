@@ -1,10 +1,10 @@
-#==============================================================================
-# This regrids model data using the xESMF package.
-#    author: Michael P. Erb
-#    date  : 2/3/2022
-#==============================================================================
+#=============================================================================
+# This regrids transient model data to CMIP resolution using the xESMF package
+# It also creates maps for pre/p-e/tas showing mid-Holocene - picontrol agreement
+# adpated from code provided by Michael Erb
 
 import numpy             as np
+import pandas            as pd
 import regionmask        as rm
 import xarray            as xr
 import xesmf             as xe
@@ -56,37 +56,61 @@ for model in ['hadcm','trace','cmip6']:
     for szn in ['ANN']:
         modelData[model][szn] = xr.open_dataset(dataDir+'Data/Model/'+model+'_'+szn+'_regrid.nc',decode_times=False)
 
+
 #%%Plot agreement
 #Settings
-save = False
-var = 'tas'
-if var == 'tas': cramp, units = 'RdBu_r','degC'
-else:            cramp, units = 'BrBG', 'mm/day'
-
-#Calculate sign of each gridcell and flatten into 2d
-modelVals = modelData['cmip6'][szn][var+'_regrid']
-modelVals = modelVals[0,:,:,:] - modelVals[1,:,:,:]
-modelN    = len(modelVals.model)
-modelAnom = np.sum(np.sign(modelVals),axis=0)
-dataPct   = (((modelAnom+modelN)/2)/modelN)*100
-
-#Plot
-plt.figure(figsize=(6,4))
-ax = rm.defined_regions.ar6.land.plot(projection=ccrs.Robinson(),
-                                      add_label=False,line_kws=dict(linewidth=1))
-model_agree = plt.pcolormesh(modelVals.lon_regrid, modelVals.lat_regrid, 
-                             dataPct,transform=ccrs.PlateCarree(),
-                             cmap=cramp,alpha=1,vmin=0,vmax=100)
-ax.coastlines()
-ax.set_global()
-plt.title('Model & Proxy Agreement for sign of MH-PI difference',fontsize=10)
-plt.colorbar(model_agree,
-             cax=inset_axes(ax,width='70%',height="4%",loc="lower center"),
-             orientation="horizontal").set_label(
-                 '% positive ('+var+') mid-Holocene anomaly',fontsize=10,c='k')
-if save: plt.savefig(dataDir+'Figures/Model/midHoloceneAgreement_'+var+'.png',
-                     dpi=400,format='png',bbox_inches='tight')       
-plt.show()
+save = True
+a=1
+for var in ['pre','p-e','tas']:
+    refReg = rm.defined_regions.ar6.all
+    if var == 'tas': 
+        cramp, units = 'RdBu_r','degC'
+        proxy = pd.read_csv(dataDir+'Data/proxyMetaData_Temp.csv')
+    else:            
+        cramp, units = 'BrBG', 'mm/day'
+        proxy = pd.read_csv(dataDir+'Data/proxyMetaData_HC.csv')
+    #
+    cramp = plt.cm.get_cmap(cramp,10)
+    #Calculate Proxy Percents for regions
+    pRegs, pPcts, plats, plons, = [],[],[],[]
+    for reg in np.unique(proxy['ipccReg']): 
+        regData = proxy.loc[proxy['ipccReg'] == reg]
+        if np.shape(regData)[0] <= 5: continue
+        direction = 2*((regData['direction'] != 'negative')-0.5)
+        regData = (regData['ka_6']-regData['ka_0.5'])*direction
+        pPcts.append(100*(sum(regData>0)/(sum(np.isnan(regData)==False)+sum(regData==0))))
+        plats.append(refReg.centroids[refReg.abbrevs.index(reg)][1])
+        plons.append(refReg.centroids[refReg.abbrevs.index(reg)][0])
+        pRegs.append(reg)
+    #
+    #Calculate sign of each gridcell and flatten into 2d
+    modelVals = modelData['cmip6'][szn][var+'_regrid']
+    modelVals = modelVals[0,:,:,:] - modelVals[1,:,:,:]
+    modelN    = len(modelVals.model)
+    modelAnom = np.sum(np.sign(modelVals),axis=0)
+    dataPct   = (((modelAnom+modelN)/2)/modelN)*100
+    #
+    #Plot
+    plt.figure(figsize=(6,4))
+    ax = refReg[pRegs].plot(projection=ccrs.Robinson(),add_label=False,line_kws=dict(linewidth=1))
+    model_agree = plt.pcolormesh(modelVals.lon_regrid, modelVals.lat_regrid, 
+                                 dataPct,transform=ccrs.PlateCarree(),
+                                 cmap=cramp,alpha=a,vmin=0,vmax=100)
+    ax.coastlines(lw=0.5)
+    ax.set_global()
+    ax.scatter(proxy['longitude'],proxy['latitude'],c='k',s=1,
+               transform=ccrs.PlateCarree())
+    ax.scatter(plons,plats,c=pPcts,transform=ccrs.PlateCarree(),
+               cmap=cramp,alpha=1,vmin=a,vmax=100,s=30,ec='k',lw=1)#plt.cm.get_cmap('BrBG',5),
+       
+    plt.title('Model & Proxy Agreement for sign of MH-PI difference',fontsize=10)
+    plt.colorbar(model_agree,
+                 cax=inset_axes(ax,width='70%',height="4%",loc="lower center"),
+                 orientation="horizontal").set_label(
+                     '% positive (annual '+var+') mid-Holocene anomaly',fontsize=10,c='k')
+    if save: plt.savefig(dataDir+'Figures/Model/midHoloceneAgreement_'+var+'.png',
+                         dpi=400,format='png',bbox_inches='tight')       
+    plt.show()
 
 
 
