@@ -49,15 +49,15 @@ countries  <- spTransform(countries,  CRSobj = PROJ)
 
 ###Add information about proxy categories
 ```{r}
-climVar    <- 'HC'
+climVar    <- 'T'
 lipdTSO <- lipdData[[climVar]]
 proxyDf <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
                   tsid          = pullTsVariable(lipdTSO,'paleoData_TSid'),
                   longitude     = pullTsVariable(lipdTSO,'geo_longitude'),
                   latitude      = pullTsVariable(lipdTSO,'geo_latitude'),
                   ipccReg       = pullTsVariable(lipdTSO,'geo_ipccRegion'),
-                  #Category      = pullTsVariable(lipdTSO,'Category'),
-                  #CategorySpec  = pullTsVariable(lipdTSO,'CategorySpecific'),
+                  Category      = pullTsVariable(lipdTSO,'Category'),
+                  CategorySpec  = pullTsVariable(lipdTSO,'CategorySpecific'),
                   recordRange   = pullTsVariable(lipdTSO,'ageRange'),
                   recordRes     = pullTsVariable(lipdTSO,'ageRes'),
                   recordResPlus = pullTsVariable(lipdTSO,'ageResPlus'),
@@ -78,7 +78,7 @@ for (tso in lipdTSO){
   for (ka in c(0.5,6)){
     proxyDf[i,paste('ka',ka,sep='_')]<-round(mean(vals[which(between(ages,1000*ka-500,1000*ka+500))],na.rm=TRUE),3)
   }
-  if (proxyDf[i,'direction']=='negative'){vals=vals*-1}
+  if (!is.na(proxyDf[i,'direction']) & proxyDf[i,'direction']=='negative'){vals=vals*-1}
   proxyDf[i,'maxValAge'] <- mean(ages[which(vals==max(vals,na.rm=TRUE))])
   proxyDf[i,'minValAge'] <- mean(ages[which(vals==min(vals,na.rm=TRUE))])
 }
@@ -88,16 +88,6 @@ write.csv(proxyDf,file=file.path(dataDir,'Data',paste('proxyMetaData_',climVar,'
 ```
 
 
-```{r}
-for (tso in lipdTSO[1:10]){
-  vals = tso$paleoData_values[which(between(tso$age,0,12000))]
-  ages = tso$age[which(between(tso$age,0,12000))]
-    proxyDf[i,minValAge] <-mean(ages[which(vals==max(vals,na.rm=TRUE))]))
-  proxyDf[i,minValAge] <-mean(ages[which(vals==max(vals,na.rm=TRUE))]))
-}
-
-  
-```
 
 ```{r}
 

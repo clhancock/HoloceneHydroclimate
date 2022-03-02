@@ -14,7 +14,7 @@ saveDir = dataDir + 'HoloceneHydroclimate/'
 dataDir = dataDir + 'Model/'
 
 #Set time variables and resolution of data
-ageMin=0; ageMax=12000; ageRes=100
+ageMin=0; ageMax=12500; ageRes=100
 binvec = list(range(ageMin-50,ageMax+51,ageRes))
 binyrs = list(range(ageMin,ageMax+1,ageRes))
 
@@ -70,6 +70,27 @@ cmip6['mh'] = {
 
 seasons = {'ANN':[0,1,2,3,4,5,6,7,8,9,10,11],'DJF':[0,1,11],'JJA':[5,6,7]}
 
+def maskmodeldata(values,lats,lons):
+    #Lat weights
+    wghts  = np.cos(np.deg2rad(lats))
+    #IPCC ref regions
+    refReg = rm.defined_regions.ar6.all
+    refReg = refReg.mask_3D(lons,lats)   
+    #Land mask
+    land   = rm.defined_regions.natural_earth.land_110
+    land   = land.mask_3D(lons,lats)   
+    land   = np.array([land.squeeze('region').data]*np.shape(refReg)[0])
+    #3d mask with land and refRegions
+    mask = refReg*land
+    #Average value by region
+    out = values.weighted(mask * wghts).mean(dim=("lat", "lon")).data
+    if sum(np.shape(out)) == len(refReg):#46: 
+        out = pd.DataFrame(out) 
+        out.index = list(mask.abbrevs.data)
+    else: out = pd.DataFrame(out, columns = list(mask.abbrevs.data))
+    return(out)
+
+
 #%% 3 Load CMIP netcdf files and convert to uniform units/nameing
 cmipEns = {'ANN':[],'JJA':[],'DJF':[]}
 for time in ['mh','pi']:
@@ -103,11 +124,20 @@ for time in ['mh','pi']:
 for szn in ens.keys(): #combine pi and mh into single xarray with time dim
     cmipEns[szn] = xr.concat(cmipEns[szn],dim='time')
     cmipEns[szn] = cmipEns[szn].assign_coords(time=['mh','pi'])
-
-#np.save(saveDir+'Data/Model/cmip6_modelPy.npy',cmipEns)
-
-#%% 
-for szn in ens.keys(): #combine pi and mh into single xarray with time dim
+    #Save anoms
+    for var in ['pre','p-e','tas']:
+        data = cmipEns[szn][var]
+        df = pd.DataFrame()
+        for n in range(len(data.model)):
+            #Calculate Difference
+            vals = data[0,n,:,:]-data[1,n,:,:]
+            #Get only values with orginal data
+            x = [i for i, w in enumerate(np.nanmean(vals,axis=0)) if np.isnan(w) == False]
+            y = [i for i, w in enumerate(np.nanmean(vals,axis=1)) if np.isnan(w) == False]
+            vals = vals[y,x]
+            df[str(data.model[n].data)] = maskmodeldata(vals,vals.lat,vals.lon)[0]
+        df=df.transpose()
+        df.to_csv(saveDir+'Data/Model/RegionTS/'+'regional_'+var+'_'+szn+'_cmip6.csv')      
     cmipEns[szn] = cmipEns[szn].drop(['pre','evp','tas','lat','lon'])
     cmipEns[szn] = cmipEns[szn].drop_dims(['lat','lon'])
     cmipEns[szn].to_netcdf(saveDir+'Data/Model/cmip6'+'_'+szn+'.nc')
@@ -156,39 +186,11 @@ for model in key.keys():
 
 #%% 5. Calculate regional timeseries and cmip mh anomolies
 
-def maskmodeldata(values,lats,lons):
-    #Lat weights
-    wghts  = np.cos(np.deg2rad(lats))
-    #IPCC ref regions
-    refReg = rm.defined_regions.ar6.land
-    refReg = refReg.mask_3D(lons,lats)   
-    #Land mask
-    land   = rm.defined_regions.natural_earth.land_110
-    land   = land.mask_3D(lons,lats)   
-    land   = np.array([land.squeeze('region').data]*np.shape(refReg)[0])
-    #3d mask with land and refRegions
-    mask = refReg*land
-    #Average value by region
-    out = values.weighted(mask * wghts).mean(dim=("lat", "lon")).data
-    if sum(np.shape(out)) == 46: 
-        out = pd.DataFrame(out) 
-        out.index = list(mask.abbrevs.data)
-    else: out = pd.DataFrame(out, columns = list(mask.abbrevs.data))
-    return(out)
 
-for model in ['hadcm','trace','cmip6']:
+for model in ['hadcm','trace']:
     for szn in ['ANN','JJA','DJF']:
         data = xr.open_dataset(saveDir+'Data/Model/'+model+'_'+szn+'.nc',decode_times=False)
         for var in ['pre','p-e','tas']:
-            if model == 'cmip6':
-                df = pd.DataFrame()
-                for n in range(len(data.model)):
-                    vals = data[var][0,n,:,:]-data[var][1,n,:,:]
-                    x = [i for i, w in enumerate(np.nanmean(vals,axis=0)) if np.isnan(w) == False]
-                    y = [i for i, w in enumerate(np.nanmean(vals,axis=1)) if np.isnan(w) == False]
-                    vals = vals[y,x]
-                    df[str(data.model[n].data)] = maskmodeldata(vals,vals.lat,vals.lon)[0]
-                df=df.transpose()
-            else: df = maskmodeldata(data[var],data[var].lat,data[var].lon)
+            df = maskmodeldata(data[var],data[var].lat,data[var].lon)
             df.to_csv(saveDir+'Data/Model/RegionTS/'+'regional_'+var+'_'+szn+'_'+model+'.csv')
             

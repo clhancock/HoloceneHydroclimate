@@ -43,7 +43,7 @@ m_2 = 'hadcm'
 #sns.palplot(sns.color_palette("BrBG", 7))
 from matplotlib.colors import LinearSegmentedColormap
 cramp = plt.cm.get_cmap('RdGy_r',10)
-cramp = LinearSegmentedColormap.from_list('cramp',['Black','white','#4A148C'],N=10)
+cramp = LinearSegmentedColormap.from_list('cramp',['#7f3b08','white','#2d004b'],N=10)
 
 #Load data
 modelData = {}

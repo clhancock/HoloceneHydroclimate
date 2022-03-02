@@ -5,21 +5,21 @@ import xarray     as xr
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-#from   mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
 models = ['trace','hadcm']
 szn = 'ANN'
-var = 'p-e'
+var = 'pre'
 modelData = {}
 for model in models:
     modelData[model] = {}
     name = 'Data/Model/'+model+'_'+szn+'.nc'
     modelData[model] = xr.open_dataset(dataDir+name,decode_times=False)
 proxy = pd.read_csv(dataDir+'Data/proxyMetaData_HC.csv')
+proxyData = proxy.loc[proxy['recordRange'] > 9000]
 
 
-
+#%%
 vals = {}
 for model in models:
     data = modelData[model][var]
@@ -39,12 +39,11 @@ for model in models:
                     vals[model+i+'_land'][lat,lon] = vals[model+i+'_all'][lat,
                                                                           lon]
 
-  #%%
-proxyData = proxy.loc[proxy['recordRange'] > 9000]
                 
-  #%%
+ #%%
   
-save=False
+save=True
+
 plt.figure(figsize=(5,4))
 plt.title('Distribution of wettest century in model data')
 gs = gridspec.GridSpec(3,2)
@@ -66,7 +65,7 @@ for i in ['wet','dry']:
         plt.ylabel(model,fontsize=8)
         ax.tick_params(labelsize=8)
         ax.set_xlim([12000,0])
-        ax.set_ylim([0,2000+500*row])
+        ax.set_ylim([0,2000+1000*row])
         ax.spines['right'].set_visible(True);ax.spines['top'].set_visible(True)
     ax = plt.subplot(gs[0:1,col:col+1])
     ax.hist(proxyData[name],  bins=12, alpha=1,density=False,

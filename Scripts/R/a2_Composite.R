@@ -17,18 +17,21 @@ library(tidyverse)
 
 #Set up directories and names
 dataDir <- getwd()
-climVar <- 'HC'
+climVar <- 'T'
 #
 
 ###Load Data
 lipdData <- readRDS(file.path(dataDir,'Data','LiPD','lipdData.rds'))
 lipdTSO  <- lipdData[[climVar]]
+if(climVar == 'T'){
+  lipdTSO <- filterTs(lipdTSO,'paleoData_units == degC')
+  lipdTSO <- filterTs(lipdTSO,'paleoData_datum == abs')
+}
 regNames <- sort(unique(as.character(pullTsVariable(lipdTSO,'geo_ipccRegion'))))
-climVar  <- 'HC'
 
 save=TRUE
 set.seed(5) #make reproducible
-#
+
 #Set variables for composite code
 nens          <- 1000    #lower = faster
 binsize       <- 100   #years (median resolution = 107yrs)
@@ -92,6 +95,9 @@ for (reg in regNames) {
     sample <- which(pullTsVariable(lipdReg,'paleoData_TSid') %in% lipdRegSample)
     lipdRegSample <- lipdReg#[sample]
     #Composite
+    if (climVar == 'HC'){
+      std <- TRUE
+    } else{std <- FALSE}
     tc <- compositeR::compositeEnsembles(fTS      = lipdRegSample,
                                          binvec   = binvec,
                                          stanFun  = standardizeMeanIteratively,
@@ -101,7 +107,7 @@ for (reg in regNames) {
                                          spread   = TRUE,
                                          duration = searchDur,
                                          searchRange = c(searchMin,searchMax),
-                                         normalizeVariance    = TRUE,
+                                         normalizeVariance    = std,
                                          scope    = "climate",
                                          minN     = 3) 
     compEns[,i] <- tc$composite
