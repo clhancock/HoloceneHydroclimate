@@ -49,13 +49,15 @@ countries  <- spTransform(countries,  CRSobj = PROJ)
 
 ###Add information about proxy categories
 ```{r}
-climVar    <- 'T'
+climVar    <- 'HC'
 lipdTSO <- lipdData[[climVar]]
 proxyDf <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
                   tsid          = pullTsVariable(lipdTSO,'paleoData_TSid'),
                   longitude     = pullTsVariable(lipdTSO,'geo_longitude'),
                   latitude      = pullTsVariable(lipdTSO,'geo_latitude'),
                   ipccReg       = pullTsVariable(lipdTSO,'geo_ipccRegion'),
+                  archive       = pullTsVariable(lipdTSO,'archiveType'),
+                  proxy = pullTsVariable(lipdTSO,'paleoData_proxy'),
                   Category      = pullTsVariable(lipdTSO,'Category'),
                   CategorySpec  = pullTsVariable(lipdTSO,'CategorySpecific'),
                   recordRange   = pullTsVariable(lipdTSO,'ageRange'),
@@ -83,7 +85,13 @@ for (tso in lipdTSO){
   proxyDf[i,'minValAge'] <- mean(ages[which(vals==min(vals,na.rm=TRUE))])
 }
 
+tablelist <- vector(mode='list')
+for (archive in unique(proxyDf$archive)){
+  summary <- proxyDf[which(proxyDf$archive == archive),]%>% group_by(proxy) %>% summarise(n = n())
+  tablelist[[paste(archive,'---------------------------')]] = as.data.frame(summary)
+}
 
+capture.output(tablelist, file = "ProxyArchiveCount_HoloceneHC.txt")
 write.csv(proxyDf,file=file.path(dataDir,'Data',paste('proxyMetaData_',climVar,'.csv',sep='')))
 ```
 
