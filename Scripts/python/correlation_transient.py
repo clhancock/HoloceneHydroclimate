@@ -1,6 +1,6 @@
 #%% 1 Load Packages
 import numpy      as np
-#import pandas     as pd
+import pandas     as pd
 import regionmask as rm
 import xarray     as xr
 #from scipy        import stats
@@ -11,6 +11,8 @@ import matplotlib.gridspec as gridspec
 from   mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import cartopy.crs as ccrs              # Packages for mapping in python
 import cartopy.util as cutil
+import cartopy.feature as cfeature
+
 dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
 #%% 
 def calcCorrelation (inData,model1,model2,var1,var2,season,t0=0,t1=12,mask=False):
@@ -38,8 +40,8 @@ times = [0,12]
 szn = 'ANN'
 v_1 = 'p-e'
 v_2 = 'tas'
-m_1 = 'trace'
-m_2 = 'trace'
+m_1 = 'hadcm'
+m_2 = 'hadcm'
 #import seaborn as sns
 #sns.palplot(sns.color_palette("BrBG", 7))
 from matplotlib.colors import LinearSegmentedColormap
@@ -67,25 +69,30 @@ else:
     lats,lons = modelData[m_1][szn]['lat_regrid'],modelData[m_1][szn]['lon_regrid']
     name = 'multi'+'_'+v_1+'_'+v_2+'_'+szn
 
-proxy=i#NEED TO CHANGE
+proxy= pd.read_csv(dataDir+'Data/'+'HC_T_RegionalProxyEnsCorrelations.csv')
 refReg = rm.defined_regions.ar6.all
     #Calculate Proxy Percents for regions
-pRegs, pVals, plats, plons, = [],[],[],[]
-for reg in np.unique(proxy['ipccReg']): 
-    #pVals.append(100*(sum(regData>0)/(sum(np.isnan(regData)==False)+sum(regData==0))))#NEED TO CHANGE
-    plats.append(refReg.centroids[refReg.abbrevs.index(reg)][1])
-    plons.append(refReg.centroids[refReg.abbrevs.index(reg)][0])
-    pRegs.append(reg)
+pltRegs, pltVals, pltlats, pltlons, = [],[],[],[]
+for reg in proxy.columns.values.tolist()[1:]: 
+    pltVals.append(np.nanmean(proxy[reg]))
+    pltlats.append(refReg.centroids[refReg.abbrevs.index(reg)][1])
+    pltlons.append(refReg.centroids[refReg.abbrevs.index(reg)][0])
+    pltRegs.append(reg) 
     #
 plt.style.use('default')
 gs = gridspec.GridSpec(12,8)
 ax = plt.subplot(gs[0:12,0:6],projection=ccrs.Robinson()) 
+#ax1 = refReg[pltRegs].plot(projection=ccrs.Robinson(),add_label=False,line_kws=dict(linewidth=1))
+#ax.ax1
 plt.title('r-values: '+m_1+' ('+szn+') ('+v_1+':'+v_2+')')
 ax.set_global()
-ax.coastlines()
+ax.coastlines(lw=0.5)
 data_cyclic,lon_cyclic = cutil.add_cyclic_point(rVals,coord=lons)
 model_contour = plt.contourf(lon_cyclic,lats, data_cyclic,transform=ccrs.PlateCarree(),
                              levels=mlevels,cmap=cramp) 
+ax.scatter(pltlons,pltlats,c=pltVals,transform=ccrs.PlateCarree(),
+           cmap=cramp,alpha=1,vmin=-1,vmax=1,s=50,ec='k',lw=1.5)#plt.cm.get_cmap('BrBG',5),
+
 cm = plt.cm.get_cmap(cramp,10)
 plt.colorbar(model_contour,cax=inset_axes(ax,width='70%',height="6%",loc=8),orientation="horizontal")
 
@@ -99,17 +106,20 @@ for lat in range(len(lats)):
         if mask[lat,lon]: rValsLand[lat,lon] = rVals[lat,lon]
               
 ax1.axvline(x=0,color='grey',lw=0.5)
+for i in range(-90,91,30):
+    ax1.axhline(y=i,color='grey',lw=0.2)
 ax1.axhline(y=0,color='grey',lw=0.5)
-ax1.axis([mlevels[0],mlevels[-1],min(lats),max(lats)])
+ax1.axis([mlevels[0],mlevels[-1],lats[-2],lats[1]])
 
 ax1.plot(np.nanmean(rVals, axis=1) ,lats,c='k',lw=1.5)
+ax1.scatter(pltVals,pltlats,c='midnightblue',s=5)#plt.cm.get_cmap('BrBG',5),
 
 x = np.nanmean(rValsLand, axis=1) 
 x[np.isnan(x)] = 0
 ax1.plot(x,lats,c='darkgreen',lw=1.5)
 
 ax1.set_xticks([])
-ax1.set_yticks(range(-90,91,30))
+ax1.set_yticks([])
 ax1.set_yticklabels([])
 if save: plt.savefig(dataDir+'Figures/Model/TransientCorrelations/'+name+'.png',
                      dpi=400,format='png',bbox_inches='tight')       
