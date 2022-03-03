@@ -1,14 +1,14 @@
 #%% 1 Load Packages
 import numpy      as np
 #import pandas     as pd
-#import regionmask as rm
+import regionmask as rm
 import xarray     as xr
 #from scipy        import stats
 from scipy.stats  import pearsonr
 #For Figures:
 import matplotlib.pyplot as plt         # Packages for making figures
 import matplotlib.gridspec as gridspec
-#from   mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from   mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import cartopy.crs as ccrs              # Packages for mapping in python
 import cartopy.util as cutil
 dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
@@ -67,6 +67,16 @@ else:
     lats,lons = modelData[m_1][szn]['lat_regrid'],modelData[m_1][szn]['lon_regrid']
     name = 'multi'+'_'+v_1+'_'+v_2+'_'+szn
 
+proxy=i#NEED TO CHANGE
+refReg = rm.defined_regions.ar6.all
+    #Calculate Proxy Percents for regions
+pRegs, pVals, plats, plons, = [],[],[],[]
+for reg in np.unique(proxy['ipccReg']): 
+    #pVals.append(100*(sum(regData>0)/(sum(np.isnan(regData)==False)+sum(regData==0))))#NEED TO CHANGE
+    plats.append(refReg.centroids[refReg.abbrevs.index(reg)][1])
+    plons.append(refReg.centroids[refReg.abbrevs.index(reg)][0])
+    pRegs.append(reg)
+    #
 plt.style.use('default')
 gs = gridspec.GridSpec(12,8)
 ax = plt.subplot(gs[0:12,0:6],projection=ccrs.Robinson()) 
