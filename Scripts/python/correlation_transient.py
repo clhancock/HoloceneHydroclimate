@@ -33,12 +33,13 @@ def calcCorrelation (inData,model1,model2,var1,var2,season,t0=0,t1=12,mask=False
 
 #%% 
 #Settings
+save=False
 times = [0,12]
 szn = 'ANN'
 v_1 = 'p-e'
 v_2 = 'tas'
-m_1 = 'hadcm'
-m_2 = 'hadcm'
+m_1 = 'trace'
+m_2 = 'trace'
 #import seaborn as sns
 #sns.palplot(sns.color_palette("BrBG", 7))
 from matplotlib.colors import LinearSegmentedColormap
@@ -56,7 +57,8 @@ for model in ['hadcm','trace']:
 #Calculate using function
 rVals = calcCorrelation(modelData,m_1,m_2,v_1,v_2,szn,times[0],times[1])
 
-#Plot 
+#%% #Plot 
+save = True
 mlevels = np.array([i /10 for i in list(range(-10,11,2))])
 if m_1 == m_2: 
     lats,lons = modelData[m_1][szn]['lat'],modelData[m_1][szn]['lon']
@@ -64,27 +66,78 @@ if m_1 == m_2:
 else: 
     lats,lons = modelData[m_1][szn]['lat_regrid'],modelData[m_1][szn]['lon_regrid']
     name = 'multi'+'_'+v_1+'_'+v_2+'_'+szn
+
+plt.style.use('default')
 gs = gridspec.GridSpec(12,8)
-ax = plt.subplot(gs[0:10,0:8],projection=ccrs.Robinson()) 
-plt.title('Correlation between '+m_1+'('+szn+'_'+v_1+') & '+m_2+'('+szn+'_'+v_2+')')
+ax = plt.subplot(gs[0:12,0:6],projection=ccrs.Robinson()) 
+plt.title('r-values: '+m_1+' ('+szn+') ('+v_1+':'+v_2+')')
 ax.set_global()
 ax.coastlines()
 data_cyclic,lon_cyclic = cutil.add_cyclic_point(rVals,coord=lons)
 model_contour = plt.contourf(lon_cyclic,lats, data_cyclic,transform=ccrs.PlateCarree(),
                              levels=mlevels,cmap=cramp) 
 cm = plt.cm.get_cmap(cramp,10)
-ax1 = plt.subplot(gs[10:12,1:7]) 
-n, bins, patches = ax1.hist(rVals.flatten(), range = [-1,1],
-                           bins=10, alpha=1, density=True,
-                           label='All Gridcells',edgecolor='k',lw= 1)
-for i, p in enumerate(patches): plt.setp(p, 'facecolor', cm(i/10)) 
-ax1.set_xlim([-1,1])
+plt.colorbar(model_contour,cax=inset_axes(ax,width='70%',height="6%",loc=8),orientation="horizontal")
 
-ax1.set_xticks(mlevels)
-ax1.axvline(x=np.mean(rVals),c='k')
-ax1.spines['right'].set_visible(True);ax1.spines['top'].set_visible(True)
+
+mask = rm.defined_regions.natural_earth.land_110.mask_3D(lons,lats).squeeze('region').data
+
+ax1 = plt.subplot(gs[3:9,6:8]) 
+rValsLand = np.full(np.shape(rVals),np.NaN) 
+for lat in range(len(lats)):
+    for lon in range(len(lons)):
+        if mask[lat,lon]: rValsLand[lat,lon] = rVals[lat,lon]
+              
+ax1.axvline(x=0,color='grey',lw=0.5)
+ax1.axhline(y=0,color='grey',lw=0.5)
+ax1.axis([mlevels[0],mlevels[-1],min(lats),max(lats)])
+
+ax1.plot(np.nanmean(rVals, axis=1) ,lats,c='k',lw=1.5)
+
+x = np.nanmean(rValsLand, axis=1) 
+x[np.isnan(x)] = 0
+ax1.plot(x,lats,c='darkgreen',lw=1.5)
+
+ax1.set_xticks([])
+ax1.set_yticks(range(-90,91,30))
+ax1.set_yticklabels([])
+if save: plt.savefig(dataDir+'Figures/Model/TransientCorrelations/'+name+'.png',
+                     dpi=400,format='png',bbox_inches='tight')       
+plt.show()
+
+#%%
+for land in ['all','land']:
+    if land == 'all':
+        ax1 = plt.subplot(gs[3:9,6:7]) 
+        x = np.nanmean(rVals, axis=1) 
+    else:
+        ax1 = plt.subplot(gs[3:9,7:8]) 
+        rValsLand = np.full(np.shape(rVals),np.NaN) 
+        for lat in range(len(lats)):
+            for lon in range(len(lons)):
+                if mask[lat,lon]: rValsLand[lat,lon] = rVals[lat,lon]
+        x = np.nanmean(rValsLand, axis=1) 
+        x[np.isnan(x)] = 0
+    ax1.axvline(x=0,color='grey',lw=0.5)
+    ax1.axhline(y=0,color='grey',lw=0.5)
+    ax1.axis([mlevels[0],mlevels[-1],min(lats),max(lats)])
+    lc = LineCollection([np.column_stack([x[i:i+2],lats[i:i+2]]) for i in range(len(x)-1)], 
+                        array=x,cmap=cramp,lw=2)
+    ax1.add_collection(lc)
+    ax1.plot(x,lats,c='k',lw=2)
+    ax1.set_xticks([])
+    ax1.set_yticks(range(-90,91,30))
+    ax1.set_yticklabels([])
+plt.show()
+#%%
+
+#%%
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+from matplotlib.colors import ListedColormap, BoundaryNorm
+
 #plt.colorbar(model_contour,cax=inset_axes(ax,width='70%',height="4%",loc=8),orientation="horizontal")
-
 if save: plt.savefig(dataDir+'Figures/Model/TransientCorrelations/'+name+'.png',
                      dpi=400,format='png',bbox_inches='tight')       
 plt.show()

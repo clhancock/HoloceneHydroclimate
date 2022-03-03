@@ -30,7 +30,7 @@ if(climVar == 'T'){
 regNames <- sort(unique(as.character(pullTsVariable(lipdTSO,'geo_ipccRegion'))))
 
 save=TRUE
-set.seed(5) #make reproducible
+set.seed(5) #make reproducible#
 
 #Set variables for composite code
 nens          <- 1000    #lower = faster

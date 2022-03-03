@@ -44,7 +44,7 @@ for model in models:
   
 save=True
 
-plt.figure(figsize=(5,4))
+plt.figure(figsize=(5,4)) ###
 plt.title('Distribution of wettest century in model data')
 gs = gridspec.GridSpec(3,2)
 for i in ['wet','dry']:
