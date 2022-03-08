@@ -1,7 +1,7 @@
 #%% 1 Load Packages
 import numpy      as np
-#import pandas     as pd
-#import regionmask as rm
+import pandas     as pd
+import regionmask as rm
 import xarray     as xr
 from scipy        import stats
 #from scipy.stats  import pearsonr
@@ -26,6 +26,14 @@ for model in ['hadcm','trace','cmip6']:
     modelData[model] = {}
     for szn in ['ANN','JJA','DJF']:
         modelData[model][szn] = xr.open_dataset(dataDir+'Data/Model/'+model+'_'+szn+'.nc',decode_times=False)
+
+
+#%%
+
+data = modelData['cmip6']['ANN']
+land = rm.defined_regions.natural_earth.land_110.mask_3D(data.lon_regrid,data.lat_regrid)
+land = land.squeeze('region').data
+pd.DataFrame(land).to_csv(dataDir+'Data/Model/cmip6LandMask.csv')
 
 #%% 3 MH anoms
 #Settings
