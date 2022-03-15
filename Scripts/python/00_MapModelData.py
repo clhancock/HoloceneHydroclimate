@@ -2,7 +2,7 @@
 import numpy      as np
 import pandas     as pd
 import regionmask as rm
-import xarray     as xr
+import xarray     as xr 
 from scipy        import stats
 #from scipy.stats  import pearsonr
 #For Figures:
@@ -37,8 +37,9 @@ pd.DataFrame(land).to_csv(dataDir+'Data/Model/cmip6LandMask.csv')
 
 #%% 3 MH anoms
 #Settings
+plt.rcParams['legend.fontsize']=8
 
-var = 'tas'
+var = 'p-e'
 if var == 'tas': 
     cramp, units = 'RdBu_r','degC'
     mlevels = np.array([i /100 for i in list(range(-220,221,40))])
@@ -60,7 +61,6 @@ for model in ['cmip6']:
         data = data.rename({'lat_regrid':'lat','lon_regrid':'lon'})
         modelAnom[model+'_'+szn] = np.mean(data,axis=0)
         
-     
 #Plot Figure
 save = True
 plt.style.use('ggplot')
@@ -89,13 +89,12 @@ for t in range(0,len(ka)-1):
             model_contour = plt.contourf(lon_cyclic, data.lat.data, 
                                          data_cyclic,transform=ccrs.PlateCarree(),
                                          levels=mlevels,extend='both',cmap=cramp)
-            plt.title(model+' '+szn+' ('+str(ka[t+1])+'ka-'+str(ka[t])+'ka)',
+            plt.title(model+' '+szn+' ('+str(ka[t+1])+'-'+str(ka[t])+'ka)',
                       fontsize=8)
-ax1 = plt.subplot(gs[(h*s):(h*s+1),0:len(models)*s])
-ax1.axis('off')
-plt.colorbar(model_contour,cax=inset_axes(ax1,width='90%',height="20%",loc="center"),
-            orientation="horizontal").set_label(units,fontsize=8,c='black')
-plt.title(var+' (Mid-Holocone - PI)',fontsize=10)
+ax = plt.subplot(gs[(h*s):(h*s+1),0:len(models)*s])
+ax.axis('off')
+cbar = plt.colorbar(model_contour,cax=inset_axes(ax,width='90%',height="30%",loc="upper center"),
+            orientation="horizontal",ticks=[-0.55,-0.25,0,0.25,0.55]).set_label(var+' Difference ('+units+')',fontsize=8,c='black')
 #Save or show
 if save: plt.savefig(dataDir+'Figures/Model/Anomolies/transModeledAnoms_'+var+'.png',
                      dpi=400,format='png',bbox_inches='tight')       
@@ -104,7 +103,7 @@ plt.show()
 
 
 
-#%% 5 Transient Trends
+ #%% 5 Transient Trends
 #Settings
 save = True
 var = 'tas'

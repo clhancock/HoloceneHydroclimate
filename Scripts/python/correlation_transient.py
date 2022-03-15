@@ -89,7 +89,7 @@ ax.set_global()
 ax.coastlines(lw=0.5)
 data_cyclic,lon_cyclic = cutil.add_cyclic_point(rVals,coord=lons)
 model_contour = plt.contourf(lon_cyclic,lats, data_cyclic,transform=ccrs.PlateCarree(),
-                             levels=mlevels,cmap=cramp) 
+                             levels=mlevels,cmap=cramp)  
 ax.scatter(pltlons,pltlats,c=pltVals,transform=ccrs.PlateCarree(),
            cmap=cramp,alpha=1,vmin=-1,vmax=1,s=50,ec='k',lw=1.5)#plt.cm.get_cmap('BrBG',5),
 

@@ -103,7 +103,7 @@ for time in ['mh','pi']:
                             'tas_regrid':'tas_regrid','tas':'tas'})
         data = data.drop('climatology_bnds')
         for szn in ens.keys():
-            idx = seasons[szn] #index for season
+            idx = seasons[szn] #index for season 
             vals = data*1 #data management
             for var in ['pre','evp','tas']:
                 #Id model variable name and conversion to degC or mm/day

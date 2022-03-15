@@ -4,10 +4,10 @@
 # adpated from code provided by Michael Erb
 
 import numpy             as np
-import pandas            as pd
+import pandas            as pd 
 import regionmask        as rm
 import xarray            as xr
-import xesmf             as xe
+#import xesmf             as xe
 import cartopy.crs       as ccrs
 import matplotlib.pyplot as plt
 from   mpl_toolkits.axes_grid1.inset_locator import inset_axes
@@ -59,18 +59,24 @@ for model in ['hadcm','trace','cmip6']:
 
 #%%Plot agreement
 #Settings
+plt.rcParams['font.family'] = 'Arial'
+plt.rcParams['axes.facecolor'] ='white'
+plt.rcParams['axes.linewidth'] = 1; 
+plt.rcParams['axes.edgecolor'] = 'k'
+plt.tick_params(labelsize=8)
+
 save = True
-a=1
+import cmasher as cmr
 for var in ['pre','p-e','tas']:
     refReg = rm.defined_regions.ar6.all
+    refRegLand = rm.defined_regions.ar6.land
     if var == 'tas': 
-        cramp, units = 'RdBu_r','degC'
-        proxy = pd.read_csv(dataDir+'Data/proxyMetaData_Temp.csv')
+        cramp, units, n = 'RdBu_r','degC', ['Cooler at 6ka','Warmer at 6ka']
+        proxy = pd.read_csv(dataDir+'Data/proxyMetaData_T.csv')
     else:            
-        cramp, units = 'BrBG', 'mm/day'
+        cramp, units, n = 'BrBG', 'mm/day', ['Drier at 6ka','Wetter at 6ka',]
         proxy = pd.read_csv(dataDir+'Data/proxyMetaData_HC.csv')
     #
-    cramp = plt.cm.get_cmap(cramp,10)
     #Calculate Proxy Percents for regions
     pRegs, pPcts, plats, plons, = [],[],[],[]
     for reg in np.unique(proxy['ipccReg']): 
@@ -87,31 +93,36 @@ for var in ['pre','p-e','tas']:
     modelVals = modelData['cmip6'][szn][var+'_regrid']
     modelVals = modelVals[0,:,:,:] - modelVals[1,:,:,:]
     modelN    = len(modelVals.model)
-    modelAnom = np.sum(np.sign(modelVals),axis=0)
-    dataPct   = (((modelAnom+modelN)/2)/modelN)*100
+    modelAnom = np.sum(np.sign(modelVals),axis=0) 
+    for model in ['hadcm','trace']:       
+        modelVals = modelData[model][szn][var+'_regrid']
+        modelVals = modelVals.groupby_bins('time',[0,1000,5500,6500]).mean(dim="time")
+        modelAnom += np.sign(modelVals[2,:,:]-modelVals[1,:,:])
+        modelN +=1
     #
     #Plot
-    plt.figure(figsize=(6,4))
-    ax = refReg[pRegs].plot(projection=ccrs.Robinson(),add_label=False,line_kws=dict(linewidth=1))
+    cramp = cmr.get_sub_cmap(cramp,0.1,0.9,N=modelN+1)
+    plt.figure(figsize=(5,3))
+    ax = plt.subplot(projection=ccrs.Robinson())
+    refRegLand.plot_regions(ax=ax,add_label=False,line_kws=dict(linewidth=0.7))
+    refReg[pRegs].plot_regions(ax=ax,add_label=False,line_kws=dict(linewidth=1.2))
     model_agree = plt.pcolormesh(modelVals.lon_regrid, modelVals.lat_regrid, 
-                                 dataPct,transform=ccrs.PlateCarree(),
-                                 cmap=cramp,alpha=a,vmin=0,vmax=100)
-    ax.coastlines(lw=0.5)
+                                 (modelAnom/modelN)*100,transform=ccrs.PlateCarree(),
+                                 cmap=cramp,vmin=-100,vmax=100)
+    ax.scatter(plons,plats,c=pPcts,transform=ccrs.PlateCarree(),cmap=cramp,
+               vmin=0,vmax=100,s=40,ec='k',lw=2)
+    plt.title('Agreement for sign of MH anomaly within model and proxy data \n(Annual '+var+')',
+              fontsize=8)
+    cbar = plt.colorbar(model_agree,orientation="horizontal",ticks=range(-100,101,50),
+                        fraction=0.04, pad=0.02,aspect=30)
+    cbar.ax.set_xticklabels(['100%\n'+n[0],'75%','50%\nEven Split','75%','100%\n'+n[1]],
+                            fontsize=8)
     ax.set_global()
-    ax.scatter(proxy['longitude'],proxy['latitude'],c='k',s=1,
-               transform=ccrs.PlateCarree())
-    ax.scatter(plons,plats,c=pPcts,transform=ccrs.PlateCarree(),
-               cmap=cramp,alpha=1,vmin=a,vmax=100,s=30,ec='k',lw=1)#plt.cm.get_cmap('BrBG',5),
-       
-    plt.title('Model & Proxy Agreement for sign of MH-PI difference',fontsize=10)
-    plt.colorbar(model_agree,
-                 cax=inset_axes(ax,width='70%',height="4%",loc="lower center"),
-                 orientation="horizontal").set_label(
-                     '% positive (annual '+var+') mid-Holocene anomaly',fontsize=10,c='k')
+    #cbar.ax.xaxis.set_ticks_position("top")
+    #cbar.set_label(''+var, labelpad=-35, x=-0.1)#  '% positive (annual '+var+') mid-Holocene anomaly',
     if save: plt.savefig(dataDir+'Figures/Model/midHoloceneAgreement_'+var+'.png',
                          dpi=400,format='png',bbox_inches='tight')       
     plt.show()
-
-
+    
 
 
