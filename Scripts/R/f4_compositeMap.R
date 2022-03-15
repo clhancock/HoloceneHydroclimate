@@ -8,9 +8,9 @@ library(maptools)
 library(proj4)
 library(sp)
 
-dataDir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
+dataDir <- getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
 var      <- 'HC'
-modelvar <- 'pre_ANN'
+modelvar <- 'p-e_ANN'
 project = TRUE
 
 #Load Data----
@@ -85,10 +85,10 @@ nudgeVals[which(regNames=='NZ'),'y'] <- 0.02
 
 #Basemap----
 
-if (var=='T'){ Csettings  <- c("#e6f5ff","#007acc","#004d80") #blues
+if (var=='T'){ Csettings  <- c("#fddbc7","#d6604d","#b2182b") #blues
 }else{
   Csettings <- c("#ebfaeb","#145214","#0a290a") #greens
-  Csettings <- c("#fff7e6","#cc8800","#805500") #yellows
+  Csettings <- c("#f6e8c3","#bf812d","#8c510a") #yellows
 }
 
 #Plot----
@@ -135,26 +135,26 @@ for (reg in regNames){
   regPlt <- ggdraw(ggplot()+theme_void()+theme(plot.background= element_rect(colour='White',fill='White')))
   compBands <- vector(mode = 'list')
   compBands$na <-  plotTimeseriesEnsRibbons(ggplot()+geom_hline(yintercept=0,size=0.2,color='black'),
-                                            X=timeN$yvec, Y=regEnsNA, alp=0.7,line.width=0.1,
+                                            X=timeN$yvec, Y=regEnsNA, alp=0.8,line.width=0.1,
                                             color.low='grey90',
                                             color.high='grey50',
                                             color.line='grey20')
-  compBands$ts <- plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=0.8,line.width=0.1,
+  compBands$ts <- plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=0.4,line.width=0.1,
                                            color.low=Csettings[1],
                                            color.high=Csettings[2],
                                            color.line=Csettings[3])
   if (!is.na(modelvar)){
     plotlimit_set <- max(abs(c(traceVals,hadcmVals,Data[['cmip6']][[reg]],apply(regEns,1,mean))),na.rm=TRUE)
     compBands$ts <- compBands$ts + geom_hline(yintercept=0,size=0.2,color='black') +
-      geom_boxplot(aes(x=6000,y=Data[['cmip6']][[reg]]*scaleVal),width=1000,size=0.2,alpha=0.6,
-                   outlier.size=0.3,outlier.stroke = 0.2,outlier.alpha=1,outlier.colour='Black') +
-      geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=hadcmVals),color='#26004d',size=0.15,alpha=0.8)+
-      geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=traceVals),color='#661400',size=0.15,alpha=0.8)
+      geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=hadcmVals),color='#4527A0',size=0.3,alpha=0.6)+
+      geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=traceVals),color='#2E7D32',size=0.3,alpha=0.6)+
+      geom_boxplot(aes(x=6000,y=Data[['cmip6']][[reg]]*scaleVal),width=1000,size=0.1,alpha=0.8,
+                   outlier.size=0.5,outlier.stroke = 0.15,outlier.alpha=1,outlier.colour='Black')
   }
   for (plt in names(compBands)){
     compBands[[plt]] <- compBands[[plt]] + 
       scale_x_reverse(limits=c(12100,-100), expand=c(0,0), n.breaks=7,sec.axis = dup_axis())+ 
-      scale_y_continuous(limits=c(plotlimit_set*c(-1000,1000)),breaks=seq(-20,20,2),sec.axis = dup_axis())+
+      scale_y_continuous(limits=c(plotlimit_set*c(-1000,1000)),breaks=seq(-100,100,2),sec.axis = dup_axis())+
       coord_cartesian(xlim=c(12000,0), ylim=c(plotlimit_set*c(-1,1))) +
       theme_void() +
       theme(panel.border    = element_rect(color='Black',fill=NA,size=0.5),
@@ -163,7 +163,6 @@ for (reg in regNames){
             plot.margin       = unit(c(0, 0, 0, 0), "in"), legend.position='none')
     regPlt <- regPlt + draw_plot(compBands[[plt]], x = 0, y = 0, width = 1, height = 1)
   }
-  regPlt
   plotLat <- refReg@polygons[[which(refReg@data[["Acronym"]]==reg)]]@Polygons[[1]]@labpt[2]
   plotLon <- refReg@polygons[[which(refReg@data[["Acronym"]]==reg)]]@Polygons[[1]]@labpt[1]
   map <- map + draw_plot(regPlt,
@@ -172,5 +171,32 @@ for (reg in regNames){
                          width = xSize, height = ySize)
 }
 
-ggsave(plot=map, width = 6, height = 6*0.5072, dpi = 400,
+
+
+#plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=0.6,line.width=0.1,color.low='#f6e8c3',color.high='#dfc27d',color.line='#8c510a')
+
+scale <- ggplot() +
+  scale_x_reverse('Age (ka BP)',limits=c(12,0),expand=c(0,0),breaks=seq(0,12,6))+
+  geom_segment(aes(x=12,xend=6,y=2,yend=2),size=2,color='#4527A0',alpha=0.6,label='HadCM') +
+  geom_segment(aes(x=12,xend=6,y=1,yend=1),size=2.5,color='#2E7D32',alpha=0.6,label='Trace') +
+  annotate("text",label="HadCM", x = 3, y = 1,size=2,family='sans',color='#4527A0') + 
+  annotate("text",label="TraCE", x = 3, y = 2,size=2,family='sans'/color='#2E7D32') + 
+  scale_y_continuous(limits=c(0,3),expand=c(0,0))+
+  theme_void()+ 
+  theme(panel.background=element_rect(colour='White',fill='White'),
+        plot.background    =element_rect(colour='white',fill='White'),
+        axis.line.x = element_line(color = 'black'),
+        axis.ticks.x  = element_line(color = 'Black',size=0.4), 
+        axis.text.x = element_text(family='sans',size=8),
+        axis.title.x = element_text(family='sans',size=8),
+        axis.ticks.length.x=unit(3,"pt"),
+        #plot.margin = unit(c(0.1, 0.1, 0.5,0.1), "in"),
+        text = element_text(family='sans',size=8))
+
+map2 <- map + draw_plot(scale,
+                        x = 0.15, 
+                        y = 0.22, 
+                        width = xSize, height = ySize*4)
+
+ggsave(plot=map2, width = 6.5, height = 6.5*0.5072, dpi = 400,
        filename = paste(file.path(dataDir,'Figures','global_'),modelvar,'_compBandPlt.png',sep=''))

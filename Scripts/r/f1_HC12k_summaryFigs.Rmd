@@ -106,17 +106,17 @@ plotVals <- vector(mode='list')
 plotVals$general  <- vector(mode='list')
 plotVals$specific <- vector(mode='list')
 
-plotVals$general$names  <- sort(unique(proxyMetaData$Category))
+plotVals$general$names  <- sort(unique(proxyDf$Category))
 plotVals$general$colors <- c("powder blue","corn flower blue",
                              "dark blue","dark orchid","grey",
                              "forest green","firebrick")
 plotVals$general$shapes <- c(12,21,15,5,13,14,11)
 
-plotVals$specific$names <- sort(unique(proxyMetaData$CategorySpec))
+plotVals$specific$names <- sort(unique(proxyDf$CategorySpec))
 plotVals$specific$colors<- c("powder blue","corn flower blue",
                              "dark blue","dark orchid","grey40","grey",
-                            "forest green","yellowgreen","darkorange","lightcoral","firebrick")
-plotVals$specific$shapes<- c(12,21,15,5,6,13,14,1,17,23,11)
+                            "forest green","yellowgreen","lightcoral","firebrick",'darkorange')
+plotVals$specific$shapes<- c(12,21,15,5,6,13,14,1,23,11,17)
 
 plotSettings <- plotVals$specific
 
@@ -124,7 +124,7 @@ plotSettings <- plotVals$specific
 
 ```{r}
 save <- TRUE
-pieData <- proxyMetaData %>% group_by(source) %>% summarise(n = n())  
+pieData <- proxyDf %>% group_by(source) %>% summarise(n = n())  
 pieData[which(pieData$source=='Arctic Holocene'),'source'] <- 'Arctic Holocene (Sundqvist et al., 2014)'
 pieData[which(pieData$source=='iso2k'),'source'] <- 'Iso2k (Konecky et al., 2020)'
 pieData[which(pieData$source=='Other'),'source'] <- 'Miscellaneous'
@@ -163,9 +163,9 @@ pie
 
 Plot a histagram showing the median time difference between Holocene ages
 ```{r}
-plotRes <- ggplot(proxyMetaData)+
-  geom_vline(xintercept=median(proxyMetaData$recordRes),size=0.7) +
-  geom_vline(xintercept=mean(proxyMetaData$recordRes),size=0.7,linetype=2) +
+plotRes <- ggplot(proxyDf)+
+  geom_vline(xintercept=median(proxyDf$recordRes),size=0.7) +
+  geom_vline(xintercept=mean(proxyDf$recordRes),size=0.7,linetype=2) +
   geom_histogram(aes(recordRes,fill=CategorySpec),color='Black',alpha=0.7,binwidth = 30) +
   scale_fill_manual(values=plotSettings$colors) +
   scale_x_continuous(name="Median Sample Resolution (binwidth = 30 years)" ,
@@ -180,9 +180,9 @@ plotRes <- ggplot(proxyMetaData)+
         legend.title = element_blank(),legend.position = c(0.5,0.6))#legend.position = 'none')# 
 plotRes
 ##############################
-plotResPlus <- ggplot(proxyMetaData)+
-  geom_vline(xintercept=median(proxyMetaData$recordResPlus),size=0.7) +
-  geom_vline(xintercept=mean(proxyMetaData$recordResPlus),size=0.7,linetype=2) +
+plotResPlus <- ggplot(proxyDf)+
+  geom_vline(xintercept=median(proxyDf$recordResPlus),size=0.7) +
+  geom_vline(xintercept=mean(proxyDf$recordResPlus),size=0.7,linetype=2) +
   geom_histogram(aes(recordResPlus,fill=CategorySpec),color='Black',alpha=0.7,binwidth = 30) +
   scale_fill_manual(values=plotSettings$colors) +
   scale_x_continuous(name = "Median Sample Resolution (binwidth = 30 years)" ,
@@ -208,9 +208,9 @@ if (save) {
 
 Plot a histagram based on record length over the Holocene
 ```{r}
-plotRange <- ggplot(proxyMetaData)+
-  geom_vline(xintercept=median(proxyMetaData$recordRange),size=0.7) +
-  geom_vline(xintercept=mean(proxyMetaData$recordRange),size=0.7,linetype=2) +
+plotRange <- ggplot(proxyDf)+
+  geom_vline(xintercept=median(proxyDf$recordRange),size=0.7) +
+  geom_vline(xintercept=mean(proxyDf$recordRange),size=0.7,linetype=2) +
   geom_histogram(aes(recordRange,fill=CategorySpec),color='Black',alpha=0.7,binwidth = 300) +
   scale_fill_manual(values=plotSettings$colors) +
   scale_x_continuous(name = "Record Length (binwidth = 300 years)",
@@ -235,7 +235,7 @@ if (save) {
 #Plot a figure showiang temporal variability over the Holocene (using geochronR)
 plotTimeData <- plotTimeAvailabilityTs(lipdTSO,age.range = c(0,12000),step=100,group='CategorySpecific')
 plotTime <- ggplot(plotTimeData$data,aes(yvec,value))+
-  geom_area(alpha=0.7,aes(fill=group),color='Black',size=0.2)+
+  geom_area(alpha=1,aes(fill=group),color='Black',size=0.2)+
   scale_fill_manual(values=plotSettings$colors) +
   scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),
                   n.breaks=7,sec.axis = sec_axis(~.,labels=NULL))+
@@ -258,10 +258,10 @@ if (save) {
 
 
 ```{r}
-proxyDataPrj   <- SpatialPointsDataFrame(proxyMetaData[,c("longitude", "latitude")], proxyMetaData, proj4string=CRS(PROJorig))
+proxyDataPrj   <- SpatialPointsDataFrame(proxyDf[,c("longitude", "latitude")], proxyDf, proj4string=CRS(PROJorig))
 proxyDataPrj   <- spTransform(proxyDataPrj, CRSobj = PROJ)
-refrenceSubset <- subset(refregions, Acronym %in% proxyMetaData$ipccReg)
-refrenceSubsetSelect <- subset(refregions, Acronym %in% (proxyMetaData %>% 
+refrenceSubset <- subset(refregions, Acronym %in% proxyDf$ipccReg)
+refrenceSubsetSelect <- subset(refregions, Acronym %in% (proxyDf %>% 
                                                            group_by(ipccReg) %>% 
                                                            summarize(count=n()) %>% 
                                                            filter(count >= 6))$ipccReg)
@@ -281,7 +281,7 @@ figPalette <- c("#CCCCCC",RColorBrewer::brewer.pal(n = 7, name = "YlOrBr"))
 
 for (region in list(levels(refrenceSubset@data[["Acronym"]]))[[1]]){
   i = which(refregions@data[["Acronym"]]==region)
-  count <- length(which(proxyMetaData$ipccReg==region))
+  count <- length(which(proxyDf$ipccReg==region))
   if (count == 0){         countName <- NA
   } else if (count <= figBreaks[1]){ countName <- 0
   } else if (count <= figBreaks[2]){ countName <- 1
@@ -347,7 +347,7 @@ map <- ggarrange(proxyMapSites+theme(legend.position = c(0.05,0.3)),
                  plotTime+theme(legend.position = 'none'),
                  ncol=1,widths=c(6),heights=c(3.5,1.5))
 
-ggsave(plot=map, width = 6, height = 5, dpi = 600,
+ggsave(plot=map, width = 6.5, height = 5, dpi = 600,
        filename = file.path(dataDir,"Figures",paste('PlotProxyTypeRegion_',climVar,'_withTime.png',sep='')))
 ```
 
