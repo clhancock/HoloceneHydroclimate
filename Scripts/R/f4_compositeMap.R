@@ -177,11 +177,11 @@ for (reg in regNames){
 
 scale <- ggplot() +
   scale_x_reverse('Age (ka BP)',limits=c(12,0),expand=c(0,0),breaks=seq(0,12,6))+
-  geom_segment(aes(x=12,xend=6,y=2,yend=2),size=2,color='#4527A0',alpha=0.6,label='HadCM') +
-  geom_segment(aes(x=12,xend=6,y=1,yend=1),size=2.5,color='#2E7D32',alpha=0.6,label='Trace') +
-  annotate("text",label="HadCM", x = 3, y = 1,size=2,family='sans',color='#4527A0') + 
-  annotate("text",label="TraCE", x = 3, y = 2,size=2,family='sans'/color='#2E7D32') + 
-  scale_y_continuous(limits=c(0,3),expand=c(0,0))+
+  geom_segment(aes(x=11.7,xend=6.3,y=1,yend=1),size=2,color='#4527A0',alpha=0.6,label='HadCM') +
+  geom_segment(aes(x=11.7,xend=6.3,y=2,yend=2),size=2,color='#2E7D32',alpha=0.6,label='Trace') +
+  annotate("text",label="HadCM", x = 2.7, y = 1,size=2,family='sans',color='#4527A0') + 
+  annotate("text",label="TraCE", x = 2.7, y = 2,size=2,family='sans',color='#2E7D32') + 
+  scale_y_continuous(limits=c(0,2.5),expand=c(0,0))+
   theme_void()+ 
   theme(panel.background=element_rect(colour='White',fill='White'),
         plot.background    =element_rect(colour='white',fill='White'),
@@ -196,7 +196,7 @@ scale <- ggplot() +
 map2 <- map + draw_plot(scale,
                         x = 0.15, 
                         y = 0.22, 
-                        width = xSize, height = ySize*4)
+                        width = xSize, height = ySize*2.5)
 
 ggsave(plot=map2, width = 6.5, height = 6.5*0.5072, dpi = 400,
        filename = paste(file.path(dataDir,'Figures','global_'),modelvar,'_compBandPlt.png',sep=''))
