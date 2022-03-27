@@ -149,7 +149,7 @@ for land in ['all','land']:
     ax1.set_yticks(range(-90,91,30))
     ax1.set_yticklabels([])
 plt.show()
-#%%
+#%%  
 
 #%%
 import numpy as np
