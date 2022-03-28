@@ -6,9 +6,10 @@ library(cowplot)
 library(ggstar)
 library(maptools)
 library(proj4)
+library(rworldmap)
 library(sp)
 
-dataDir <- getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
+dataDir <-  '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
 var      <- 'HC'
 modelvar <- 'p-e_ANN'
 project = TRUE
@@ -42,68 +43,92 @@ binvec <- Data$proxy$time
 #Climate variable Settings for HC vs T
 
 
-xSize <- 0.085
-ySize <- 0.06
+xSize <- 0.1
+ySize <- 0.07
 nudgeVals <- data.frame(region=regNames,x=rep(0,length(regNames)),y=rep(0,length(regNames)))
-nudgeVals[which(regNames=='ARO'),'x'] <- 0.025
-nudgeVals[which(regNames=='ARO'),'y'] <- -0.01
-nudgeVals[which(regNames=='CAF'),'x'] <- -0.04
-nudgeVals[which(regNames=='CAR'),'x'] <- 0.007
-nudgeVals[which(regNames=='CAR'),'y'] <- 0.04
-nudgeVals[which(regNames=='NWN'),'x'] <- 0.0115
-nudgeVals[which(regNames=='NWN'),'y'] <- 0.007
-nudgeVals[which(regNames=='NEN'),'y'] <- -0.022
-nudgeVals[which(regNames=='NEN'),'x'] <- 0.007
-nudgeVals[which(regNames=='GIC'),'x'] <- 0.003
-nudgeVals[which(regNames=='WNA'),'x'] <- -0.042
-nudgeVals[which(regNames=='CNA'),'x'] <- 0.0035
-nudgeVals[which(regNames=='ENA'),'x'] <- 0.042
-nudgeVals[which(regNames=='SAM'),'y'] <- -0.02
-nudgeVals[which(regNames=='NES'),'y'] <- 0.02
+nudgeVals[which(regNames=='GIC'),'x'] <- 0
+nudgeVals[which(regNames=='NWN'),'x'] <- -0.002
+nudgeVals[which(regNames=='NWN'),'y'] <- -0.02
+nudgeVals[which(regNames=='NEN'),'y'] <- -0.028
+nudgeVals[which(regNames=='NEN'),'x'] <- -0.002
+nudgeVals[which(regNames=='WNA'),'x'] <- -0.053
+nudgeVals[which(regNames=='CNA'),'x'] <- 0.007
+nudgeVals[which(regNames=='ENA'),'x'] <- 0.060
+nudgeVals[which(regNames=='NAS'),'x'] <- -0.04
+nudgeVals[which(regNames=='SCA'),'x'] <- -0.015
+nudgeVals[which(regNames=='CAR'),'x'] <- 0.03
+nudgeVals[which(regNames=='CAR'),'y'] <- 0.045
+nudgeVals[which(regNames=='NWS'),'x'] <- -0.01
 nudgeVals[which(regNames=='NSA'),'x'] <- 0.025
-nudgeVals[which(regNames=='NSA'),'y'] <- 0.04
-nudgeVals[which(regNames=='NAO'),'y'] <- -0.03
-nudgeVals[which(regNames=='NAO'),'x'] <- 0.004
-nudgeVals[which(regNames=='NEU'),'x'] <- 0.004
+nudgeVals[which(regNames=='NSA'),'y'] <- 0.048
+nudgeVals[which(regNames=='NES'),'y'] <- 0.022
+nudgeVals[which(regNames=='SAM'),'y'] <- -0.03
+
+nudgeVals[which(regNames=='NEU'),'x'] <- 0.015
 nudgeVals[which(regNames=='NEU'),'y'] <- 0.01
 nudgeVals[which(regNames=='WCE'),'x'] <- -0.005
-nudgeVals[which(regNames=='WSAF'),'x'] <- -0.022
-nudgeVals[which(regNames=='ESAF'),'x'] <- 0.022
-nudgeVals[which(regNames=='WCA'),'x'] <- -0.01
-nudgeVals[which(regNames=='ESB'),'y'] <- 0.004
+nudgeVals[which(regNames=='MED'),'x'] <- -0.02
+nudgeVals[which(regNames=='CAF'),'x'] <- -0.054
+nudgeVals[which(regNames=='NEAF'),'y'] <- 0.002
+nudgeVals[which(regNames=='SEAF'),'y'] <- -0.002
+nudgeVals[which(regNames=='WSAF'),'x'] <- -0.032
+nudgeVals[which(regNames=='ESAF'),'x'] <- 0.03
+
+nudgeVals[which(regNames=='ESB'),'y'] <- 0.014
 nudgeVals[which(regNames=='ESB'),'x'] <- -0.01
-nudgeVals[which(regNames=='ECA'),'y'] <- 0.013
 nudgeVals[which(regNames=='RFE'),'x'] <- -0.04
-nudgeVals[which(regNames=='EPO'),'x'] <- -0.04
-nudgeVals[which(regNames=='SAS'),'y'] <- -0.002
-nudgeVals[which(regNames=='SAS'),'x'] <- -0.005
-nudgeVals[which(regNames=='EAS'),'x'] <- 0.003
+nudgeVals[which(regNames=='WCA'),'x'] <- -0.021
+nudgeVals[which(regNames=='ECA'),'x'] <- -0.0035
+nudgeVals[which(regNames=='ECA'),'y'] <- 0.015
+nudgeVals[which(regNames=='TIB'),'x'] <- 0.003
+nudgeVals[which(regNames=='TIB'),'y'] <- -0.007
+nudgeVals[which(regNames=='EAS'),'x'] <- 0.021
+nudgeVals[which(regNames=='SAS'),'y'] <- -0.02
+nudgeVals[which(regNames=='SAS'),'x'] <-  0.0
 nudgeVals[which(regNames=='SEA'),'x'] <- -0.017
-nudgeVals[which(regNames=='SAU'),'x'] <- -0.036
-nudgeVals[which(regNames=='NZ'),'x'] <- -0.025
-nudgeVals[which(regNames=='NZ'),'y'] <- 0.02
+nudgeVals[which(regNames=='SAU'),'x'] <- -0.044
+nudgeVals[which(regNames=='NZ'),'x'] <- -0.017
+
+nudgeVals[which(regNames=='EPO'),'x'] <- -0.02
+nudgeVals[which(regNames=='ARO'),'x'] <- -0.18
+nudgeVals[which(regNames=='ARO'),'y'] <- -0.03
+nudgeVals[which(regNames=='NAO'),'y'] <- 0.106
+nudgeVals[which(regNames=='NAO'),'x'] <- 0.03
+
+
+
+
+
+
 
 #Basemap----
 
-if (var=='T'){ Csettings  <- c("#fddbc7","#d6604d","#b2182b") #blues
+if (var=='T'){ Csettings  <- c("#fddbc7","#d6604d","#b2182b") #reds
 }else{
   Csettings <- c("#ebfaeb","#145214","#0a290a") #greens
   Csettings <- c("#f6e8c3","#bf812d","#8c510a") #yellows
+  Csettings <- c("#E1E6EA","#8599AB",'#434D55') #Blues
+  
 }
-
-#Plot----
-
+Csettings <- c("#E1E6EA","#8599AB",'#434D55') #Blues
+Chadcm <- '#AB8599'
+Ctrace <- '#99AB85'
+alph<-1
 map<- ggdraw(ggplot() +
                #Set Border around plot - probably not the best way to do this
                borders(aggregate(refReg, FUN=length), fill=NA, colour='black', size=1) +
                geom_map(data=refReg, map=fortify(refReg),aes(x=long, y=lat, group=group, map_id=id), 
-                        fill="white", colour="white", size=0.5)+
+                        fill="white", colour="white", size=0.3)+
                #Add Country data (basemap)
                geom_map(data=countries, map=fortify(countries), aes(x=long, y=lat, group=group, map_id=id), 
-                        fill = "grey80",color="grey90",size=0.2) +
-               borders(database = subset(refReg, Acronym %in% regNames), fill=NA, colour='grey40',size=0.25) + 
+                        fill = "grey80",color="grey90",size=0.1) +
+               borders(database = subset(refReg, Acronym %in% regNames), fill=NA, colour='grey40',size=0.1) + 
                coord_fixed(1) + 
                theme_void())
+
+
+#Plot---- 
+               
 
 for (reg in regNames){ 
   #Load Data for Region
@@ -134,21 +159,21 @@ for (reg in regNames){
   plotlimit_set <- 5
   regPlt <- ggdraw(ggplot()+theme_void()+theme(plot.background= element_rect(colour='White',fill='White')))
   compBands <- vector(mode = 'list')
-  compBands$na <-  plotTimeseriesEnsRibbons(ggplot()+geom_hline(yintercept=0,size=0.2,color='black'),
-                                            X=timeN$yvec, Y=regEnsNA, alp=0.8,line.width=0.1,
+  compBands$na <-  plotTimeseriesEnsRibbons(ggplot()+geom_hline(yintercept=0,size=0.05,color='black'),
+                                            X=timeN$yvec, Y=regEnsNA, alp=alph,line.width=0.1,
                                             color.low='grey90',
                                             color.high='grey50',
                                             color.line='grey20')
-  compBands$ts <- plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=0.4,line.width=0.1,
+  compBands$ts <- plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=alph-0.2,line.width=0.1,
                                            color.low=Csettings[1],
                                            color.high=Csettings[2],
                                            color.line=Csettings[3])
   if (!is.na(modelvar)){
-    plotlimit_set <- max(abs(c(traceVals,hadcmVals,Data[['cmip6']][[reg]],apply(regEns,1,mean))),na.rm=TRUE)
-    compBands$ts <- compBands$ts + geom_hline(yintercept=0,size=0.2,color='black') +
-      geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=hadcmVals),color='#4527A0',size=0.3,alpha=0.6)+
-      geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=traceVals),color='#2E7D32',size=0.3,alpha=0.6)+
-      geom_boxplot(aes(x=6000,y=Data[['cmip6']][[reg]]*scaleVal),width=1000,size=0.1,alpha=0.8,
+    plotlimit_set <- max(abs(c(traceVals,hadcmVals,Data[['cmip6']][[reg]],apply(regEns,1,mean))),na.rm=TRUE)*1.2
+    compBands$ts <- compBands$ts + geom_hline(yintercept=0,size=0.05,color='black') +
+      geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=hadcmVals),color=Chadcm,size=0.3,alpha=alph)+
+      geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=traceVals),color=Ctrace,size=0.3,alpha=alph)+
+      geom_boxplot(aes(x=6000,y=Data[['cmip6']][[reg]]*scaleVal),width=1000,size=0.1,alpha=alph,
                    outlier.size=0.5,outlier.stroke = 0.15,outlier.alpha=1,outlier.colour='Black')
   }
   for (plt in names(compBands)){
@@ -176,27 +201,41 @@ for (reg in regNames){
 #plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=0.6,line.width=0.1,color.low='#f6e8c3',color.high='#dfc27d',color.line='#8c510a')
 
 scale <- ggplot() +
-  scale_x_reverse('Age (ka BP)',limits=c(12,0),expand=c(0,0),breaks=seq(0,12,6))+
-  geom_segment(aes(x=11.7,xend=6.3,y=1,yend=1),size=2,color='#4527A0',alpha=0.6,label='HadCM') +
-  geom_segment(aes(x=11.7,xend=6.3,y=2,yend=2),size=2,color='#2E7D32',alpha=0.6,label='Trace') +
-  annotate("text",label="HadCM", x = 2.7, y = 1,size=2,family='sans',color='#4527A0') + 
-  annotate("text",label="TraCE", x = 2.7, y = 2,size=2,family='sans',color='#2E7D32') + 
-  scale_y_continuous(limits=c(0,2.5),expand=c(0,0))+
+  scale_x_reverse('Age (ka BP)',limits=c(12,0),expand=c(0,0),breaks=seq(0,12,3),labels=c('0','','6','','12'))+
+  geom_segment(aes(x=11.5,xend=6,y=1,yend=1),size=2,color='Black') +
+  geom_segment(aes(x=11.5,xend=6,y=2,yend=2),size=2,color='Black') +
+  geom_segment(aes(x=11.5,xend=6,y=3,yend=3),size=2,color='Black') +
+  geom_segment(aes(x=11.4,xend=6.1,y=1,yend=1),size=1.5,color=Chadcm,alpha=alph) +
+  geom_segment(aes(x=11.4,xend=6.1,y=2,yend=2),size=1.5,color=Ctrace,alpha=alph) +
+  geom_segment(aes(x=11.4,xend=6.1,y=3,yend=3),size=1.5,color=Csettings[2],alpha=alph) +
+  annotate("text",label="HadCM", x = 3, y = 1,family='sans',color='Black',size = 1.7)+
+  annotate("text",label="TraCE", x = 3, y = 2,family='sans',color='Black',size = 1.7) + 
+  annotate("text",label="Proxy", x = 3, y = 3,family='sans',color='Black',size = 1.7) + 
+  scale_y_continuous(limits=c(0,3.7),expand=c(0,0))+
   theme_void()+ 
-  theme(panel.background=element_rect(colour='White',fill='White'),
+  theme(panel.background=element_rect(colour='black',fill='White'),
         plot.background    =element_rect(colour='white',fill='White'),
-        axis.line.x = element_line(color = 'black'),
-        axis.ticks.x  = element_line(color = 'Black',size=0.4), 
-        axis.text.x = element_text(family='sans',size=8),
-        axis.title.x = element_text(family='sans',size=8),
+        axis.line.x = element_line(color = 'black',size=0.3),
+        axis.ticks.x  = element_line(color = 'Black',size=0.3), 
+        axis.text.x = element_text(family='sans',size=5),
+        axis.title.x = element_text(family='sans',size=5),
         axis.ticks.length.x=unit(3,"pt"),
         #plot.margin = unit(c(0.1, 0.1, 0.5,0.1), "in"),
         text = element_text(family='sans',size=8))
 
-map2 <- map + draw_plot(scale,
-                        x = 0.15, 
+
+if (var == 'HC'){
+  map2 <- map +
+    theme(plot.margin = unit(c(0,rep(0,4)), "in"))+
+    annotate("text",label="(a) Hydroclimate", x = 0.11, y = 0.93,family='sans',color='Black',size = 2)
+} else{
+  map2 <- map +annotate("text",label="(b) Temperature", x = 0.11, y = 0.93,family='sans',color='Black',size = 2.2)
+  
+}
+map3 <- map2 + draw_plot(scale,
+                        x = 0.14, 
                         y = 0.22, 
                         width = xSize, height = ySize*2.5)
 
-ggsave(plot=map2, width = 6.5, height = 6.5*0.5072, dpi = 400,
+ggsave(plot=map3, width = 6.5, height = 3.4, dpi = 600,
        filename = paste(file.path(dataDir,'Figures','global_'),modelvar,'_compBandPlt.png',sep=''))

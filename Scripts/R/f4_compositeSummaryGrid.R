@@ -10,7 +10,7 @@ library(maptools)
 library(proj4)
 library(rworldmap)
 library(sp)
-dataDir <- file.path(getwd())# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
+dataDir <-  '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
 var     <- 'HC'
 project = FALSE
 #Load Data----
@@ -34,8 +34,8 @@ lipdTso  <- readRDS(file.path(dataDir,'Data','LiPD','lipdData.rds'))[[var]]
 
 if (var=='T'){ Csettings  <- c("#FFEBEE","#FFCDD2","#EF9A9A") #reds
 }else{Csettings <- c("#f6e8c3","#bf812d","#8c510a") #yellows
-
 }
+Csettings <- c("#E1E6EA","#8599AB",'#434D55') #Blues
 #Proxy Value Settings
 CatColor <- c("powder blue","corn flower blue","dark blue","dark orchid",
               "grey40","grey",
@@ -48,7 +48,7 @@ CatNames <- c("Glacier Ice","Lake Deposits",paste('Lake Sediment (','\u3B4','18O
 CatShape <- c(12,21,15,5, 6,13, 14,1, 17,23,11)
 
 #Create Plots-----
-sample = 2
+sample = 1
 if (var == 'HC'){
   if (sample == 1){regNames <- c('NWN','WNA','NEN','CNA','GIC','ENA','NEU','ESB','WCE','ECA','MED','WCA','SAU','NZ')
                    position <- c(letters[(length(regNames)+1):26],'aa','ab')
@@ -132,11 +132,11 @@ for (reg in regNames){
   } else{regEns<-regEnsNA}
   plotlimit_set <- 5
   compBands <- vector(mode = 'list')
-  compBands$na <-  plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEnsNA, alp=0.8,line.width=0.5,
+  compBands$na <-  plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEnsNA, alp=1,line.width=0.3,
                                            color.low='grey90',
                                            color.high='grey50',
                                            color.line='grey20')
-  compBands$ts <- plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=0.4,line.width=0.5,
+  compBands$ts <- plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=1,line.width=0.3,
                                            color.low =Csettings[1],
                                            color.high=Csettings[2],
                                            color.line=Csettings[3])
