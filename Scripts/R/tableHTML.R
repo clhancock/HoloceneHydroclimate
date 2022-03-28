@@ -61,6 +61,8 @@ outTbl <- reactable(
  defaultPageSize=size,
  wrap=FALSE,
  resizable=TRUE,
+ searchable=TRUE,
+ filterable=TRUE,
  borderless = TRUE,
  compact=TRUE,
  defaultColDef = colDef(width=50),
