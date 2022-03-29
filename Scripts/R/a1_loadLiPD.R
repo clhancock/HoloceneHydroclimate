@@ -12,7 +12,7 @@ library(sf)
 library(sp)
 library(tidyverse)
 #Set up directories and names-----
-dataDir <- getwd()
+dataDir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
 #Which versions of datesets to use
 tempVers <- '1_0_2'
 hcVers   <- '0_4_0'
@@ -26,9 +26,9 @@ refregions <- readShapePoly(file.path(dataDir,'Data','IPCC_refRegions','IPCC-WGI
 refregions <-  spTransform(refregions, CRSobj = PROJ)
 #Load LiPD Data-----
 #Load Lipd Files
-D_t    <- readLipd(paste("http://lipdverse.org/Temp12k/",tempVers,"/Temp12k",tempVers,".zip",sep=''))
-D_hc   <- readLipd(paste("http://lipdverse.org/HoloceneHydroclimate/",hcVers,"/HoloceneHydroclimate",hcVers,".zip",sep=''))
-D_new  <- readLipd(file.path(dataDir,'Data','LiPD','new'))
+#D_t    <- readLipd(paste("http://lipdverse.org/Temp12k/",tempVers,"/Temp12k",tempVers,".zip",sep=''))
+#D_hc   <- readLipd(paste("http://lipdverse.org/HoloceneHydroclimate/",hcVers,"/HoloceneHydroclimate",hcVers,".zip",sep=''))
+#D_new  <- readLipd(file.path(dataDir,'Data','LiPD','new'))
 #Assign tsids for data compilations based on within correct dataset and version -----
 
 #Combine LiPD files and extract data from 2 sources without duplicates
@@ -103,15 +103,15 @@ for (climVar in names(lipdData)){
     lipd[[ts]]$ageResPlus <- median(diff(tso$age[which(diff(tso$values) != 0)]))
     #
     if (climVar == 'HC'){
-      if (is.null(lipd[[ts]]$climateInterpretation1_seasonalityGeneral)){
-        lipd[[ts]]$climateInterpretation1_seasonalityGeneral <- 'Annual'
-      } else if (grepl('ummer',lipd[[ts]]$climateInterpretation1_seasonalityGeneral)){
-        lipd[[ts]]$climateInterpretation1_seasonalityGeneral <- 'Summer'
-      } else if (grepl('inter',lipd[[ts]]$climateInterpretation1_seasonalityGeneral)){
-        lipd[[ts]]$climateInterpretation1_seasonalityGeneral <- 'Winter'
-      } else {
-        lipd[[ts]]$climateInterpretation1_seasonalityGeneral <- 'Annual'
-      }
+      szn <- lipd[[ts]]$climateInterpretation1_seasonalityGeneral
+      if (is.null(szn)){
+        szn <- 'Annual'
+      } else if (grepl('ummer',szn)){ 
+        if (substr(szn, nchar(szn), nchar(szn)) == '+'){szn  <- 'Summer+'} else{szn  <- 'Summer'}
+      } else if (grepl('inter',szn)){ 
+        if (substr(szn, nchar(szn), nchar(szn)) == '+'){szn  <- 'Winter+'} else{szn  <- 'Winter'}
+      } else {                         szn <- 'Annual'} 
+      lipd[[ts]]$climateInterpretation1_seasonalityGeneral <- szn
       if (lipd[[ts]]$climateInterpretation1_variable == 'M'){
         lipd[[ts]]$climateInterpretation1_variable <- 'P-E'
       }
@@ -127,9 +127,10 @@ for (climVar in names(lipdData)){
         lipd[[ts]]$CategorySpecific <- 'Other (not calibrated)'
       } else if (archive == 'Speleothem'){
         lipd[[ts]]$Category           <- 'Speleothem'
+        lipd[[ts]]$SourceURL          <- 'https://researchdata.reading.ac.uk/256/'
         if (proxy == 'd18O' | proxy ==  'd13C'){
           lipd[[ts]]$CategorySpecific <- paste(archive,' (','\u3B4',substring(proxy, 2),')',sep='')
-        } else{
+      } else{
           lipd[[ts]]$CategorySpecific <- 'Speleothem (other)'
         }
       } else if (archive == 'LakeDeposits'){
@@ -209,7 +210,7 @@ for (climVar in names(lipdData)){
   }
   #require >0 change points for lakedeposits
   lipd                <- lipd[which(!is.na(pullTsVariable(lipd,"ageResPlus")))]
-  lipdData[[climVar]] <- lipd[which(pullTsVariable(lipd,"climateInterpretation1_seasonalityGeneral") %in% c('summer+','winter+') == FALSE)]
+  lipdData[[climVar]] <- lipd#[which(pullTsVariable(lipd,"climateInterpretation1_seasonalityGeneral") %in% c('summer+','winter+') == FALSE)]
 }
 
 print(paste("Temp:",length(lipdData$T))) #810
