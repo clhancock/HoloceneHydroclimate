@@ -45,6 +45,9 @@ else:
     cramp, units = 'BrBG', 'mm/day'
     mlevels = np.array([i /100 for i in list(range(-75,76,10))])
     
+labels=['(a)','(b)','(c)']
+label=0
+
 seasons = ['ANN','JJA','DJF'] 
 s = 3
 #Plot Figure
@@ -67,19 +70,27 @@ for szn in seasons:
     data_cyclic,lon_cyclic = cutil.add_cyclic_point(data,coord=data.lon.data)
     model_contour = plt.contourf(lon_cyclic, data.lat.data, 
                                  data_cyclic,transform=ccrs.PlateCarree(),
-                                 levels=mlevels,extend='both',cmap=cramp)
-    ax.annotate(szn, xy=(0, 0), xycoords='data', xytext=(-0.05, 0.5), 
-                textcoords='axes fraction', fontsize=8, fontfamily = 'Arial',
-                rotation=90, horizontalalignment='center', verticalalignment='center')  
+                                 levels=mlevels,extend='both',cmap=cramp) 
     if szn == 'ANN':
-        ax.annotate('CMIP Ensemble Mean ('+var+')',
+        ax.annotate('CMIP Ensemble Mean (Mid-Holocene - Pre-Industrial)  ',
                     xy=(0, 0), xycoords='data',fontsize=8, xytext=(0.5, 1.1), 
                     textcoords='axes fraction',horizontalalignment='center', verticalalignment='center')  
+        ax.annotate('Annual', xy=(0, 0), xycoords='data', xytext=(-0.05, 0.5), 
+                textcoords='axes fraction', fontsize=8, fontfamily = 'Arial',
+                rotation=90, horizontalalignment='center', verticalalignment='center') 
+    else: 
+        ax.annotate(szn, xy=(0, 0), xycoords='data', xytext=(-0.05, 0.5), 
+                textcoords='axes fraction', fontsize=8, fontfamily = 'Arial',
+                rotation=90, horizontalalignment='center', verticalalignment='center') 
+    ax.annotate(labels[label], 
+                    xy=(0, 0), xycoords='data', xytext=(0.05, 0.95), 
+                    textcoords='axes fraction', fontsize=8, fontfamily = 'Arial')
+    label+=1
 ax = plt.subplot(gs[(h*s):(h*s+1),0:s])
 ax.axis('off')
 cbar = plt.colorbar(model_contour,orientation="horizontal",
                     cax=inset_axes(ax,width='90%',height="30%",loc="upper center"),
-            ticks=[-0.6,-0.3,0,0.3,0.6]).set_label('Mid-Holocene - Pre-Industrial ('+units+')',
+            ticks=[-0.6,-0.3,0,0.3,0.6]).set_label(var.upper()+' ('+units+')',
                                                    fontsize=8,c='black')
 plt.tick_params(labelsize=8)
 #Save or show
@@ -89,64 +100,72 @@ else: plt.show()
 
 
 #%%transient anoms
-ka = [0,6]
-models  = ['hadcm','trace']#,'cmip6']
-seasons = ['ANN','JJA','DJF'] 
+ka = [0.5,6,12]
+models  = ['trace','hadcm']#,'cmip6']
+seasons = ['ANN'] 
 modelAnom = {}
 s = 3
-
+var = 'p-e'
+if var == 'tas': 
+    cramp, units = 'RdBu_r','degC'
+    mlevels = np.array([i /100 for i in list(range(-220,221,40))])
+else: 
+    cramp, units = 'BrBG', 'mm/day'
+    mlevels = np.array([i /100 for i in list(range(-75,76,10))])
+    
+labels=['(a)','(b)','(c)','(d)']
+label=0
 #Plot Figure
 save = True
 plt.style.use('ggplot')
-plt.figure(figsize=(3.25*len(models),6),dpi=400); 
+plt.figure(figsize=(3.25*len(models),4),dpi=400); 
 h=len(seasons)*(len(ka)-1)
 gs = gridspec.GridSpec(h*s+1,len(models)*s)
 for t in range(0,len(ka)-1):
     for model in models:
         for szn in seasons:
-            if model in ['trace','hadcm']:
-                data = modelData[model][szn][var]
-                data0 = data.groupby_bins('time',[ka[t]*1000-500,ka[t]*1000+500]).mean(dim='time')
-                data1 = data.groupby_bins('time',[ka[t+1]*1000-500,ka[t+1]*1000+500]).mean(dim='time')
-                data = data0
-                data.data = (data1.data-data0.data)
-                data = data.squeeze('time_bins')
-            else:
-                data = modelData[model][szn][var+'_regrid']
-                data = data[0,:,:,:] - data[1,:,:,:] 
-                data = data.rename({'lat_regrid':'lat','lon_regrid':'lon'})
-                data = np.mean(data,axis=0)
+            data = modelData[model][szn][var]
+            data0 = data.groupby_bins('time',[ka[t]*1000-500,ka[t]*1000+500]).mean(dim='time')
+            data1 = data.groupby_bins('time',[ka[t+1]*1000-500,ka[t+1]*1000+500]).mean(dim='time')
+            data = data0
+            data.data = (data1.data-data0.data)
+            data = data.squeeze('time_bins')
             i = [x for x, val in enumerate(seasons) if val == szn][0]
             j = [x for x, val in enumerate(models) if val == model][0]
             ax = plt.subplot(gs[(i+t)*s:(i+t)*s+s,j*s:j*s+s],projection=ccrs.Robinson()) 
             ax.spines['geo'].set_edgecolor('black')
             ax.set_global()
             ax.coastlines()
-            plt.ylabel('\n'+'TraCE\n(% of grid cells)',fontsize=8)
             ax.add_feature(cfeature.LAND,facecolor='whitesmoke',edgecolor='k')
             ax.add_feature(cfeature.LAKES,facecolor='none',edgecolor='k')
             data_cyclic,lon_cyclic = cutil.add_cyclic_point(data,coord=data.lon.data)
             model_contour = plt.contourf(lon_cyclic, data.lat.data, 
                                          data_cyclic,transform=ccrs.PlateCarree(),
                                          levels=mlevels,extend='both',cmap=cramp)
-            ax.annotate(szn,
-                xy=(0, 0), xycoords='data',
-                xytext=(-0.05, 0.5), textcoords='axes fraction',fontsize=8,fontfamily = 'Arial',
-                rotation=90,horizontalalignment='center', verticalalignment='center')  
-            if szn == 'ANN':
-                ax.annotate('CMIP Ensemble Mean ('+var+')',
-                    xy=(0, 0), xycoords='data',fontsize=8,
+            if j == 0:
+                ax.annotate(str(ka[t+1])+'ka - '+str(ka[t])+'ka', 
+                    xy=(0, 0), xycoords='data', xytext=(-0.05, 0.5), 
+                    textcoords='axes fraction', fontsize=8, fontfamily = 'Arial',
+                    rotation=90, horizontalalignment='center', verticalalignment='center')  
+            if t == 0:
+                if   model == 'hadcm': modelName = 'HadCM'
+                elif model == 'trace': modelName = 'TraCE'
+                ax.annotate(modelName, xy=(0, 0), xycoords='data',fontsize=8,
                     xytext=(0.5, 1.1), textcoords='axes fraction',
                     horizontalalignment='center', verticalalignment='center')  
+            ax.annotate(labels[label], 
+                    xy=(0, 0), xycoords='data', xytext=(0.05, 0.95), 
+                    textcoords='axes fraction', fontsize=8, fontfamily = 'Arial')
+            label+=1
 ax = plt.subplot(gs[(h*s):(h*s+1),0:len(models)*s])
 ax.axis('off')
 #cbar = plt.colorbar(model_contour,cax=inset_axes(ax,width='80%',height="30%",loc="upper center"),
  #           orientation="horizontal",ticks=[-0.55,-0.25,0,0.25,0.55]).set_label(var+' Difference ('+units+')',fontsize=8,c='black')
 cbar = plt.colorbar(model_contour,cax=inset_axes(ax,width='90%',height="30%",loc="upper center"),
-            orientation="horizontal",ticks=[-0.6,-0.3,0,0.3,0.6]).set_label('Mid-Holocene - Pre-Industrial ('+units+')',fontsize=8,c='black')
+            orientation="horizontal",ticks=[-0.6,-0.3,0,0.3,0.6]).set_label('Annual '+var.upper()+' ('+units+')',fontsize=8,c='black')
 plt.tick_params(labelsize=8)
 #Save or show
-if save: plt.savefig(dataDir+'Figures/Model/Anomalies/CMIP_MH-PI_bySeason_'+var+'.png',
+if save: plt.savefig(dataDir+'Figures/Model/Anomalies/Trans_Anoms_byAge_byModel_'+var+'.png',
                      dpi=600,format='png',bbox_inches='tight')       
 plt.show()
 

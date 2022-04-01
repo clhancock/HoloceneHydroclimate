@@ -65,7 +65,7 @@ plt.rcParams['axes.linewidth'] = 1;
 plt.rcParams['axes.edgecolor'] = 'k'
 plt.tick_params(labelsize=8)
 
-save = True
+save = False
 import cmasher as cmr
 for var in ['pre','p-e','tas']:
     refReg = rm.defined_regions.ar6.all
