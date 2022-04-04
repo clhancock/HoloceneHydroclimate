@@ -21,10 +21,10 @@ import cartopy.crs as ccrs              # Packages for mapping in python
 import cartopy.feature as cfeature
 #import cartopy.util as cutil
 #
-dataDir  = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/'
+dataDir  = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
 #
 save=False
-data_HC =  pd.read_csv(dataDir+'HoloceneHydroclimate/Data/proxyMetaData_T.csv')
+data_HC =  pd.read_csv(dataDir+'/Data/proxyMetaData_HC.csv')
 #data_T =  pd.read_csv(gitHubDir+'DataFiles/proxyT.csv')
 
 
@@ -32,7 +32,7 @@ data_HC =  pd.read_csv(dataDir+'HoloceneHydroclimate/Data/proxyMetaData_T.csv')
 #Load Model Data
 #
 #Set time variables and resolution of data
-ageMin=0; ageMax=12000; ageRes=200
+ageMin=0; ageMax=12000; ageRes=100
 timebin = [*range(ageMin,ageMax+1,ageRes)]
 
 #Model variable names and conversion to common time/variable units (generally mm/day)

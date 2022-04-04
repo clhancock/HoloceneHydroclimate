@@ -60,7 +60,7 @@ for i in ['Wet','Dry']:
         ax = plt.subplot(gs[row:row+1,col:col+1])
         ax.bar(np.linspace(0.5, 11.5,12),
                100*np.histogram(vals[model+'_'+i+'_all'].flatten(),bins=12,range=[0,12000])[0]/total,  
-               width=1,label='All Gridcells', color = 'lightgrey', edgecolor='k',lw= 1)
+               width=1,label='All Grid Cells', color = 'lightgrey', edgecolor='k',lw= 1)
         ax.bar(np.linspace(0.5, 11.5,12),
                100*np.histogram(vals[model+'_'+i+'_land'].flatten(),bins=12,range=[0,12000])[0]/total,  
                width=1,label='Land Only', color = c, alpha=0.8,edgecolor='k',lw= 1)

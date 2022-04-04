@@ -40,8 +40,8 @@ times = [0,12]
 szn = 'ANN'
 v_1 = 'p-e'
 v_2 = 'tas'
-m_1 = 'hadcm'
-m_2 = 'hadcm'
+m_1 = 'trace'
+m_2 = 'trace'
 #import seaborn as sns
 #sns.palplot(sns.color_palette("BrBG", 7))
 from matplotlib.colors import LinearSegmentedColormap
@@ -68,7 +68,11 @@ if m_1 == m_2:
 else: 
     lats,lons = modelData[m_1][szn]['lat_regrid'],modelData[m_1][szn]['lon_regrid']
     name = 'multi'+'_'+v_1+'_'+v_2+'_'+szn
+import cmasher as cmr
 
+cramp = LinearSegmentedColormap.from_list('cramp',['#40004b','white','#00441b'],N=30)
+cramp = cmr.get_sub_cmap(cramp,0.1,0.9,N=20)
+ 
 proxy= pd.read_csv(dataDir+'Data/'+'HC_T_RegionalProxyEnsCorrelations.csv')
 refReg = rm.defined_regions.ar6.all
     #Calculate Proxy Percents for regions
@@ -79,46 +83,52 @@ for reg in proxy.columns.values.tolist()[1:]:
     pltlons.append(refReg.centroids[refReg.abbrevs.index(reg)][0])
     pltRegs.append(reg) 
     #
-plt.style.use('default')
+    
+plt.figure(figsize=(6,3.01))
 gs = gridspec.GridSpec(12,8)
 ax = plt.subplot(gs[0:12,0:6],projection=ccrs.Robinson()) 
-#ax1 = refReg[pltRegs].plot(projection=ccrs.Robinson(),add_label=False,line_kws=dict(linewidth=1))
-#ax.ax1
-plt.title('r-values: '+m_1+' ('+szn+') ('+v_1+':'+v_2+')')
-ax.set_global()
-ax.coastlines(lw=0.5)
+#ax = plt.subplot(projection=ccrs.Robinson())     
+refRegLand = rm.defined_regions.ar6.land
+refRegLand.plot_regions(ax=ax,add_label=False,line_kws=dict(linewidth=0.7))
 data_cyclic,lon_cyclic = cutil.add_cyclic_point(rVals,coord=lons)
 model_contour = plt.contourf(lon_cyclic,lats, data_cyclic,transform=ccrs.PlateCarree(),
-                             levels=mlevels,cmap=cramp)  
+                             vmin=-1,vmax=1,cmap=cramp,levels=20)  
 ax.scatter(pltlons,pltlats,c=pltVals,transform=ccrs.PlateCarree(),
-           cmap=cramp,alpha=1,vmin=-1,vmax=1,s=50,ec='k',lw=1.5)#plt.cm.get_cmap('BrBG',5),
+           cmap=cramp,vmin=-1,vmax=1,s=40,ec='k',lw=2)
+ax.set_global()
+ax.annotate('(a)',xy=(0, 0), xycoords='data', xytext=(0.05, 0.95), 
+            textcoords='axes fraction', fontsize=8, fontfamily = 'Arial')
+cbar = plt.colorbar(model_contour,orientation="horizontal",ticks=[-1,-0.6,-0.3,0,0.3,0.6,1],
+                        fraction=0.04, pad=0.04,aspect=30)
+cbar.set_label('Pearson Correlation Coefficient')
+cbar.ax.set_xticklabels([-1,-0.6,-0.3,0,0.3,0.6,1],fontsize=8)
 
-cm = plt.cm.get_cmap(cramp,10)
-plt.colorbar(model_contour,cax=inset_axes(ax,width='70%',height="6%",loc=8),orientation="horizontal")
-
+#Save or show
 
 mask = rm.defined_regions.natural_earth.land_110.mask_3D(lons,lats).squeeze('region').data
 
-ax1 = plt.subplot(gs[3:9,6:8]) 
+ax1 = plt.subplot(gs[2:11,6:8]) 
 rValsLand = np.full(np.shape(rVals),np.NaN) 
 for lat in range(len(lats)):
     for lon in range(len(lons)):
         if mask[lat,lon]: rValsLand[lat,lon] = rVals[lat,lon]
-              
-ax1.axvline(x=0,color='grey',lw=0.5)
+ax1.annotate('(b)',xy=(0, 0), xycoords='data', xytext=(-0.2, 0.95), 
+            textcoords='axes fraction', fontsize=8, fontfamily = 'Arial')
+ax1.axvline(x=0,color='black',lw=0.5)
 for i in range(-90,91,30):
-    ax1.axhline(y=i,color='grey',lw=0.2)
-ax1.axhline(y=0,color='grey',lw=0.5)
-ax1.axis([mlevels[0],mlevels[-1],lats[-2],lats[1]])
+    ax1.axhline(y=i,xmin=0,xmax=0.05,color='grey',lw=0.3)
+    ax1.axhline(y=i,xmin=0.95,xmax=1,color='grey',lw=0.3)
 
-ax1.plot(np.nanmean(rVals, axis=1) ,lats,c='k',lw=1.5)
-ax1.scatter(pltVals,pltlats,c='midnightblue',s=5)#plt.cm.get_cmap('BrBG',5),
+ax1.axis([mlevels[0],mlevels[-1],lats[-2],lats[1]])
 
 x = np.nanmean(rValsLand, axis=1) 
 x[np.isnan(x)] = 0
-ax1.plot(x,lats,c='darkgreen',lw=1.5)
-
-ax1.set_xticks([])
+ax1.plot(np.nanmean(rVals,axis=1) ,lats,c='darkslategrey',lw=1.9)
+ax1.plot(x,lats,c='darkgoldenrod',lw=1.9)
+ax1.scatter(pltVals,pltlats,c='k',s=7)#plt.cm.get_cmap('BrBG',5),
+ax1.spines['right'].set_visible(False);ax1.spines['left'].set_visible(False)
+ax1.set_xticks([-1,0,1])
+ax1.set_yticklabels([-1,0,1],fontsize=8)
 ax1.set_yticks([])
 ax1.set_yticklabels([])
 if save: plt.savefig(dataDir+'Figures/Model/TransientCorrelations/'+name+'.png',
