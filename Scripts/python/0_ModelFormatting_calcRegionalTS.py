@@ -1,8 +1,9 @@
-#This script uses cmip, hadcm & trace netcdf files with non-standard nameing/unit conventions
-#For each model and season a netcdf with standard naming conventions is produced
-#Data are not on the same grid (other than CMIP)
+#This script formats model data to compare with each other and model simulations 
+#Input:  CMIP6, HadCM & TraCE netcdf files with non-standard nameing/unit conventions
+#Output: Each model and season a netcdf with standard naming conventions is produced
+#Notes:  Data are not on the same grid (other than CMIP6)
 
-#Load Packages
+#1 Load Packages
 import numpy      as np
 import pandas     as pd
 import regionmask as rm
@@ -31,7 +32,8 @@ key = {'trace':{'lat':'lat',
                 'pre':{'varName':'precip_mm_srf',   'conv':[((1/1000)*(60*60*24*1000)),0]}, #converts kg/m2/s to m/s to mm/day
                 'evp':{'varName':'totalEvap_mm_srf','conv':[1,0]}, #already in mm/day
                 'tas':{'varName':'temp_mm_srf',    'conv':[1,-273.15]}}} #converts K to degC
-  
+
+#Dictionary of CMIP file names
 cmip6 = {}  
 cmip6['pi'] = {
     'AWI-ESM-1-1-LR': "/AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_185501-195412_clim_tas_pr_evspsbl.nc",
@@ -68,8 +70,10 @@ cmip6['mh'] = {
     #'NorESM2-LM':     "/NorESM2-LM_midHolocene_r1i1p1f1_gn_210101-220012_clim_tas_pr_evspsbl.nc"
     }
 
+
 seasons = {'ANN':[0,1,2,3,4,5,6,7,8,9,10,11],'DJF':[0,1,11],'JJA':[5,6,7]}
 
+#Function for masking model data based on IPCC regions and land
 def maskmodeldata(values,lats,lons):
     #Lat weights
     wghts  = np.cos(np.deg2rad(lats))
@@ -120,8 +124,10 @@ for time in ['mh','pi']:
         ens[szn] = xr.concat(ens[szn],dim='model')
         ens[szn] = ens[szn].assign_coords(model=list(cmip6[time].keys()))
         cmipEns[szn].append(ens[szn])
-#%% 
-for szn in ens.keys(): #combine pi and mh into single xarray with time dim
+        
+#%% Combine preindustrial and midholocene into single xarray with time dim
+
+for szn in ens.keys(): 
     cmipEns[szn] = xr.concat(cmipEns[szn],dim='time')
     cmipEns[szn] = cmipEns[szn].assign_coords(time=['mh','pi'])
     #Save anoms
@@ -145,7 +151,8 @@ for szn in ens.keys(): #combine pi and mh into single xarray with time dim
 
 
 
-#%% 4. Load Michael's netcdf files and convert to uniform units/nameing
+#%% 4. Load Michael's transient netcdf files and convert to uniform units/nameing
+
 modelData = {}
 for model in key.keys():
     print(model)
@@ -185,7 +192,6 @@ for model in key.keys():
         modelData[model][szn] = sznData
 
 #%% 5. Calculate regional timeseries and cmip mh anomolies
-
 
 for model in ['hadcm','trace']:
     for szn in ['ANN','JJA','DJF']:

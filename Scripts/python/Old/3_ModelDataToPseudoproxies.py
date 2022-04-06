@@ -21,10 +21,9 @@ import cartopy.crs as ccrs              # Packages for mapping in python
 import cartopy.feature as cfeature
 #import cartopy.util as cutil
 #
-dataDir  = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
 #
-save=False
-data_HC =  pd.read_csv(dataDir+'/Data/proxyMetaData_HC.csv')
+from scipy.stats import pearsonr
+
 #data_T =  pd.read_csv(gitHubDir+'DataFiles/proxyT.csv')
 
 
@@ -32,61 +31,81 @@ data_HC =  pd.read_csv(dataDir+'/Data/proxyMetaData_HC.csv')
 #Load Model Data
 #
 #Set time variables and resolution of data
-ageMin=0; ageMax=12000; ageRes=100
-timebin = [*range(ageMin,ageMax+1,ageRes)]
+dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
+modelData = {}
+for model in ['hadcm','trace','cmip6']:
+    modelData[model] = {}
+    for szn in ['ANN','JJA','DJF']:
+        modelData[model][szn] = xr.open_dataset(dataDir+'Data/Model/'+model+'_'+szn+'.nc',decode_times=False)
 
-#Model variable names and conversion to common time/variable units (generally mm/day)
-modelKey = {'trace':{'lat':'lat','lon':'lon',
-                     'Time':{'varName':'time','conversion':[-1000,0]}, #To 0-12ka Holocene
-                     'Precip':{'varName':'PRECT','conversion':[(60*60*24*1000),0]}, #converts m/s to mm/day
-                     'Evap':{'varName':'QFLX','conversion':[((1/1000)*(60*60*24*1000)),0]}, #converts kg/m2/s to m/s to mm/day
-                     'Temp':{'varName':'TREFHT','conversion':[1,-273.15]}}, #converts K to degC
-            'hadcm':{'lat':'latitude','lon':'longitude',
-                     'Time':{'varName':'t','conversion':[-1,2000]}, #To 0-12ka Holocene
-                     'Precip':{'varName':'precip_mm_srf','conversion':[((1/1000)*(60*60*24*1000)),0]}, #converts kg/m2/s to m/s to mm/day
-                     'Evap':{'varName':'totalEvap_mm_srf','conversion':[1,0]}, #already in mm/day
-                     'Temp':{'varName':'temp_mm_1_5m','conversion':[1,-273.15]}}} #converts K to degC
-dataModel = {}
-for model in modelKey.keys():
-    dataModel[model] = {}
-    for variable in ['Precip','Evap','Temp']: #',Temp'
-        dataModel[model][variable] = {}
-        for season in ['ANN','DJF','JJA']:
-             print(model+variable+season)
-             #Load data
-             filename = modelKey[model][variable]['varName']
-             if model == 'hadcm': filename = 'deglh.vn1_0.'+filename+'.monthly.'+season
-             elif model=='trace': filename = 'trace.01-36.22000BP.cam2.'+filename+'.22000BP_decavg'+season+'_400BCE'
-             data = xr.open_dataset(dataDir+'ModelNetCDF/Model_transient/netcdf/'+model+'/'+filename+'.nc',decode_times=False)
-             #For first climate variable, add lat/lon information 
-             if len(dataModel[model]) == 1: 
-                 dataModel[model]['lat']  = data[modelKey[model]['lat']].values
-                 dataModel[model]['lon']  = data[modelKey[model]['lon']].values
-                 dataModel[model]['lon']  = xr.where(dataModel[model]['lon'] > 180,dataModel[model]['lon'] - 360,dataModel[model]['lon'])
-                 dataModel[model]['time'] = timebin
-             #Convert to common time units
-             modeltime   = data[modelKey[model]['Time']['varName']]
-             modeltime   = modeltime.values*(modelKey[model]['Time']['conversion'][0])+modelKey[model]['Time']['conversion'][1] 
-             #Convert to common variable units (mm/day typically)
-             modelvalues = data[modelKey[model][variable]['varName']]
-             modelvalues = modelvalues.values*(modelKey[model][variable]['conversion'][0])+modelKey[model][variable]['conversion'][1]              
-             #Convert to common data structure
-             if model == 'hadcm': modelvalues = modelvalues[:,0,:,:]
-             #Bin data to common time resolution 
-             modelvalues = pd.DataFrame([list(modeltime),list(modelvalues)]).transpose() 
-             modelvalues.columns = ['time','values']
-             binvalue = []
-             for timeslice in timebin: binvalue.append(np.mean(modelvalues.loc[(modelvalues['time'] >= timeslice-ageRes/2) & (modelvalues['time'] < (timeslice+ageRes/2))]['values']))
-             dataModel[model][variable][season] = np.dstack(binvalue)
-    #
-    #Calculate P-E
-    dataModel[model]['EffM'] = {}
-    for season in ['ANN','DJF','JJA']:
-        dataModel[model]['EffM'][season] = dataModel[model]['Precip'][season] - dataModel[model]['Evap'][season] 
-#
+proxyDF =  pd.read_csv(dataDir+'/Data/proxyMetaData_HC.csv')
 
-np.save(str(dataDir+'HoloceneHydroclimate/'+'Data/'+'Model/modelPy.npy'),dataModel)
+save=False
 
+
+
+
+#%%
+#%%
+variable    = 'p-e'
+season      = 'annual'
+standardize = False
+
+regions = []
+siteNum = []
+rvalueT = []
+rvalueH = []
+rvalMax = []
+rvalAvg = []
+
+for reg in np.unique(proxyDF['ipccReg']):
+    if reg not in regionmask.defined_regions.ar6.land.abbrevs: continue
+    print(reg)
+    #Select proxy sites for region
+    regData  = proxyDF.loc[proxyDF['ipccReg']==reg] 
+    regions.append(reg)
+    siteNum.append(np.shape(regData)[0])
+    for model in ['hadcm','trace']:
+        #Empty dataframe for pseudoproxy timeseries
+        pesudoDF = pd.DataFrame()
+        for i in list(regData.index):
+            #climate variable
+            if   variable == 'pre':                        var = 'pre'
+            elif variable == 'p-e':                        var = 'p-e'
+            elif variable == 'HC': 
+                if regData['climInterp'][i] == 'P':        var = 'pre'
+                else:                                      var = 'p-e'
+            elif variable == 'tas':                        var = 'tas'
+            #seasonality
+            if   season == 'annual':                       szn = 'ANN'
+            elif season == 'summer':                       szn = 'JJA'
+            elif season == 'winter':                       szn = 'DJF'
+            else: 
+                if   'ummer' in str(data_HC['season'][i]): szn = 'JJA'
+                elif 'inter' in str(data_HC['season'][i]): szn = 'DJF'
+                else:                                      szn = 'ANN'
+            if regData['latitude'][i] < 0:         
+                if   szn == 'JJA':                         szn = 'DJF'
+                elif szn == 'DJF':                         szn = 'JJA'
+            #geography
+            lat = np.argmin(np.abs(modelData[model][szn]['lat'].data-regData['latitude'][i]))
+            lon = np.argmin(np.abs(modelData[model][szn]['lon'].data-regData['longitude'][i]))
+            #site timeseries
+            modelvalues = modelData[model]['ANN']['p-e'][0:121,lat,lon]
+            if standardize: modelvalues = stats.zscore(modelvalues)
+            #mask = [idx for idx, val in enumerate(dataModel[model]['time']) if (val < ror val > site['ageMax'])]
+            pesudoDF[regData['tsid'][i]] = modelvalues
+        pesudoTS = pesudoDF.mean(axis=1)
+        regionTS = pd.read_csv(dataDir+'/Data/Model/regionTS/regional_'+var+'_ANN_'+model+'.csv')[reg][0:121]
+        if   model == 'hadcm': corrH = round(pearsonr(pesudoTS,regionTS)[0],2)
+        elif model == 'trace': corrT = round(pearsonr(pesudoTS,regionTS)[0],2)
+    rvalueT.append(corrT)
+    rvalueH.append(corrH)
+    rvalMax.append(max([corrT,corrH]))
+    rvalAvg.append(np.mean([corrT,corrH]))
+
+df = pd.DataFrame([regions,siteNum,rvalueT,rvalueH,rvalMax,rvalAvg]).transpose()
+df.to_csv(str(dataDir+'Data/Model/'+'pseudoProxyCorr'+'_'+var+'.csv'))
 
 
 
@@ -94,17 +113,6 @@ np.save(str(dataDir+'HoloceneHydroclimate/'+'Data/'+'Model/modelPy.npy'),dataMod
 
 
 #%%
-dataModel = np.load(str(dataDir+'HoloceneHydroclimate/'+'Data/'+'Model/modelPy.npy'),allow_pickle=True).item()
-landmask=dict()
-landmask['hadcm'] = xr.open_dataset(str(dataDir+'ModelNetCDF/Model_transient/netcdf/'+'hadcm'+'/deglh.vn1_0.ht_mm_srf.monthly.ANN.100yr.nc'),decode_times=False)
-landmask['hadcm'] = landmask['hadcm']['ht_mm_srf'].values[249,0,:,:]
-landmask['hadcm'][landmask['hadcm'] > 0] = True
-landmask['hadcm'][landmask['hadcm'] <= 0] = False
-landmask['trace'] = xr.open_dataset(str(dataDir+'ModelNetCDF/Model_transient/netcdf/'+'trace'+'/trace.01-36.22000BP.cam2.LANDFRAC.22000BP_decavg_400BCE.nc'),decode_times=False)
-landmask['trace'] = landmask['trace']['LANDFRAC'].values[2203,:,:]
-landmask['trace'][landmask['trace'] >= 0.5] = True
-landmask['trace'][landmask['trace'] < 0.5] = False
-
 def calculatePseudoProxy(proxyDF=data_HC,
                          dataModelDict=dataModel,
                          variable   ='P',#Or T # Change to 'P' or 'P-E' to test assumptions about proxies
@@ -120,34 +128,7 @@ def calculatePseudoProxy(proxyDF=data_HC,
             print(region)
             regData = proxyDF.loc[proxyDF['ipccReg']==region]
             regDF   = pd.DataFrame()
-            for i in list(regData.index):
-                #climate variable
-                if   variable == 'P':                          var = 'Precip'
-                elif variable == 'P-E':                        var = 'EffM'
-                elif variable == 'HC': 
-                    if regData['variable'][i] == 'P':          var = 'Precip'
-                    else:                                      var = 'EffM'
-                else: var = 'Temp'
-                #seasonality
-                sea = ''
-                if   season == 'annual':                       sea = 'ANN'
-                elif season == 'summer':                       sea = 'JJA'
-                elif season == 'winter':                       sea = 'DJF'
-                elif season == 'proxy': 
-                    if   'ummer' in str(data_HC['season'][i]): sea = 'JJA'
-                    elif 'inter' in str(data_HC['season'][i]): sea = 'DJF'
-                    else:                                      sea = 'ANN'
-                if regData['latitude'][i] < 0:
-                    if   sea == 'JJA':                         sea = 'DJF'
-                    elif sea == 'DJF':                         sea = 'JJA'
-                #geography
-                lat=np.argmin(np.abs(dataModel[model]['lat']-regData['latitude'][i]))
-                lon=np.argmin(np.abs(dataModel[model]['lon']-regData['longitude'][i]))
-                #site timeseries
-                modelvalues = dataModel[model][var][sea][lat,lon,:]
-                #if standardize: modelvalues = stats.zscore(modelvalues)
-                #mask = [idx for idx, val in enumerate(dataModel[model]['time']) if (val < ror val > site['ageMax'])]
-                regDF[regData['tsid'][i]] = modelvalues
+            
             PseudoProxy[region] = regDF
             PseudoProxy['medianTS'][region] = regDF.mean(axis=1)
             #Full region model estimate
