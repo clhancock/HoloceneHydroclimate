@@ -9,43 +9,8 @@ import numpy             as np
 import pandas            as pd 
 import regionmask        as rm
 import xarray            as xr
-import xesmf             as xe
 
 dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
-
-#%%Regrid and save tansient data with cmip spatial resolution
-
-make_figure = True
-for szn in ['ANN','JJA','DJF']:
-    dataGrid = xr.open_dataset(dataDir+'Data/Model/cmip6_'+szn+'.nc') #Regrid
-    for model in ['hadcm','trace']:
-        dataOrig = xr.open_dataset(dataDir+'Data/Model/'+model+'_'+szn+'.nc')
-        dataReGr = xr.Dataset({
-             'lat': (['lat'],dataGrid['lat_regrid'].data,{'units':'degrees_north'}),
-             'lon': (['lon'],dataGrid['lon_regrid'].data,{'units':'degrees_east'}),
-            })
-        #Weird impact of having values directly at -90 and 90 deg lat
-        if model == 'hadcm': dataOrig = dataOrig.isel(lat=list(range(1,len(dataOrig.lat)-1)))
-        #Regrid
-        regridder = xe.Regridder(dataOrig,dataReGr,'conservative')
-        #regridder = xe.Regridder(dataOrig,dataReGr,'conservative',periodic=True,ignore_degenerate=True)
-        #regridder = xe.Regridder(dataOrig,dataReGr,'bilinear')         
-        dataReGr = regridder(dataOrig,keep_attrs=True)
-        #Plot to make sure it looks right
-        print(np.max(abs(dataReGr['tas'].data)))
-        print(np.max(abs(dataOrig['tas'].data)))
-        if make_figure:
-            ax1 = plt.subplot2grid((2,1),(0,0),projection=ccrs.PlateCarree())
-            ax2 = plt.subplot2grid((2,1),(1,0),projection=ccrs.PlateCarree())
-            dataOrig['tas'].isel(time=0).plot.pcolormesh(ax=ax1)
-            dataReGr['tas'].isel(time=0).plot.pcolormesh(ax=ax2)
-            ax1.coastlines(); ax2.coastlines()
-            plt.plot()
-            plt.show()
-        #Rename to indicate regrid
-        for var in dataReGr.keys(): dataReGr = dataReGr.rename({var:var+'_regrid'})
-        dataReGr = dataReGr.rename({'lat':'lat_regrid','lon':'lon_regrid'})
-        dataReGr.to_netcdf(dataDir+'Data/Model/'+model+'_'+szn+'_regrid'+'.nc')
 
 
 
@@ -55,6 +20,18 @@ for model in ['hadcm','trace','cmip6']:
     modelData[model] = {}
     for szn in ['ANN']:
         modelData[model][szn] = xr.open_dataset(dataDir+'Data/Model/'+model+'_'+szn+'_regrid.nc',decode_times=False)
+
+
+#%% 4. 
+#%% 5. Calculate regional timeseries and cmip mh anomolies
+
+for model in ['hadcm','trace']:
+    for szn in ['ANN','JJA','DJF']:
+        data = xr.open_dataset(saveDir+'Data/Model/'+model+'_'+szn+'.nc',decode_times=False)
+        for var in ['pre','p-e','tas']:
+            df = maskmodeldata(data[var],data[var].lat,data[var].lon)
+            df.to_csv(saveDir+'Data/Model/RegionTS/'+'regional_'+var+'_'+szn+'_'+model+'.csv')
+            
 
 
 #%%Plot agreement

@@ -95,6 +95,11 @@ def maskmodeldata(values,lats,lons):
     return(out)
 
 
+
+
+
+
+
 #%% 3 Load CMIP netcdf files and convert to uniform units/nameing
 cmipEns = {'ANN':[],'JJA':[],'DJF':[]}
 for time in ['mh','pi']:

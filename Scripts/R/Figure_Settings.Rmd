@@ -1,0 +1,95 @@
+
+###Input Data
+```{r, warning=FALSE}
+lipdData  <- readRDS(file=file.path(dataDir,'Data','Proxy','LiPD','lipdData.rds'))
+
+PROJ       <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+PROJorig   <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+refregions <- readShapePoly(file.path(dataDir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
+                            proj4string=CRS(PROJorig))
+refregions <-  spTransform(refregions, CRSobj = PROJ)
+
+countries  <- getMap("less islands")
+countries  <- spTransform(countries,  CRSobj = PROJ)
+
+climVar    <- 'HC'
+lipdTSO <- lipdData[[climVar]]
+proxyDf <- read.csv(file=file.path(dataDir,'Data','Proxy',paste('proxyMetaData_',climVar,'.csv',sep='')))
+```
+
+###Figure Settings
+```{r}
+#Set up directories and names
+dataDir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/' #
+#-getwd()
+figSize <- c(5,2.5)
+figFont <- 'sans'
+figText <- 8
+```
+
+###Plot Settings
+```{r}
+##############################
+###Create list of color information
+plotVals <- vector(mode='list')
+plotVals$general  <- vector(mode='list')
+plotVals$specific <- vector(mode='list')
+
+plotVals$general$names  <- sort(unique(proxyDf$Category))
+plotVals$general$colors <- c("powder blue","corn flower blue",
+                             "dark blue","dark orchid","grey",
+                             "forest green","firebrick")
+plotVals$general$shapes <- c(12,21,15,5,13,14,11)
+
+plotVals$specific$names  <- sort(unique(proxyDf$CategorySpec))
+
+colors <- as.character(plotVals$specific$names)
+colors[which(colors=="Glacier Ice")]             <- "powder blue"
+colors[which(colors=="Lake Deposits")]           <- "corn flower blue"
+colors[which(colors=="Lake Sediment (δ18O)")]    <- "dark blue"
+colors[which(colors=="Leaf Wax (δD)")]           <- "dark orchid"
+colors[which(colors=="Other (calibrated)")]      <- "grey40"
+colors[which(colors=="Other (not calibrated)")]  <- "grey"
+colors[which(colors=="Pollen (calibrated)")]     <- "forest green"
+colors[which(colors=="Pollen (not calibrated)")] <- "yellowgreen"
+colors[which(colors=="Speleothem (other)")]      <- "darkorange"
+colors[which(colors=="Speleothem (δ13C)")]       <- "lightcoral"
+colors[which(colors=="Speleothem (δ18O)")]       <- "firebrick"
+
+shapes <- as.character(plotVals$specific$names) 
+shapes[which(shapes=="Glacier Ice")]             <- 12
+shapes[which(shapes=="Lake Deposits")]           <- 21
+shapes[which(shapes=="Lake Sediment (δ18O)")]    <- 15
+shapes[which(shapes=="Leaf Wax (δD)")]           <- 5
+shapes[which(shapes=="Other (calibrated)")]      <- 6
+shapes[which(shapes=="Other (not calibrated)")]  <- 13
+shapes[which(shapes=="Pollen (calibrated)")]     <- 14
+shapes[which(shapes=="Pollen (not calibrated)")] <- 1
+shapes[which(shapes=="Speleothem (other)")]      <- 17
+shapes[which(shapes=="Speleothem (δ13C)")]       <- 23
+shapes[which(shapes=="Speleothem (δ18O)")]       <- 11
+
+plotVals$specific$colors <- colors
+plotVals$specific$shapes <- as.numeric(shapes)
+```
+
+```{r}
+basemap <- ggplot() +
+  #Set Border around plot - probably not the best way to do this
+  borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=2) +
+  geom_map(data=refregions, map=fortify(refregions),
+           aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
+  #Add Country data (basemap)
+  geom_map(data=countries, map=fortify(countries),
+           aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
+  coord_fixed(1) + 
+  theme_void() 
+```
+
+
+
+
+
+
+
+
