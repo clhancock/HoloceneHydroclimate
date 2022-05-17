@@ -25,12 +25,12 @@ library(tidyverse)
 ###Input Data
 ```{r, warning=FALSE}
 #Set up directories and names
-dataDir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/' #
+#dir <- getwd()#'/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/' #
 #-getwd()
 climVar  <- 'HC'
-lipdData <- readRDS(file=file.path(dataDir,'Data','Proxy','LiPD','lipdData.rds'))
+lipdData <- readRDS(file=file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
 lipdTSO  <- lipdData[[climVar]]
-proxyDf  <- read.csv(file=file.path(dataDir,'Data','Proxy',paste('proxyMetaData_',climVar,'.csv',sep='')))
+proxyDf  <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',climVar,'.csv',sep='')))
 save     <- TRUE
 plotSettings <- plotVals$specific
 ```

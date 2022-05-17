@@ -1,11 +1,12 @@
+library(rworldmap)
 
 ###Input Data
 ```{r, warning=FALSE}
-lipdData  <- readRDS(file=file.path(dataDir,'Data','Proxy','LiPD','lipdData.rds'))
+lipdData  <- readRDS(file=file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
 
 PROJ       <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
 PROJorig   <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-refregions <- readShapePoly(file.path(dataDir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
+refregions <- readShapePoly(file.path(dir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
                             proj4string=CRS(PROJorig))
 refregions <-  spTransform(refregions, CRSobj = PROJ)
 
@@ -14,13 +15,13 @@ countries  <- spTransform(countries,  CRSobj = PROJ)
 
 climVar    <- 'HC'
 lipdTSO <- lipdData[[climVar]]
-proxyDf <- read.csv(file=file.path(dataDir,'Data','Proxy',paste('proxyMetaData_',climVar,'.csv',sep='')))
+proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',climVar,'.csv',sep='')))
 ```
 
 ###Figure Settings
 ```{r}
 #Set up directories and names
-dataDir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/' #
+dir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/' #
 #-getwd()
 figSize <- c(5,2.5)
 figFont <- 'sans'

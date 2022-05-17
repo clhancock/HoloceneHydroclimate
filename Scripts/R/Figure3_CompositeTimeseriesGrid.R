@@ -10,29 +10,29 @@ library(maptools)
 library(proj4)
 library(rworldmap)
 library(sp)
-dataDir <-  '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
-var     <- 'HC'
+dir <-  getwd()#'/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
+climVar     <- 'HC'
 project = FALSE
 #Load Data----
 #Projections
 PROJ     <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
 PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 #Refrence Region Shapefiles
-refReg   <- readShapePoly(file.path(dataDir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),proj4string=CRS(PROJorig))
+refReg   <- readShapePoly(file.path(dir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),proj4string=CRS(PROJorig))
 if (project){refReg   <-  spTransform(refReg, CRSobj = PROJ)}
 #Countries for basemap
 countries  <- getMap("less islands")
 if (project){countries  <- spTransform(countries,  CRSobj = PROJ)}
 #Load Proxy Information
-regPlts  <- read.csv(file.path(dataDir,'Data','RegionComposites',var,'MedianTSbyRegion.csv'))
+regPlts  <- read.csv(file.path(dir,'Data','RegionComposites',climVar,'MedianTSbyRegion.csv'))
 regnames <- as.character(refReg@data[["Acronym"]])[which(refReg@data[["Acronym"]]%in%names(regPlts))]
 regPlts  <- vector(mode='list')
-lipdTso  <- readRDS(file.path(dataDir,'Data','LiPD','lipdData.rds'))[[var]]
+lipdTso  <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))[[climVar]]
 
 #Figure Settings----
 #Climate variable Settings for HC vs T
 
-if (var=='T'){ Csettings  <- c("#FFEBEE","#FFCDD2","#EF9A9A") #reds
+if (climVar=='T'){ Csettings  <- c("#FFEBEE","#FFCDD2","#EF9A9A") #reds
 }else{Csettings <- c("#f6e8c3","#bf812d","#8c510a") #yellows
 }
 Csettings <- c("#E1E6EA","#8599AB",'#434D55') #Blues
@@ -49,7 +49,7 @@ CatShape <- c(12,21,15,5, 6,13, 14,1, 17,23,11)
 
 #Create Plots-----
 sample = 1
-if (var == 'HC'){
+if (climVar == 'HC'){
   if (sample == 1){regNames <- c('NWN','WNA','NEN','CNA','GIC','ENA','NEU','ESB','WCE','ECA','MED','WCA','SAU','NZ')
                    position <- c(letters[(length(regNames)+1):26],'aa','ab')
   } else{          regNames <- c('NCA','SCA','SAH','EAS','NEAF','TIB','SEAF','SAS','ESAF','SEA','WSAF','NES','NWS','SAM')
@@ -75,7 +75,7 @@ for (reg in regNames){
   if (project){df <- spTransform(df, CRSobj = PROJ)}
   df <- as.data.frame(df)
   idxC <- which(CatNames %in% sort(unique(df$CategorySpec)))
-  regEnsNA <- read.csv(file.path(dataDir,'Data','RegionComposites',var,paste(reg,'.csv',sep='')))
+  regEnsNA <- read.csv(file.path(dir,'Data','RegionComposites',climVar,paste(reg,'.csv',sep='')))
   #Standardize mean at 0
   regEnsNA <- as.matrix(regEnsNA - as.numeric(apply(regEnsNA,2,mean,na.rm=TRUE)))
   regEnsNA <- regEnsNA / as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
@@ -222,6 +222,6 @@ for (i in 1:2){
   plt <- plt + draw_plot(scale, x = h, y = v, width = 0.5, height = dv/2)
 }
 ggsave(plot=plt, width = 6.5, height = 7, dpi = 400,
-       filename = file.path(dataDir,'Figures',paste('compositeSummaryGrid_',var,'_',sample,'.png',sep='')))
+       filename = file.path(dir,'Figures',paste('compositeSummaryGrid_',climVar,'_',sample,'.png',sep='')))
 
 #-----
