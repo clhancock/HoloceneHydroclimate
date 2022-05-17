@@ -14,7 +14,7 @@ library(sp)
 library(tidyverse)
 
 #Set up directories and names-----
-dir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
+dir <- getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
 #Which versions of datesets to use
 tempVers <- '1_0_2'
 hcVers   <- '0_4_0'
@@ -29,9 +29,9 @@ refregions <-  spTransform(refregions, CRSobj = PROJ)
 
 #Load LiPD Data-----
 #Load Lipd Files
-#D_t    <- readLipd(paste("http://lipdverse.org/Temp12k/",tempVers,"/Temp12k",tempVers,".zip",sep=''))
-#D_hc   <- readLipd(paste("http://lipdverse.org/HoloceneHydroclimate/",hcVers,"/HoloceneHydroclimate",hcVers,".zip",sep=''))
-#D_new  <- readLipd(file.path(dir,'Data','Proxy','LiPD','new'))
+D_t    <- readLipd(paste("http://lipdverse.org/Temp12k/",tempVers,"/Temp12k",tempVers,".zip",sep=''))
+D_hc   <- readLipd(paste("http://lipdverse.org/HoloceneHydroclimate/",hcVers,"/HoloceneHydroclimate",hcVers,".zip",sep=''))
+D_new  <- readLipd(file.path(dir,'Data','Proxy','LiPD','new'))
 
 #Assign tsids for data compilations based on within correct dataset and version -----
 #Combine LiPD files and extract data from 2 sources without duplicates
