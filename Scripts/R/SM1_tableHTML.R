@@ -54,6 +54,7 @@ for (reg in regList$Acronym){
   start <- end + 1
 }
 
+
 #Id Divides between regions
 #idx <- c(lengthtbl2$Region))
 #idx2 <- c()
