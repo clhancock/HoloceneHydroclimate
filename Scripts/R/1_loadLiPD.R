@@ -21,11 +21,9 @@ hcVers   <- '0_4_0'
 #Cut off for lake deposite numbers
 LakeDepositsNo <- 9
 #Load ipcc region spatial data
-PROJ     <- "+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m"
-PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-refregions <- readShapePoly(file.path(dir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
-                            proj4string=CRS(PROJorig))
-refregions <-  spTransform(refregions, CRSobj = PROJ)
+PROJ <- "+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m"
+load(url("https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true"))
+refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
 
 #Load LiPD Data-----
 #Load Lipd Files
@@ -209,6 +207,8 @@ for (climVar in names(lipdData)){
     } else{lipd[[ts]]$Source <- 'Temp12k'}
     #
   }
+  #Save TSid of removed files
+  removedData <- pullTsVariable(lipd,"dataSetName")[which(!is.na(pullTsVariable(lipd,"ageResPlus")))]
   #require >0 change points for lakedeposits
   lipd                <- lipd[which(!is.na(pullTsVariable(lipd,"ageResPlus")))]
   lipdData[[climVar]] <- lipd#[which(pullTsVariable(lipd,"climateInterpretation1_seasonalityGeneral") %in% c('Summer+','Winter+') == FALSE)]
@@ -218,7 +218,7 @@ print(paste("Temp:",length(lipdData$T)))  #810
 print(paste("HC:",  length(lipdData$HC))) #663
 
 #Save-----
-saveRDS(lipdData, file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
+#saveRDS(lipdData, file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
 
 #Save Summary Table for Data-----
 climVar <- 'HC'
@@ -268,6 +268,20 @@ for (archive in unique(proxyDf$archive)){
 }
 
 #Save summary tables
-capture.output(tablelist, file = file.path(dir,'Data','Proxy','ProxyArchiveCount_HoloceneHC.txt'))
-write.csv(proxyDf,file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',climVar,'.csv',sep='')))
+#capture.output(tablelist, file = file.path(dir,'Data','Proxy','ProxyArchiveCount_HoloceneHC.txt'))
+#write.csv(proxyDf,file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',climVar,'.csv',sep='')))
+
+library(janitor)
+z <- read.table("/Users/chrishancock/Downloads/Herzschuh-etal_2021_climate-recons_Asia (3).tab",
+                header = F,sep="\t")  %>% 
+  row_to_names(row_number = 1) 
+
+View(z)
+View(sort(unique(z$Site)))
+
+View(z[which(grepl('Hidden',z$Site,ignore.case=TRUE)),])
+
+
+
+
 

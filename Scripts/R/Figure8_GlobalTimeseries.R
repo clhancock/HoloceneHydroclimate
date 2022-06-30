@@ -9,9 +9,9 @@ library(proj4)
 library(rworldmap)
 library(sp)
 
-dir <-  '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
+dir <-  '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/'
 climVar  <- 'HC'
-modelVar <- 'p-e_ANN'
+modelVar <- NA
 project = TRUE
 
 #Load Data----
@@ -110,10 +110,10 @@ if (climVar=='T'){ Csettings  <- c("#fddbc7","#d6604d","#b2182b") #reds
   Csettings <- c("#E1E6EA","#8599AB",'#434D55') #Blues
   
 }
-Csettings <- c("#E1E6EA","#8599AB",'#434D55') #Blues
+Csettings <- c("#80DBF1","#253DA1",'#000137') #Blues
 Chadcm <- '#AB8599'
 Ctrace <- '#99AB85'
-alph<-1
+alph<-0.8
 map<- ggdraw(ggplot() +
                #Set Border around plot - probably not the best way to do this
                borders(aggregate(refReg, FUN=length), fill=NA, colour='black', size=1) +
@@ -198,22 +198,22 @@ for (reg in regNames){
 
 
 
-#plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=0.6,line.width=0.1,color.low='#f6e8c3',color.high='#dfc27d',color.line='#8c510a')
+plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=0.7,line.width=0.1,color.low='#80DBF1',color.high='#253DA1',color.line='#000137')
 
 scale <- ggplot() +
   scale_x_reverse('Age (ka BP)',limits=c(12,0),expand=c(0,0),breaks=seq(0,12,3),labels=c('0','','6','','12'))+
-  geom_segment(aes(x=11.5,xend=6,y=1,yend=1),size=2,color='Black') +
-  geom_segment(aes(x=11.5,xend=6,y=2,yend=2),size=2,color='Black') +
-  geom_segment(aes(x=11.5,xend=6,y=3,yend=3),size=2,color='Black') +
-  geom_segment(aes(x=11.4,xend=6.1,y=1,yend=1),size=1.5,color=Chadcm,alpha=alph) +
-  geom_segment(aes(x=11.4,xend=6.1,y=2,yend=2),size=1.5,color=Ctrace,alpha=alph) +
-  geom_segment(aes(x=11.4,xend=6.1,y=3,yend=3),size=1.5,color=Csettings[2],alpha=alph) +
-  annotate("text",label="HadCM", x = 3, y = 1,family='sans',color='Black',size = 1.7)+
-  annotate("text",label="TraCE", x = 3, y = 2,family='sans',color='Black',size = 1.7) + 
-  annotate("text",label="Proxy", x = 3, y = 3,family='sans',color='Black',size = 1.7) + 
+  #geom_segment(aes(x=11.5,xend=6,y=1,yend=1),size=2,color='Black') +
+  #geom_segment(aes(x=11.5,xend=6,y=2,yend=2),size=2,color='Black') +
+  #geom_segment(aes(x=11.5,xend=6,y=3,yend=3),size=2,color='Black') +
+  #geom_segment(aes(x=11.4,xend=6.1,y=1,yend=1),size=1.5,color=Chadcm,alpha=alph) +
+  #geom_segment(aes(x=11.4,xend=6.1,y=2,yend=2),size=1.5,color=Ctrace,alpha=alph) +
+  #geom_segment(aes(x=11.4,xend=6.1,y=3,yend=3),size=1.5,color=Csettings[2],alpha=alph) +
+  #annotate("text",label="HadCM", x = 3, y = 1,family='sans',color='Black',size = 1.7)+
+  #annotate("text",label="TraCE", x = 3, y = 2,family='sans',color='Black',size = 1.7) + 
+  #annotate("text",label="Proxy", x = 3, y = 3,family='sans',color='Black',size = 1.7) + 
   scale_y_continuous(limits=c(0,3.7),expand=c(0,0))+
   theme_void()+ 
-  theme(panel.background=element_rect(colour='black',fill='White'),
+  theme(panel.background=element_rect(colour='White',fill='White'),
         plot.background    =element_rect(colour='white',fill='White'),
         axis.line.x = element_line(color = 'black',size=0.3),
         axis.ticks.x  = element_line(color = 'Black',size=0.3), 
@@ -226,8 +226,8 @@ scale <- ggplot() +
 
 if (climVar == 'HC'){
   map2 <- map +
-    theme(plot.margin = unit(c(0,rep(0,4)), "in"))+
-    annotate("text",label="(a) Hydroclimate", x = 0.11, y = 0.93,family='sans',color='Black',size = 2)
+    theme(plot.margin = unit(c(0,rep(0,4)), "in"))
+    #annotate("text",label="(a) Hydroclimate", x = 0.11, y = 0.93,family='sans',color='Black',size = 2)
 } else{
   map2 <- map +annotate("text",label="(b) Temperature", x = 0.11, y = 0.93,family='sans',color='Black',size = 2.2)
   

@@ -25,7 +25,7 @@ library(tidyverse)
 ###Input Data
 ```{r, warning=FALSE}
 #Set up directories and names
-#dir <- getwd()#'/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/' #
+dir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/' #
 #-getwd()
 climVar  <- 'HC'
 lipdData <- readRDS(file=file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
