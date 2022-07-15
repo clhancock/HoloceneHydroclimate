@@ -39,12 +39,12 @@ if(var == 'T'){
 
 #Set variables for composite code--------------------------------------------------------------------------------
 
-nens          <- 3     #Ensemble numbers (lower = faster)
+nens          <- 200     #Ensemble numbers (lower = faster)
 binsize       <- 100     #years (median resolution = 107yrs)
 ageMin        <- 0       #age BP
 ageMax        <- 12400   #age BP
 searchDur     <- 4000    #yrs (for 3 lake deposit data points)
-nThresh       <- 20       #minimum no. of records, else skip 
+nThresh       <- 6       #minimum no. of records, else skip 
 
 #Set bin vectors
 binvec   <- seq(ageMin-binsize/2, to = ageMax+binsize/2, by = binsize)
@@ -62,7 +62,7 @@ regNames <- c(as.character(regNames$name))#,'EAN','SSA') #Add 2 SH regions with 
 
 #Set up data to add once regional composite is calculated
 compositeEnsemble <- vector(mode='list')
-medianCompositeTS <- data_frame(time=binYears)
+medianCompositeTS <- data_frame(time=binYears[1:which(binYears==12000)])
 
 #Loop to composite (by region)
 for (reg in c(regNames)) {
@@ -89,7 +89,8 @@ for (reg in c(regNames)) {
   }
   regionComposite           <- as.matrix(purrr::map_dfc(ensOut,magrittr::extract,"composite"))
   rownames(regionComposite) <- binYears
-  compositeEnsemble[[reg]]  <- regionComposite[1:which(binYears==12000),]
+  regionComposite           <- regionComposite[1:which(binYears==12000),]
+  compositeEnsemble[[reg]]  <- regionComposite
   medianCompositeTS[[reg]]  <- apply(regionComposite,1,median,na.rm=TRUE)
   #plot region to confirm that everything looks good
   plotTimeseriesEnsRibbons(X = binYears[1:which(binYears==12000)],Y = compositeEnsemble[[reg]])+
@@ -100,7 +101,7 @@ for (reg in c(regNames)) {
 }
 
 if(save){
-  write.csv(medianCompositeTS, row.names=FALSE, file=file.path(saveDir,'_MedianTS_byRegion.csv'))
+  write.csv(medianCompositeTS, row.names=FALSE, file=file.path(saveDir,'MedianTS_byRegion.csv'))
   for (reg in names(compositeEnsemble)){
     write.csv(compositeEnsemble[[reg]], row.names=FALSE,file = file.path(saveDir,paste(reg,'.csv',sep='')))
   }
