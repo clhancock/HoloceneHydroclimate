@@ -1,9 +1,11 @@
-#Purpose-----
-#goal: create regional composits based on ipcc regions using either temp or hc
+#Purpose--------------------------------------------------------------------------------
+#goal: create regional composite based on IPCC regions using either temp or HC
 #in:   LiPD files
-#out:  individual csv for each region where columns repersent iterations. 
-#      summary table with each column as the regional median timeseries
-#---
+#out:  individual csv for each region where columns represent iterations. 
+#      summary table with each column as the regional median time series
+
+#Load Packages--------------------------------------------------------------------------------
+
 library(compositeR)
 library(doParallel)
 library(dplyr)
@@ -14,47 +16,55 @@ library(magrittr)
 library(purrr)
 library(tidyverse)
 
-#Set up directories and names
-dir <- getwd()
-dir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
-climVar <- 'HC'
-save=TRUE
-#
 
-###Load Data without winter+ or summer+ seasonality
-lipdData <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))[[climVar]]
+#Set up directories and names--------------------------------------------------------------------------------
+
+dir  <- getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
+var  <- 'HC'
+save <- FALSE
+saveDir <- file.path(dir,'Data','RegionComposites',var)
+
+
+#Load Data without winter+ or summer+ seasonality--------------------------------------------------------------------------------
+
+lipdData <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
 lipdTSO  <- lipdData[-which(pullTsVariable(lipdData,"climateInterpretation1_seasonalityGeneral") %in% c('Summer+','Winter+'))]
 
-if(climVar == 'T'){
+if(var == 'T'){
   lipdTSO <- filterTs(lipdTSO,'paleoData_units == degC')
   lipdTSO <- filterTs(lipdTSO,'paleoData_datum == abs')
   std <- FALSE      #Use calibrated data so no need to normalize variance
 } else{std <- TRUE} #Normalize variance because data recorded with different units
 
-#Set variables for composite code
-nens          <- 200     #lower = faster
+
+#Set variables for composite code--------------------------------------------------------------------------------
+
+nens          <- 3     #Ensemble numbers (lower = faster)
 binsize       <- 100     #years (median resolution = 107yrs)
 ageMin        <- 0       #age BP
-ageMax        <- 12000   #age BP
-searchDur     <- 3500    #yrs (for 3 lake deposit data points)
-nThresh       <- 6       #minimum no. of records, else skip 
+ageMax        <- 12400   #age BP
+searchDur     <- 4000    #yrs (for 3 lake deposit data points)
+nThresh       <- 20       #minimum no. of records, else skip 
 
 #Set bin vectors
 binvec   <- seq(ageMin-binsize/2, to = ageMax+binsize/2, by = binsize)
 binYears <- rowMeans(cbind(binvec[-1],binvec[-length(binvec)]))
 
-#ID regions to reconstruct
+#ID regions to reconstruct based on number of records (nThresh)
 regNames <- data.frame(name=pullTsVariable(lipdTSO,'geo_ipccRegion')) %>% 
   group_by(name) %>% 
   summarise(n = n()) %>% 
-  filter(n>=nThresh)
-regNames <- c(as.character(regNames$name),'EAN','SSA')
+  filter(n >= nThresh)
+regNames <- c(as.character(regNames$name))#,'EAN','SSA') #Add 2 SH regions with fewer records to gain global coverage
+
+
+#Calculate reconstructions--------------------------------------------------------------------------------
 
 #Set up data to add once regional composite is calculated
 compositeEnsemble <- vector(mode='list')
 medianCompositeTS <- data_frame(time=binYears)
 
-#Loop to composite (by region)-----
+#Loop to composite (by region)
 for (reg in c(regNames)) {
   lipdReg  <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
   for (i in 1:length(lipdReg)){
@@ -77,20 +87,18 @@ for (reg in c(regNames)) {
                              minN                 = 3)
     return(list(composite = tc$composite,count = tc$count))
   }
-  regionComposite           <- as.matrix(purrr::map_dfc(ensOut,extract,"composite"))
+  regionComposite           <- as.matrix(purrr::map_dfc(ensOut,magrittr::extract,"composite"))
   rownames(regionComposite) <- binYears
-  compositeEnsemble[[reg]]  <- regionComposite
+  compositeEnsemble[[reg]]  <- regionComposite[1:which(binYears==12000),]
   medianCompositeTS[[reg]]  <- apply(regionComposite,1,median,na.rm=TRUE)
   #plot region to confirm that everything looks good
-  plotTimeseriesEnsRibbons(X = binYears,Y = compositeEnsemble[[reg]])+
+  plotTimeseriesEnsRibbons(X = binYears[1:which(binYears==12000)],Y = compositeEnsemble[[reg]])+
     scale_x_continuous(name = "age (yr BP)",         oob = scales::squish)+
     scale_y_continuous(name = "Standardized Anomaly",oob = scales::squish)+
     theme_bw()+
     ggtitle(paste(reg,"Composite Ensemble"))
 }
 
-#Save-----
-saveDir <- file.path(dir,'Data','RegionComposites',climVar)
 if(save){
   write.csv(medianCompositeTS, row.names=FALSE, file=file.path(saveDir,'_MedianTS_byRegion.csv'))
   for (reg in names(compositeEnsemble)){
@@ -105,6 +113,7 @@ if(save){
 
 
 
+#Save--------------------------------------------------------------------------------
 
 #Code for sampleing and weighting but not really worth it. Widens the spread but minimal impact on median/trends. And code is clunky
 
