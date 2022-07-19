@@ -45,61 +45,6 @@ binvec <- Data$proxy$time
 
 xSize <- 0.1
 ySize <- 0.07
-nudgeVals <- data.frame(region=regNames,x=rep(0,length(regNames)),y=rep(0,length(regNames)))
-nudgeVals[which(regNames=='GIC'),'x'] <- 0
-nudgeVals[which(regNames=='NWN'),'x'] <- -0.002
-nudgeVals[which(regNames=='NWN'),'y'] <- -0.02
-nudgeVals[which(regNames=='NEN'),'y'] <- -0.028
-nudgeVals[which(regNames=='NEN'),'x'] <- -0.002
-nudgeVals[which(regNames=='WNA'),'x'] <- -0.053
-nudgeVals[which(regNames=='CNA'),'x'] <- 0.007
-nudgeVals[which(regNames=='ENA'),'x'] <- 0.060
-nudgeVals[which(regNames=='NAS'),'x'] <- -0.04
-nudgeVals[which(regNames=='SCA'),'x'] <- -0.015
-nudgeVals[which(regNames=='CAR'),'x'] <- 0.03
-nudgeVals[which(regNames=='CAR'),'y'] <- 0.045
-nudgeVals[which(regNames=='NWS'),'x'] <- -0.01
-nudgeVals[which(regNames=='NSA'),'x'] <- 0.025
-nudgeVals[which(regNames=='NSA'),'y'] <- 0.048
-nudgeVals[which(regNames=='NES'),'y'] <- 0.022
-nudgeVals[which(regNames=='SAM'),'y'] <- -0.03
-
-nudgeVals[which(regNames=='NEU'),'x'] <- 0.015
-nudgeVals[which(regNames=='NEU'),'y'] <- 0.01
-nudgeVals[which(regNames=='WCE'),'x'] <- -0.005
-nudgeVals[which(regNames=='MED'),'x'] <- -0.02
-nudgeVals[which(regNames=='CAF'),'x'] <- -0.054
-nudgeVals[which(regNames=='NEAF'),'y'] <- 0.002
-nudgeVals[which(regNames=='SEAF'),'y'] <- -0.002
-nudgeVals[which(regNames=='WSAF'),'x'] <- -0.032
-nudgeVals[which(regNames=='ESAF'),'x'] <- 0.03
-
-nudgeVals[which(regNames=='ESB'),'y'] <- 0.014
-nudgeVals[which(regNames=='ESB'),'x'] <- -0.01
-nudgeVals[which(regNames=='RFE'),'x'] <- -0.04
-nudgeVals[which(regNames=='WCA'),'x'] <- -0.021
-nudgeVals[which(regNames=='ECA'),'x'] <- -0.0035
-nudgeVals[which(regNames=='ECA'),'y'] <- 0.015
-nudgeVals[which(regNames=='TIB'),'x'] <- 0.003
-nudgeVals[which(regNames=='TIB'),'y'] <- -0.007
-nudgeVals[which(regNames=='EAS'),'x'] <- 0.021
-nudgeVals[which(regNames=='SAS'),'y'] <- -0.02
-nudgeVals[which(regNames=='SAS'),'x'] <-  0.0
-nudgeVals[which(regNames=='SEA'),'x'] <- -0.017
-nudgeVals[which(regNames=='SAU'),'x'] <- -0.044
-nudgeVals[which(regNames=='NZ'),'x'] <- -0.017
-
-nudgeVals[which(regNames=='EPO'),'x'] <- -0.02
-nudgeVals[which(regNames=='ARO'),'x'] <- -0.18
-nudgeVals[which(regNames=='ARO'),'y'] <- -0.03
-nudgeVals[which(regNames=='NAO'),'y'] <- 0.106
-nudgeVals[which(regNames=='NAO'),'x'] <- 0.03
-
-
-
-
-
-
 
 #Basemap----
 

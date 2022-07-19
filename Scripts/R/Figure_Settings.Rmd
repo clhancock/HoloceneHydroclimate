@@ -2,20 +2,22 @@ library(rworldmap)
 
 ###Input Data
 ```{r, warning=FALSE}
-lipdData  <- readRDS(file=file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
 
-PROJ       <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
-PROJorig   <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-refregions <- readShapePoly(file.path(dir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'),
-                            proj4string=CRS(PROJorig))
-refregions <-  spTransform(refregions, CRSobj = PROJ)
+dir  <- getwd()
+dir  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
 
-countries  <- getMap("less islands")
+PROJ <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
+PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'))
+refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
+
+countries  <- rworldmap::getMap("less islands")
 countries  <- spTransform(countries,  CRSobj = PROJ)
 
-climVar    <- 'HC'
-lipdTSO <- lipdData[[climVar]]
-proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',climVar,'.csv',sep='')))
+lipdData  <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
+var    <- 'HC'
+lipdTSO <- lipdData[[var]]
+proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',var,'.csv',sep='')))
 ```
 
 ###Figure Settings
