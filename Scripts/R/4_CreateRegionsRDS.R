@@ -29,7 +29,17 @@ lipdData  <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
 #Set up directories and names--------------------------------------------------------------------------------
 
 regionData <- vector(mode='list')
-regionData[[reg]] <- vector(mode='list')
+regionSummary <- data.frame(region=names(regionData),
+                            name=rep(NA,length(regionData)),
+                            type=rep(NA,length(regionData)),
+                            latitude=rep(NA,length(regionData)),
+                            longitude=rep(NA,length(regionData)),
+                            nproxy_HC=rep(NA,length(regionData)),
+                            nproxy_T=rep(NA,length(regionData)),
+                            composite_HC=rep(NA,length(regionData)),
+                            composite_T=rep(NA,length(regionData))
+                            )
+
 for (reg in sort(as.vector(refregions$Acronym))){
   regionData[[reg]]$polygon <- refregions[refregions@data$Acronym == reg, ]
   regionData[[reg]]$name <- as.character(regionData[[reg]]$polygon$Name)

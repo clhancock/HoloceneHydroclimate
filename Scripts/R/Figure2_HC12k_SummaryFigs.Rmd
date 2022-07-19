@@ -1,6 +1,6 @@
 ---
 goal: Plot age metadata to summarize holocene hydroclimate dataset
-input: rdata for Temp12k and HC12k ts; refRegions
+input: figure settings variables not for temp12k
 output: 4 figures (histogram of record length and resolution, graph of ts availability, and plot of number of records in each region)
 author: chris hancock
 ---
@@ -24,15 +24,7 @@ library(tidyverse)
 
 ###Input Data
 ```{r, warning=FALSE}
-#Set up directories and names
-dir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/' #
-#-getwd()
-climVar  <- 'HC'
-lipdData <- readRDS(file=file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
-lipdTSO  <- lipdData[[climVar]]
-proxyDf  <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',climVar,'.csv',sep='')))
-save     <- TRUE
-plotSettings <- plotVals$specific
+save     <- FALSE
 ```
 
 ###Pie Chart for Sproxy data source
@@ -78,33 +70,36 @@ pie
 ###Plot a histagram showing the median time difference between Holocene ages
 ```{r}
 plotRes <- ggplot(proxyDf)+
-  geom_vline(xintercept=median(proxyDf$recordRes),size=0.7) +
-  geom_vline(xintercept=mean(proxyDf$recordRes),size=0.7,linetype=2) +
-  geom_histogram(aes(recordRes,fill=CategorySpec),color='Black',alpha=0.7,binwidth = 30) +
-  scale_fill_manual(values=plotSettings$colors) +
-  scale_x_continuous(name="Median Sample Resolution (binwidth = 30 years)" ,
-                     limits=c(0,1250), expand=c(0,0), breaks=seq(0,1250,150)) +
-  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,110), expand=c(0,0))+
+  geom_vline(xintercept=median(proxyDf$ageRes), size=0.8) +
+  geom_vline(xintercept=mean(proxyDf$ageRes), size=0.8, linetype=2) +
+  geom_histogram(aes(ageRes,fill=CategorySpec), color='Black', alpha=0.7, breaks = seq(0,max(proxyDf$ageRes,na.rm=TRUE)+25,25)) +
+  scale_fill_manual(values=plotSettings$color) +
+  scale_x_reverse(name="Median Proxy Sample Resolution (binwidth = 25 years)" ,
+                     limits=c(max(proxyDf$ageRes,na.rm=TRUE),0), expand=c(0,0), breaks=seq(0,max(proxyDf$ageRes,na.rm=TRUE),300)) +
+  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,125), expand=c(0,0))+
+  coord_flip()+
   theme_bw()+
   theme(text = element_text(family=figFont,size=figText),
-        plot.background = element_rect(fill = 'white',color='Black'),
+        plot.background = element_rect(fill = 'White',color='Black'),
         plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "in"),
         legend.key.height = unit(0.1, "in"),
         legend.key.width = unit(0.1, "in"),
-        legend.title = element_blank(),legend.position = c(0.5,0.6))#legend.position = 'none')# 
+        legend.title = element_blank(),legend.position = c(0.5,0.6))#legend.position = 'none')#
+  
 plotRes
 ##############################
 plotResPlus <- ggplot(proxyDf)+
-  geom_vline(xintercept=median(proxyDf$recordResPlus),size=0.7) +
-  geom_vline(xintercept=mean(proxyDf$recordResPlus),size=0.7,linetype=2) +
-  geom_histogram(aes(recordResPlus,fill=CategorySpec),color='Black',alpha=0.7,binwidth = 30) +
-  scale_fill_manual(values=plotSettings$colors) +
-  scale_x_continuous(name = "Median Sample Resolution (binwidth = 30 years)" ,
-                     limits=c(0,3000), expand=c(0,0), breaks=seq(0,1250,150)) +
-  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,110), expand=c(0,0))+
+  geom_vline(xintercept=median(proxyDf$ageResPlus), size=0.8) +
+  geom_vline(xintercept=mean(proxyDf$ageResPlus), size=0.8, linetype=2) +
+  geom_histogram(aes(ageResPlus,fill=CategorySpec), color='Black', alpha=0.7, breaks = seq(0,max(proxyDf$ageResPlus,na.rm=TRUE)+100,100)) +
+  scale_fill_manual(values=plotSettings$color) +
+  scale_x_reverse(name="Median Proxy Sample Resolution (binwidth = 50 years)" ,
+                     limits=c(max(proxyDf$ageResPlus,na.rm=TRUE),0), expand=c(0,0), breaks=seq(0,max(proxyDf$ageResPlus,na.rm=TRUE),600)) +
+  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,125), expand=c(0,0))+
+  coord_flip()+
   theme_bw()+
   theme(text = element_text(family=figFont,size=figText),
-        plot.background = element_rect(fill = 'white',color='Black'),
+        plot.background = element_rect(fill = 'White',color='Black'),
         plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "in"),
         legend.key.height = unit(0.1, "in"),
         legend.key.width = unit(0.1, "in"),
@@ -123,20 +118,21 @@ if (save) {
 ###Plot a histagram based on record length over the Holocene
 ```{r}
 plotRange <- ggplot(proxyDf)+
-  geom_vline(xintercept=median(proxyDf$recordRange),size=0.7) +
-  geom_vline(xintercept=mean(proxyDf$recordRange),size=0.7,linetype=2) +
-  geom_histogram(aes(recordRange,fill=CategorySpec),color='Black',alpha=0.7,binwidth = 300) +
-  scale_fill_manual(values=plotSettings$colors) +
+  geom_vline(xintercept=median(proxyDf$ageRange), size=0.8) +
+  geom_vline(xintercept=mean(proxyDf$ageRange), size=0.8, linetype=2) +
+  geom_histogram(aes(ageRange,fill=CategorySpec), color='Black', alpha=0.7, breaks = seq(0,max(proxyDf$ageRange,na.rm=TRUE)+500,500)) +
+  scale_fill_manual(values=plotSettings$color) +
   scale_x_continuous(name = "Record Length (binwidth = 300 years)",
-                     limits=c(3000,12000),expand=c(0,0),breaks=seq(3000,12000,1200)) +
-  scale_y_continuous(name = "Count of Records",oob=scales::squish,limits=c(0,120),expand=c(0,0)) +
+                     limits=c(2900,12000),expand=c(0,0),breaks=seq(3000,12000,2000)) +
+  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,150), expand=c(0,0))+
+  coord_flip()+
   theme_bw()+
   theme(text = element_text(family=figFont,size=figText),
-        plot.background = element_rect(fill = 'white',color='Black'),
+        plot.background = element_rect(fill = 'White',color='Black'),
         plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "in"),
         legend.key.height = unit(0.1, "in"),
         legend.key.width = unit(0.1, "in"),
-        legend.title = element_blank(),legend.position = c(0.5,0.6))#legend.position = 'none')# 
+        legend.title = element_blank(),legend.position = c(0.5,0.6))#legend.position = 'none')# legend.position = c(0.5,0.7))
 
 plotRange
 if (save) {
@@ -149,15 +145,14 @@ if (save) {
 ```{r}
 plotTimeData <- plotTimeAvailabilityTs(lipdTSO,age.range = c(0,12000),step=100,group='CategorySpecific')
 plotTime <- ggplot(plotTimeData$data,aes(yvec,value))+
-  geom_area(alpha=1,aes(fill=group),color='Black',size=0.2)+
-  scale_fill_manual(values=plotSettings$colors) +
-  scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),
-                  n.breaks=7,sec.axis = sec_axis(~.,labels=NULL))+
+  geom_area(alpha=0.7,aes(fill=group),color='Black',size=0.2)+
+  scale_fill_manual(values=plotSettings$color) +
+  scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),n.breaks=7)+
   scale_y_continuous(name = "Count of Records",limits=c(0,length(lipdTSO)),expand=c(0,0),
                      labels=seq(0,length(lipdTSO),100), breaks=seq(0,length(lipdTSO),100))+
   theme_bw()+
   theme(text = element_text(family=figFont,size=figText),
-        plot.background = element_rect(fill = 'white',color='Black'),
+        plot.background = element_rect(fill = 'White',color='Black'),
         plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "in"),
         legend.key.height = unit(0.1, "in"),
         legend.key.width = unit(0.1, "in"),
@@ -173,15 +168,11 @@ if (save) {
 
 ```{r}
 #Plot Figure 2 count by regions
-proxyDataPrj   <- SpatialPointsDataFrame(proxyDf[,c("longitude", "latitude")], proxyDf, proj4string=CRS(PROJorig))
-proxyDataPrj   <- spTransform(proxyDataPrj, CRSobj = PROJ)
-refrenceSubset <-       subset(refregions, Acronym %in% proxyDf$ipccReg)
-refrenceSubsetSelect <- subset(refregions, Acronym %in% (proxyDf %>% 
-                                                         group_by(ipccReg) %>% 
-                                                         summarize(count=n()) %>% 
-                                                         filter(count >= 6))$ipccReg)
+regionsSelect$all       <- refregions
+regionsSelect$select    <- subset(refregions, Acronym %in% proxyDf$ipccReg)
+regionsSelect$composite <- subset(refregions, Acronym %in% colnames(read.csv(file.path(dir,'Data','RegionComposites','T','MedianTSbyRegion.csv'))))
 
-dataTable <- fortify(refrenceSubset)
+dataTable <- fortify(regionsSelect$select)
 dataTable$Count     <- NA
 dataTable$CountName <- NA
 dataTable$Region    <- NA
@@ -246,8 +237,8 @@ proxyMapSites <- basemap +
   geom_star(data= as.data.frame(proxyDataPrj),aes(x=longitude.1 , y=latitude.1,
                                                   starshape=CategorySpec, fill=CategorySpec),
             size=1.5,color='Black',alpha=1,starstroke=0.3) + 
-  scale_fill_manual(values=plotSettings$colors,name= 'Proxy Category') +
-  scale_starshape_manual(values=plotSettings$shapes,name= 'Proxy Category') +
+  scale_fill_manual(values=plotSettings$color,name= 'Proxy Category') +
+  scale_starshape_manual(values=plotSettings$shape,name= 'Proxy Category') +
   theme(text = element_text(family=figFont,size=figText),
         plot.background = element_rect(fill = 'white',color='Black'),
         plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "in"),

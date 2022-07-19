@@ -111,7 +111,7 @@ for (var in names(lipdData)){
       arrange(age)
     tso$ageMin     <- max(min(df$age),0)
     tso$ageMax     <- min(max(df$age),12000)
-    tso$ageRange   <- diff(range(df$age))
+    tso$ageRange   <- min(diff(range(df$age)),12000)
     tso$ageRes     <- median(diff(df$age))
     tso$ageResPlus <- median(diff(df$age[which(diff(df$values) != 0)]))
     tso$paleoData_HoloceneValues <- df
@@ -149,7 +149,7 @@ for (var in names(lipdData)){
       } else if (archive == 'Speleothem'){
         tso$Category           <- 'Speleothem'
         if (proxy == 'd18O' | proxy ==  'd13C'){
-          tso$CategorySpecific <- paste(archive,' (','\u3B4',substring(proxy, 2),')',sep='')
+          tso$CategorySpecific <- paste(archive,' (','δ',substring(proxy, 2),')',sep='')
         } else{
           tso$CategorySpecific <- 'Speleothem (other)'
         }
@@ -160,11 +160,11 @@ for (var in names(lipdData)){
         tso$Category           <- 'Glacier Ice'
         tso$CategorySpecific   <- 'Glacier Ice'
       } else if (archive == 'LakeSediment' & proxy == 'd18O'){
-        tso$Category           <- paste('Lake Sediment (','18O)',sep="\u3B4")
-        tso$CategorySpecific   <- paste('Lake Sediment (','18O)',sep="\u3B4")
+        tso$Category           <- 'Lake Sediment (δ18O)'
+        tso$CategorySpecific   <- 'Lake Sediment (δ18O)'
       } else if (proxy == 'dDwax'){
-        tso$Category           <- paste('Leaf Wax (','D)',sep="\u3B4")
-        tso$CategorySpecific   <- paste('Leaf Wax (','D)',sep="\u3B4")
+        tso$Category           <- 'Leaf Wax (δD)'
+        tso$CategorySpecific   <- 'Leaf Wax (δD)'
       } else if (proxy == 'pollen'){
         tso$Category           <- 'Pollen'
         if (is.null(unit)){
