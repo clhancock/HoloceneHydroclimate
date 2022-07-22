@@ -118,13 +118,6 @@ regionsSelect$all       <- refregions
 regionsSelect$select    <- subset(refregions, Acronym %in% proxyDf$ipccReg)
 regionsSelect$composite <- subset(refregions, Acronym %in% colnames(read.csv(file.path(dir,'Data','RegionComposites','T','MedianTSbyRegion.csv'))))
 
-proxyDataPrj   <- SpatialPointsDataFrame(proxyDf[,c("longitude", "latitude")], proxyDf, proj4string=CRS(PROJorig))
-proxyDataPrj   <- spTransform(proxyDataPrj, CRSobj = PROJ)
-refrenceSubset <-       subset(refregions, Acronym %in% proxyDf$ipccReg)
-refrenceSubsetSelect <- subset(refregions, Acronym %in% (proxyDf %>% 
-                                                         group_by(ipccReg) %>% 
-                                                         summarize(count=n()) %>% 
-                                                         filter(count >= 6))$ipccReg)
 ```
 
 ```{r, warning=FALSE}
@@ -141,6 +134,20 @@ basemap <- ggplot() +
   theme_void() 
 
 basemap
+```
+
+```{r, warning=FALSE}
+
+
+library(ggplot2)
+library(ggOceanMapsData)
+library(ggOceanMaps)
+
+dt <- expand.grid(lon = c(-180, 180), lat = c(-90, 90))
+
+basemap(data = dt, land.col = NaN, bathymetry = T, legends = F) + 
+  scale_fill_manual(values = c(rep("white", 10))) + theme_void()
+
 ```
 
 
