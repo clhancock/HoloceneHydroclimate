@@ -7,17 +7,10 @@
  #          
 #author: chris hancock
 
-# tsidListHC <- c('WEBb3fd19e6', 'WEBd3eaa693', 'WEBb6841ae1','WEB4fba7605', 'WEBa1c23512', 'WEB8ffcaee7',
-#                 'WEB5aca062f',#paleodata to fill in data which was NA for Eilandvlei.Wuendsch.2018.lpd
-#                 'WEBeab5d1e0',#New ages for LagunaLaGaiba.Fornace.2016.lpd
-#                 'WEB-ef183-b6de-44d7-8b46-61a47')#New ages for Alley.GISP2.2000
-# tsidListHC <- tsidListHC[-which(tsidListHC == 'WEBaf733834')] #Record length too short
-# tsidListHC <- tsidListHC[-which(tsidListHC == 'LPD6d6b5db7')] #Record length too short
-# tsidListHC <- tsidListHC[-which(tsidListHC == 'LPD2999f647')] #Non-linear
+#'WEB5aca062f',#paleodata to fill in data which was NA for Eilandvlei.Wuendsch.2018.lpd
+# 'WEBeab5d1e0',#New ages for LagunaLaGaiba.Fornace.2016.lpd
 # tsidListHC <- tsidListHC[-which(tsidListHC ==  'GH129d82be')] #New ages
 # lipdData$HC <- lipdData$HC[-(which(pullTsVariable(lipdData$HC,"paleoData_TSid")=='WEBeab5d1e0')[1])]
-# lipdData$HC[[which(pullTsVariable(lipdData$HC,"paleoData_TSid")=='WEBed535db2')]]$geo_latitude  <- -18.0918
-# lipdData$HC[[which(pullTsVariable(lipdData$HC,"paleoData_TSid")=='WEBed535db2')]]$geo_longitude <- -57.5627
 
 #Load Packages--------------------------------------------------------------------------------
 

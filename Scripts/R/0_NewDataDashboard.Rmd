@@ -21,13 +21,51 @@ library(scales)
 library(sp)
 library(tidyverse)
 dir <- "/Users/chrishancock/Dropbox"
-dir <- "C://Users/clh624/Dropbox/"
+#dir <- "C://Users/clh624/Dropbox/"
 
+```
+
+```{r}
+D_hc <- readLipd(paste('http://lipdverse.org/HoloceneHydroclimate/','0_4_0','/HoloceneHydroclimate','0_4_0','.zip',sep=''))
+TS_Lake <- splitInterpretationByScope(extractTs(D_hc))
+TS_Lake <- TS_Lake[which(pullTsVariable(TS_Lake,'createdBy')=="http://github.com/nickmckay/oxfordLakeStatus2Lipd")]
+TS_Lake <- TS_Lake[pullTsVariable(TS_Lake,'paleoData_variableName')=='lakeStatus']
+```
+
+```{r}
+lipd <- TS_Lake
+TSids <- c()
+for (ts in 1:length(lipd)){
+    #Add age information
+    tso <- data.frame(age = as.numeric(lipd[[ts]]$age), values = as.numeric(lipd[[ts]]$paleoData_values)) %>%
+      filter(between(age,-100,12400)) %>%
+      filter(!is.na(values)) %>%
+      arrange(age)
+    if (nrow(tso) >= 11){
+      #if (length(unique(tso$values)) >= 2){
+      if (length(which(diff(tso$values) != 0)) >= 2){
+       TSids <- append(TSids,lipd[[ts]]$paleoData_TSid) 
+      }
+    }
+}
+print(length(TSids))
+View(as.data.frame(TSids))
 ```
 
 ###Input Data
 ```{r, warning=FALSE}
 Dlake   <- readLipd(file.path(dir,"PaleoDIVER"))
+```
+```{r}
+TS_Lake <- splitInterpretationByScope(extractTs(Dlake))
+TS_Lake <- TS_Lake[which(pullTsVariable(TS_Lake,'paleoData_TSid')=='pdR0NFxIRcqx0L6n7X5')]
+print(length(TS_Lake))
+ts <- 1
+tso <- data.frame(age = as.numeric(lipd[[ts]]$age), values = as.numeric(lipd[[ts]]$paleoData_values)) %>%
+      filter(between(age,-100,12400)) %>%
+      filter(!is.na(values)) %>%
+      arrange(age)
+print(tso)
 ```
 
 ```{r}
@@ -61,7 +99,40 @@ for (ts in 1:length(lipd)){
 print(length(TSids))
 ```
 
+
 ```{r}
+TS_Lake <- splitInterpretationByScope(extractTs(Dlake))
+TS_Lake <- TS_Lake[which(pullTsVariable(TS_Lake,'paleoData_primaryTimeseries')==TRUE)]
+lipd <- TS_Lake
+TSids <- c()
+for (ts in 1:length(lipd)){
+    #Add age information
+    include <- FALSE
+    tso <- data.frame(age = as.numeric(lipd[[ts]]$age), values = as.numeric(lipd[[ts]]$paleoData_values)) %>%
+      filter(between(age,-100,12000)) %>%
+      filter(!is.na(values)) %>%
+      arrange(age)
+    if (nrow(tso) < 10) {next}
+    lipd[[ts]]$ageMin     <- min(tso$age)
+    lipd[[ts]]$ageMax     <- max(tso$age)
+    lipd[[ts]]$ageRange   <- diff(range(tso$age))
+    lipd[[ts]]$ageRes     <- median(diff(tso$age))
+    lipd[[ts]]$ageResPlus <- median(diff(tso$age[which(diff(tso$values) != 0)]))
+    if (!is.na(lipd[[ts]]$ageRange)){
+      if (lipd[[ts]]$ageRange > 6000 & lipd[[ts]]$ageRes < 1000){
+        include <- TRUE
+      } else if (lipd[[ts]]$ageRange > 4000 & lipd[[ts]]$ageRes < 400){
+        include <- TRUE
+      }
+    }
+    if (include){
+      TSids <- append(TSids,lipd[[ts]]$paleoData_TSid)}
+}
+print(length(TSids))
+```
+
+```{r}
+Dpoll   <- readLipd(file.path(dir,"LegacyClimate"))
 TS_Poll <- splitInterpretationByScope(extractTs(Dpoll))
 TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'paleoData_primaryTimeseries')==TRUE)]
 TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'climateInterpretation1_variable')=='P')]
@@ -106,6 +177,20 @@ for (ts in 1:length(lipd)){
 print(length(TSids))
 View(as.data.frame(TSids))
 write.csv(as.data.frame(TSids),"/Users/clh624/Desktop/Data")
+```
+
+
+```{r}
+
+dataset <- "WilliamKingFlourMill.Grant.2014"
+z<-  read.table("/Users/chrishancock/Downloads/Li-etal_2021_agemodel.tab", sep = '\t',header = TRUE)
+Dpoll   <- readLipd(file.path(dir,"LegacyClimate",paste(dataset,"lpd",sep=".")))
+TS_Poll <- splitInterpretationByScope(extractTs(Dpoll))
+TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'paleoData_primaryTimeseries')==TRUE)]
+TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'climateInterpretation1_variable')=='P')]
+
+
+
 ```
 
 
