@@ -21,7 +21,7 @@ library(scales)
 library(sp)
 library(tidyverse)
 dir <- "/Users/chrishancock/Dropbox"
-#dir <- "C://Users/clh624/Dropbox/"
+dir <- "C://Users/clh624/Dropbox/"
 
 ```
 
@@ -183,7 +183,8 @@ write.csv(as.data.frame(TSids),"/Users/clh624/Desktop/Data")
 ```{r}
 
 dataset <- "WilliamKingFlourMill.Grant.2014"
-z<-  read.table("/Users/chrishancock/Downloads/Li-etal_2021_agemodel.tab", sep = '\t',header = TRUE)
+zz <-  read.table("C://Users/clh624/Downloads/Herzschuh-etal_2021_climate-recons_Europe.tab", sep = '\t',header = TRUE)
+
 Dpoll   <- readLipd(file.path(dir,"LegacyClimate",paste(dataset,"lpd",sep=".")))
 TS_Poll <- splitInterpretationByScope(extractTs(Dpoll))
 TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'paleoData_primaryTimeseries')==TRUE)]
@@ -193,6 +194,84 @@ TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'climateInterpretation1_variable
 
 ```
 
+```{r}
+
+TSids <- c()
+chronData <-  read.table("C://Users/clh624/Downloads/Table-S1_chronological_control_points_metadata.tab", sep = '\t',header = TRUE)
+Dpoll   <- readLipd(file.path(dir,"LegacyClimate"))
+for (i in 1:length(Dpoll)){
+  Dselect <- Dpoll[[i]]
+  chronDataSelect <- chronData[which(chronData$Site_ID==Dselect$LegacyClimateSiteId & chronData$Site_Name==Dselect[["geo"]][["siteName"]]),] 
+  if(is.null(Dselect[["pub"]][[1]][["citation"]])){
+     chronDataSelect <- chronDataSelect[which(is.na(chronDataSelect$First_Publication)),]
+  } else{
+     chronDataSelect <- chronDataSelect[which(chronDataSelect$First_Publication==Dselect[["pub"]][[1]][["citation"]]),]
+  }
+}
+  TS_Poll <- splitInterpretationByScope(extractTs(Dselect))
+  TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'paleoData_primaryTimeseries')==TRUE)]
+  TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'climateInterpretation1_variable')=='P')]
+  for (ts in 1:length(TS_Poll)){
+      #Add age information
+      include <- FALSE
+      tso <- data.frame(age = as.numeric(TS_Poll[[ts]]$age), values = as.numeric(TS_Poll[[ts]]$paleoData_values)) %>%
+        filter(between(age,-100,12000)) %>%
+        filter(!is.na(values)) %>%
+        arrange(age)
+      if (nrow(tso) < 10) {next}
+      TS_Poll[[ts]]$ageMin     <- min(tso$age)
+      TS_Poll[[ts]]$ageMax     <- max(tso$age)
+      TS_Poll[[ts]]$ageRange   <- diff(range(tso$age))
+      TS_Poll[[ts]]$ageRes     <- median(diff(tso$age))
+      TS_Poll[[ts]]$ageResPlus <- median(diff(tso$age[which(diff(tso$values) != 0)]))
+      AgeControl <- chronDataSelect[which(chronDataSelect$Dataset_ID==unique(chronDataSelect$Dataset_ID)[ts]),]$Age_Calibrated..kyr.BP*1000
+      AgeControl <- AgeControl[which(AgeControl<=12000)]
+      if(length(AgeControl)<=3){       thresh <- 1
+      } else if(length(AgeControl)<=6){thresh <- 2
+      } else{                          thresh <- length(AgeControl)*0.3334
+      }
+      if(length(which(diff(AgeControl)<0))>=thresh){next} #allow for 1 age reversal for every 4 age control points
+      TS_Poll[[ts]]$AgeControlMax <- max(diff(c(TS_Poll[[ts]]$ageMin,AgeControl,TS_Poll[[ts]]$ageMax)))
+      TS_Poll[[ts]]$AgeControlN   <- length(AgeControl)
+      if (!is.na(TS_Poll[[ts]]$ageRange)){
+        if (TS_Poll[[ts]]$ageRange > 4000 & TS_Poll[[ts]]$ageRes < 400){
+            if (TS_Poll[[ts]]$AgeControlMax < 3000 & TS_Poll[[ts]]$AgeControlN >= 2){  
+            include <- TRUE
+          } else if (TS_Poll[[ts]]$AgeControlMax < 3500 & TS_Poll[[ts]]$AgeControlN >= 5){  
+            include <- TRUE
+          } else if (TS_Poll[[ts]]$AgeControlMax < 4000 & TS_Poll[[ts]]$AgeControlN >= 6){  
+            include <- TRUE
+          }
+        }
+      } 
+      if (include){
+        TSids <- append(TSids,TS_Poll[[ts]]$paleoData_TSid)}
+  }
+  if(!is.na(unique(chronDataSelect$Dataset_ID)[ts+1])){print(Dselect$dataSetName)}
+}
+
+print(length(TSids))
+View(as.data.frame(TSids))
+write.csv(as.data.frame(TSids),"/Users/clh624/Desktop/Data")
+
+```
+
+```{r}  
+Dselect <- Dpoll[["Bruckmisse.Rosch.2009"]]
+print(Dselect$chronData[[1]][["measurementTable"]][[1]]$age$values)
+for (i in 1:length(Dselect[["paleoData"]])){
+  print(i)
+  chronDataSelect <- chronData[which(chronData$Site_ID==Dselect$LegacyClimateSiteId & chronData$Site_Name==Dselect[["geo"]][["siteName"]]),] 
+  if(is.null(Dselect[["pub"]][[1]][["citation"]])){
+     chronDataSelect <- chronDataSelect[which(is.na(chronDataSelect$First_Publication)),]
+  } else{
+     chronDataSelect <- chronDataSelect[which(chronDataSelect$First_Publication==Dselect[["pub"]][[1]][["citation"]]),]
+  }
+  print(chronDataSelect[which(chronDataSelect$Dataset_ID==unique(chronDataSelect$Dataset_ID)[i]),]$Age_Calibrated..kyr.BP*1000)
+}
+if(!is.na(unique(chronDataSelect$Dataset_ID)[i+1])){print(Dselect$dataSetName)}
+
+```
 
 ```{r}
 figFont = 'sans'
