@@ -4,16 +4,21 @@
  #       Also assign regional designations and additional metadata. 
 #input:  url for LiPD files
 #output: rdata file for Temp12k and HC12k timeseries lists
- #          
+#        csv summarizing data in an easy to share table    
+#        pdf of timeseries dashboards          
+#
 #author: chris hancock
 
 #'WEB5aca062f',#paleodata to fill in data which was NA for Eilandvlei.Wuendsch.2018.lpd
-# 'WEBeab5d1e0',#New ages for LagunaLaGaiba.Fornace.2016.lpd
-# tsidListHC <- tsidListHC[-which(tsidListHC ==  'GH129d82be')] #New ages
-# lipdData$HC <- lipdData$HC[-(which(pullTsVariable(lipdData$HC,"paleoData_TSid")=='WEBeab5d1e0')[1])]
+#'WEBeab5d1e0',#New ages for LagunaLaGaiba.Fornace.2016.lpd
+#tsidListHC <- tsidListHC[-which(tsidListHC ==  'GH129d82be')] #New ages
+#lipdData$HC <- lipdData$HC[-(which(pullTsVariable(lipdData$HC,"paleoData_TSid")=='WEBeab5d1e0')[1])]
 
 #Load Packages--------------------------------------------------------------------------------
 
+library(cowplot)
+library(ggstar)
+library(ggplot2)
 library(lipdR)
 library(maptools)
 library(proj4)
@@ -136,6 +141,7 @@ for (var in names(lipdData)){
       archive  <- tso$archiveType
       proxy    <- tso$paleoData_proxy
       unit     <- tso$paleoData_units
+      if(is.null(tso$climateInterpretation1_variableDetail)){tso$climateInterpretation1_variableDetail<-'Blank'} 
       if (is.null(proxy) | is.null(archive)){
         tso$Category         <- 'Other'
         tso$CategorySpecific <- 'Other (not calibrated)'
@@ -146,17 +152,17 @@ for (var in names(lipdData)){
         } else{
           tso$CategorySpecific <- 'Speleothem (other)'
         }
-      } else if (archive == 'LakeDeposits'){
+      } else if (tso$climateInterpretation1_variableDetail == 'lakeLevel@surface'){
         tso$Category           <- 'Shoreline'
         tso$CategorySpecific   <- 'Shoreline (Lake Level)'
       } else if (archive == 'GlacierIce'){
-        tso$Category           <- 'Glacier Ice'
-        tso$CategorySpecific   <- 'Glacier Ice'
+        tso$Category           <- 'Glacial Ice'
+        tso$CategorySpecific   <- 'Glacial Ice (Accumulation)'
       } else if (archive == 'LakeSediment' & proxy == 'd18O'){
         tso$Category           <- 'Lake Sediment (δ18O)'
         tso$CategorySpecific   <- 'Lake Sediment (δ18O)'
       } else if (proxy == 'dDwax'){
-        tso$Category           <- 'Leaf Wax (δD)'
+        tso$Category           <- 'Leaf Wax'
         tso$CategorySpecific   <- 'Leaf Wax (δD)'
       } else if (proxy == 'pollen'){
         tso$Category           <- 'Pollen'
@@ -200,28 +206,25 @@ for (var in names(lipdData)){
       else if (tso$createdBy =='sisal2lipd'){
         tso$Source = 'SISALv2'
       }
-      else if (tso$originalDataUrl == 'wNAm'){
-        tso$Source = 'wNA'
+      else if (grepl(tso$createdBy,'LegacyClimate2LiPD')){
+        tso$Source = 'Legacy Climate v1.0'
       }
       else if (tso$originalDataUrl == 'geochange.er.usgs.gov/midden/'){
         tso$Source = 'wNA'
       }
-      else if (grepl(tso$createdBy,'LegacyClimate2LiPD')){
-        tso$Source = 'Legacy Climate v1.0'
+      else if (grepl('/study/30535',tso$originalDataUrl)){
+        tso$Source = 'wNA'
       }
-      else if (tso$calibration_method == 'JM18_MAT'){
-        tso$Source = 'Marsicek et al. (2018)'
+      else if (grepl('10.25921/bnxb-1n90',tso$originalDataUrl)){
+        tso$Source = 'Mid-Latitude Holocene'
       }
-      else if (grepl('gov/paleo/study/15444',tso$originalDataUrl) | '10.5194/cp-10-1605-2014' == tso$pub2_doi){
+      else if (grepl('/study/15444',tso$originalDataUrl)){
         tso$Source = 'Arctic Holocene'
       }
-      else if (substr(tso$dataSetName,1,2) == 'LS'){
-        tso$Source = 'iso2k'
+      else if (grepl('10.5194/essd-12-2261-2020',tso$originalDataUrl) | (substr(tso$dataSetName,1,2) == 'LS')){
+        tso$Source = 'Iso2k'
       }
-      else if (tso$originalDataUrl == 'https://essd.copernicus.org/articles/12/2261/2020/'){
-        tso$Source = 'iso2k'
-      }
-      else if (grepl('10.25921/4RY2-G808',tso$originalDataUrl) | grepl('/paleo/study/27330',tso$originalDataUrl)){
+      else if (grepl('10.25921/4RY2-G808',tso$originalDataUrl) | grepl('/study/27330',tso$originalDataUrl)){
         tso$Source = 'Temp12k'
       } else{tso$Source = 'Other'}
     } else{tso$Source <- 'Temp12k'}
@@ -286,90 +289,98 @@ for (var in names(lipdData)){
 
 #Other --------------------------------------------------------------------------------
 
+var <- 'HC'
+
+countries  <- spTransform(rworldmap::getMap("less islands"), CRSobj = PROJ)
+
+proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetadata_',var,'.csv',sep='')))
+proxyDf <- as.data.frame(spTransform(SpatialPointsDataFrame(proxyDf[,c("longitude", "latitude")], proxyDf, proj4string=CRS(PROJorig)), CRSobj = PROJ))
+
+lipdTSO <- lipdData[[var]]
+
+plotSettings$names <- sort(unique(proxyDf$CategorySpec))
+#
+plotSettings$color <- as.character(plotSettings$names)
+plotSettings$color[which(plotSettings$names=="Glacier Ice (Accumulation)")]             <- "powder blue"
+plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "corn flower blue"
+plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "dark blue"
+plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "dark orchid" #δ
+plotSettings$color[which(plotSettings$names=="Other (calibrated)")]      <- "grey40"
+plotSettings$color[which(plotSettings$names=="Other (not calibrated)")]  <- "grey"
+plotSettings$color[which(plotSettings$names=="Pollen (calibrated)")]     <- "forest green"
+plotSettings$color[which(plotSettings$names=="Pollen (not calibrated)")] <- "yellowgreen"
+plotSettings$color[which(plotSettings$names=="Speleothem (other)")]      <- "darkorange"
+plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "lightcoral"
+plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "firebrick"
+#
+plotSettings$shape <- as.character(plotSettings$names) 
+plotSettings$shape[which(plotSettings$names=="Glacier Ice (Accumulation)")]             <- 12
+plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
+plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
+plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
+plotSettings$shape[which(plotSettings$names=="Other (calibrated)")]      <- 6
+plotSettings$shape[which(plotSettings$names=="Other (not calibrated)")]  <- 13
+plotSettings$shape[which(plotSettings$names=="Pollen (calibrated)")]     <- 14
+plotSettings$shape[which(plotSettings$names=="Pollen (not calibrated)")] <- 1
+plotSettings$shape[which(plotSettings$names=="Speleothem (other)")]      <- 17
+plotSettings$shape[which(plotSettings$names=="Speleothem (δ13C)")]       <- 23
+plotSettings$shape[which(plotSettings$names=="Speleothem (δ18O)")]       <- 11 
 
 
 
-
-for (regNo in as.numeric(refregions@data[["Acronym"]])){
-  reg <- levels(refregions@data[["Acronym"]])[regNo]
-  print(reg)
-  count <- which(as.numeric(refregions@data[["Acronym"]])==regNo)
-  #
-  #Stack Plot
-  #
-  stack.df <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
-  if (length(stack.df) == 0){next}
-  stack.df <- tidyTs(stack.df,age.var = "age") %>% 
-    filter(between(age,0,12000)) %>% #only years from Holocene
-    group_by(paleoData_TSid) %>%     #group by column
-    arrange(geo_latitude)            #North to south
-  stackColors <- c()
-  #Get colors for categories within region
-  
-  
-  for (category in unique(stack.df$CategorySpecific)){
-    stackColors <- c(stackColors,
-                     plotSettings$colors[which(plotSettings$names == category)])
-  }
-  stackPlot <- plotTimeseriesStack(stack.df,
-                                   time.var = "age",
-                                   color.var =  "CategorySpecific",
-                                   invert.var = 'climateInterpretation1_interpDirection',
-                                   color.ramp = stackColors) + 
-    scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),
-                    n.breaks=7,sec.axis = sec_axis(~.,labels=NULL)) 
-  #
-  #Region map
-  #
-  proxyDataPrj <- SpatialPointsDataFrame(stack.df[,c("geo_longitude", "geo_latitude")], 
-                                         stack.df, proj4string=CRS(PROJorig))
-  proxyDataPrj <- spTransform(proxyDataPrj, CRSobj = PROJ)
-  proxyDFprj   <- as.data.frame(proxyDataPrj)
-  idx <- which(plotSettings$names %in% unique(proxyDFprj$CategorySpecific))
+for (reg in as.character(refregions@data[["Acronym"]][1:3])){
+  n <- which(as.character(refregions@data[["Acronym"]])==reg)
+  tsSelect <- lipdTSO#[which(pullTsVariable(lipdTSO,'geo_ipccRegion')==reg)]
+  if (length(tsSelect) == 0){next}
   refrenceRegShp <- subset(refregions, Acronym ==reg)
+  regionDf <- proxyDf[which(proxyDf$ipccReg==reg),]
+  idx <- which(plotSettings$names %in% regionDf$CategorySpec)
   regMap <-  ggplot() +
     geom_map(data=countries, map=fortify(countries),
              aes(x=long, y=lat, group=group, map_id=id), 
              fill = "grey80",color="grey90",size=0.4) +
-    coord_fixed(1,xlim= range(fortify(refrenceRegShp)$lon),
-                ylim=range(fortify(refrenceRegShp)$lat)) + 
     geom_map(data=refrenceRegShp, map=fortify(refrenceRegShp), 
              aes(x=long, y=lat, group=group, map_id=id),
              fill=NA, alpha=0.75, size=0.5, color='black') +
-    geom_star(data=proxyDFprj,
-              aes(x=geo_longitude.1 , y=geo_latitude.1,
-                  starshape=CategorySpecific, fill=CategorySpecific),
-              size=4,color='Black',alpha=1,starstroke=0.5) + 
-    scale_fill_manual(values=plotSettings$colors[idx],name= 'Proxy Category') +
-    scale_starshape_manual(values=plotSettings$shapes[idx],name= 'Proxy Category') +
+    geom_point(data=proxyDf,aes(x=longitude.1 ,y=latitude.1),size=1,color='Black') + 
+    geom_star(data=regionDf,aes(x=longitude.1 ,y=latitude.1,fill=CategorySpec,starshape=CategorySpec),
+              size=3,color='Black',starstroke=0.5) + 
+    coord_fixed(xlim= range(fortify(refrenceRegShp)$lon), ylim=range(fortify(refrenceRegShp)$lat)) + 
+    scale_fill_manual(     values=plotSettings$color[idx]) +
+    scale_starshape_manual(values=plotSettings$shape[idx]) +
     theme_void() + 
     theme(legend.position = 'none') 
-  ggsave(file.path(githubDir,'Figures','Dashboard','_Summary',
-                   paste(count,'_',reg,'__regMap.png',sep='')),
-         plot=regMap,device='png',width=5,height=5,units='in')
-  ggsave(file.path(githubDir,'Figures','Dashboard','_Summary',
-                   paste(count,'_',reg,'__stackPlot.png',sep='')),
-         plot=stackPlot,device='png',width=8.5,height=11,units='in')
   #
-  #
-  #
-}
-
-dir  <- getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
-
-PROJ <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
-PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'))
-refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
-
-
-
-for (j in c(1)){
-  for (ts in 1:length(TS_Poll)){
-    #df <- proxyDFprj %>% filter(paleoData_TSid==unique(proxyDFprj$paleoData_TSid)[i])
-    tso <- TS_Poll[[ts]]
-    col <- 'black' #plotSettings$colors[which(plotSettings$names == ts$CategorySpecific)]
-    shp <- 1#plotSettings$shapes[which(plotSettings$names == ts$CategorySpecific)]
+  print(paste(n,reg,sep=". "))
+  for (ts in 1:length(tsSelect)){
+    siteDf  <- regionDf[which(regionDf$tsid==tso$paleoData_TSid),]
+    tso     <- tsSelect[[ts]]
+    Dselect <- D_hc[[tso$dataSetName]]
+    i       <- min(length(Dselect[["chronData"]]),1)
+    ageColName <- NA
+    if (i != 0){
+      chronTable <- Dselect[["chronData"]][[i]][["measurementTable"]][[1]]
+      agenames <- names(chronTable)[grepl(c('age'),names(chronTable),ignore.case=TRUE)]
+      for (name in c('type','error','min','max','hi','lo','radio','14',"Uncorr","unc","up","old","young","std","reservoir","σ","low","Rejected","±","comment","err")){
+        agenames <- agenames[which(grepl(name,agenames,ignore.case=TRUE)==FALSE)]
+      }
+      for (name in c(agenames,'age','Age','CalAge','CalibratedAge','Calibrated Age')){
+        if (name %in% names(chronTable)){
+          ageColName <- name
+        } 
+      }
+      agecontrol <- chronTable[[ageColName]]$values
+      if (!is.null(chronTable[[ageColName]][["units"]])){
+        if (grepl("ka",chronTable[[ageColName]][["units"]])){
+          agecontrol <- agecontrol*1000
+        }
+      }
+    }
+    if (is.na(name)){agecontrol<-NA}
+    print(name)
+    print(agecontrol)
+    col <- plotSettings$color[which(plotSettings$names == tso$CategorySpecific)]
+    shp <- plotSettings$shape[which(plotSettings$names == tso$CategorySpecific)]
     df <- data.frame(
       age    = as.numeric(tso$age), 
       values = as.numeric(tso$paleoData_values)) %>%
@@ -382,55 +393,48 @@ for (j in c(1)){
       geom_star(aes(x=df$age,y=df$values),fill=col,color='black',starshape=shp,size=1,starstroke=0.5,alpha=0.7) + 
       geom_path(aes(x=ages,y=values),color=col,alpha=0.7) + 
       scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),n.breaks=7,oob=scales::squish) +
-      theme_bw() +     
-      #ggtitle(paste(unique(df[,'geo_ipccRegion']),': ',unique(df[,'dataSetName']),sep='')) + 
-      theme(text = element_text(family='sans',size=8),
-            plot.title = element_text(hjust = 0.5,family='sans',size=10,face='bold'))
-    if (ts$climateInterpretation1_interpDirection == 'negative'){
-      plt <- plt + scale_y_reverse(name=paste(ts$paleoData_variableName,
-                                              ' (',ts$paleoData_units,')',sep=''))
+      theme_bw() +
+      ggtitle(paste(reg,": ",siteDf$dataset," (",siteDf$proxy,")",sep="")) 
+    if (tso$climateInterpretation1_interpDirection == 'negative'){
+      plt <- plt + 
+        geom_point(aes(x=agecontrol,y=agecontrol*0+max(df$values,na.rm=TRUE)), color="black",size=2,shape=17)+
+        scale_y_reverse(name=paste(tso$paleoData_variableName,' (',tso$paleoData_units,')',sep=''))
     } else{
-      plt <- plt + scale_y_continuous(name=paste(ts$paleoData_variableName,
-                                                 ' (',ts$paleoData_units,')',sep=''))
+      plt <- plt + 
+        geom_point(aes(x=agecontrol,y=agecontrol*0+min(df$values,na.rm=TRUE)), color="black",size=2,shape=17)+
+        scale_y_continuous(name=paste(tso$paleoData_variableName,' (',tso$paleoData_units,')',sep=''))
     }
-    
-    map <- regMap + 
-      geom_star(data=df,aes(x=geo_longitude.1 , y=geo_latitude.1,
-                            starshape=CategorySpecific, fill=CategorySpecific),
-                size=4,color='gold',alpha=1,starstroke=4) +
-      theme(text = element_text(family='sans',size=8))
+    plt
+    #
+    map <- regMap + geom_star(data=siteDf,
+                              aes(x=longitude.1, y=latitude.1), starshape=shp, fill=col,
+                              size=3,color='gold',alpha=1,starstroke=2)
     h <- 0
-    txt <- ggplot(df) 
+    txt <- ggplot(siteDf) 
     for (name in c('paleoData_TSid','dataSetName',
                    'geo_latitude','geo_longitude','geo_elevation',
                    'archiveType','Category','CategorySpecific',
                    'paleoData_proxyGeneral','paleoData_proxy','paleoData_proxyDetail','paleoData_variableName',
                    'climateInterpretation1_seasonalityGeneral',
                    'climateInterpretation1_variable','paleoData_units',
-                   'Source','pub1_title','pub1_doi','pub2_title','pub2_doi')){
+                   'Source','pub1_title','pub1_doi','pub2_doi','originalDataUrl')){
       h <- h-1
-      if (name %in% names(df) == FALSE){df[,name] <- NA}
+      #if (name %in% names(tso) == FALSE){tso[[name]]<- NA}
       txt <- txt + 
         annotate("text", x = 0, y = h, label = paste(name,': ',sep=''),hjust = 0,size=2.5) +
-        annotate("text", x = 0.25, y = h, label = unique(df[,name]),hjust = 0,size=2.5)    
+        annotate("text", x = 0.25, y = h, label = unique(tso[[name]]),hjust = 0,size=2.5)    
     }
     txt <- txt + scale_x_continuous(limits=c(0,0.6)) + theme_void() 
     bkg <- ggplot()+
       theme_void() +
-      theme(plot.background = element_rect(fill = NA,color='Black'))
-    summary <- ggdraw() + 
-      draw_plot(plt, x = 0, y = 0.5, width = 1, height = 0.5) +
-      draw_plot(map, x = 0, y = 0, width = 0.5, height = 0.5) +
-      draw_plot(txt, x = 0.5, y = 0, width = 0.5, height = 0.5) +
-      draw_plot(bkg, x = 0, y = 0, width = 1, height = 1) 
-    ggsave(file.path(githubDir,'Figures','Dashboard',
-                     paste(count,'_',
-                           unique(df[,'geo_ipccRegion']),'_',
-                           unique(df[,'geo_latitude']),'_',
-                           unique(df[,'dataSetName']),'_',
-                           unique(df[,'paleoData_TSid']),
-                           '.png',sep='')),
-           plot=summary,device='png',width=10,height=5,units='in')
+      theme(plot.background = element_rect(fill = "White",color='White'))
+    summary <- ggdraw(bkg) + 
+      draw_plot(plt, x = 0,   y = 0.5, width = 1,   height = 0.5) +
+      draw_plot(map, x = 0,   y = 0,   width = 0.5, height = 0.5) +
+      draw_plot(txt, x = 0.5, y = 0,   width = 0.5, height = 0.5) 
+    ggsave(file.path(dir,"Figures","Dashboard",
+                     paste(n,reg,ts,tso$paleoData_TSid,'.pdf',sep='_')),device='pdf',
+           plot=summary,width=10,height=6,units='in')
   }
 }
 
@@ -466,8 +470,6 @@ for (j in c(1)){
 # View(sort(unique(z$Site)))
 # 
 # View(z[which(grepl('Hidden',z$Site,ignore.case=TRUE)),])
-
-
 
 
 

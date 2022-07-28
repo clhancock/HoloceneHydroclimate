@@ -39,30 +39,30 @@ if (var == 'HC'){
     plotSettings$names <- sort(unique(proxyDf$CategorySpec))
     #
     plotSettings$color <- as.character(plotSettings$names)
-    plotSettings$color[which(plotSettings$names=="Glacier Ice")]             <- "powder blue"
+    plotSettings$color[which(plotSettings$names=="Glacier Ice")] <- "powder blue"
     plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "corn flower blue"
-    plotSettings$color[which(plotSettings$names=="Lake Sediment (d18O)")]    <- "dark blue"
-    plotSettings$color[which(plotSettings$names=="Leaf Wax (dD)")]           <- "dark orchid" #δ
+    plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "dark blue"
+    plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "dark orchid" #δ
     plotSettings$color[which(plotSettings$names=="Other (calibrated)")]      <- "grey40"
     plotSettings$color[which(plotSettings$names=="Other (not calibrated)")]  <- "grey"
     plotSettings$color[which(plotSettings$names=="Pollen (calibrated)")]     <- "forest green"
     plotSettings$color[which(plotSettings$names=="Pollen (not calibrated)")] <- "yellowgreen"
     plotSettings$color[which(plotSettings$names=="Speleothem (other)")]      <- "darkorange"
-    plotSettings$color[which(plotSettings$names=="Speleothem (d13C)")]       <- "lightcoral"
-    plotSettings$color[which(plotSettings$names=="Speleothem (d18O)")]       <- "firebrick"
+    plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "lightcoral"
+    plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "firebrick"
     #
     plotSettings$shape <- as.character(plotSettings$names) 
-    plotSettings$shape[which(plotSettings$names=="Glacier Ice")]             <- 12
+    plotSettings$shape[which(plotSettings$names=="Glacier Ice")] <- 12
     plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
-    plotSettings$shape[which(plotSettings$names=="Lake Sediment (d18O)")]    <- 15
-    plotSettings$shape[which(plotSettings$names=="Leaf Wax (dD)")]           <- 5
+    plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
+    plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
     plotSettings$shape[which(plotSettings$names=="Other (calibrated)")]      <- 6
     plotSettings$shape[which(plotSettings$names=="Other (not calibrated)")]  <- 13
     plotSettings$shape[which(plotSettings$names=="Pollen (calibrated)")]     <- 14
     plotSettings$shape[which(plotSettings$names=="Pollen (not calibrated)")] <- 1
     plotSettings$shape[which(plotSettings$names=="Speleothem (other)")]      <- 17
-    plotSettings$shape[which(plotSettings$names=="Speleothem (d13C)")]       <- 23
-    plotSettings$shape[which(plotSettings$names=="Speleothem (d18O)")]       <- 11  
+    plotSettings$shape[which(plotSettings$names=="Speleothem (δ13C)")]       <- 23
+    plotSettings$shape[which(plotSettings$names=="Speleothem (δ18O)")]       <- 11  
   } else{
     plotSettings$names <- sort(unique(proxyDf$Category))
     #
