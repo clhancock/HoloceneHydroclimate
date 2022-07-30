@@ -2,12 +2,14 @@
 
 ###Input Data
 ```{r, warning=FALSE}
+
+library(RCurl)
 var     <- 'HC'
 
 #dir  <- getwd()
-#dir  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
+dir  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
 
-lipdTSO <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
+lipdTSO <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))#[[var]]
 proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',var,'.csv',sep='')))
 
 
@@ -18,10 +20,8 @@ refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
 
 countries  <- rworldmap::getMap("less islands")
 countries  <- sp::spTransform(countries,  CRSobj = PROJ)
-```
 
 ###Figure Settings
-```{r}
 figFont <- 'sans'
 figText <- 8
 ```
@@ -139,14 +139,6 @@ basemap
 ```{r, warning=FALSE}
 
 
-library(ggplot2)
-library(ggOceanMapsData)
-library(ggOceanMaps)
-
-dt <- expand.grid(lon = c(-180, 180), lat = c(-90, 90))
-
-basemap(data = dt, land.col = NaN, bathymetry = T, legends = F) + 
-  scale_fill_manual(values = c(rep("white", 10))) + theme_void()
 
 ```
 

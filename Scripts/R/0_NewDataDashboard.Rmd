@@ -191,14 +191,31 @@ TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'paleoData_primaryTimeseries')==
 TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'climateInterpretation1_variable')=='P')]
 
 
+z <- 
 
+recs <- pg_search(query = "doi:10.1594/PANGAEA.930512 ")
+
+asia <-pangaear::pg_data(doi= "10.1594/PANGAEA.930606")
+nams
+
+z <-  readLines("/Users/chrishancock/Downloads/Herzschuh-etal_2021_climate-recons-model-stats_Asia.tab")
 ```
 
 ```{r}
+dir <- "/Users/chrishancock/Dropbox"
+#Dpoll   <- readLipd(file.path(dir,"LegacyClimate"))
 
 TSids <- c()
-chronData <-  read.table("C://Users/clh624/Downloads/Table-S1_chronological_control_points_metadata.tab", sep = '\t',header = TRUE)
-Dpoll   <- readLipd(file.path(dir,"LegacyClimate"))
+chronData <-  read.table("/Users/chrishancock/Downloads/Table-S1_chronological_control_points_metadata.csv", sep = '\t',header = TRUE)
+
+significance <- vector(mode='list')
+significance[["Western North America"]]  <- pangaear::pg_data(doi= "10.1594/PANGAEA.930595")[[1]][["data"]]
+significance[["Eastern North America"]]  <- pangaear::pg_data(doi= "10.1594/PANGAEA.930593")[[1]][["data"]]
+significance[["Europe"]]                <- read.delim("/Users/chrishancock/Downloads/Herzschuh-etal_2021_climate-recons-signif_Europe.tab", sep = '\t',header = TRUE,fileEncoding="UTF-16LE")
+significance[["Asia"]]                   <- pangaear::pg_data(doi= "10.1594/PANGAEA.930590")[[1]][["data"]]
+
+colnames(significance[["Europe"]])<-names(significance[["Asia"]]  )
+
 for (i in 1:length(Dpoll)){
   Dselect <- Dpoll[[i]]
   chronDataSelect <- chronData[which(chronData$Site_ID==Dselect$LegacyClimateSiteId & chronData$Site_Name==Dselect[["geo"]][["siteName"]]),] 
@@ -207,7 +224,6 @@ for (i in 1:length(Dpoll)){
   } else{
      chronDataSelect <- chronDataSelect[which(chronDataSelect$First_Publication==Dselect[["pub"]][[1]][["citation"]]),]
   }
-}
   TS_Poll <- splitInterpretationByScope(extractTs(Dselect))
   TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'paleoData_primaryTimeseries')==TRUE)]
   TS_Poll <- TS_Poll[which(pullTsVariable(TS_Poll,'climateInterpretation1_variable')=='P')]
@@ -224,6 +240,7 @@ for (i in 1:length(Dpoll)){
       TS_Poll[[ts]]$ageRange   <- diff(range(tso$age))
       TS_Poll[[ts]]$ageRes     <- median(diff(tso$age))
       TS_Poll[[ts]]$ageResPlus <- median(diff(tso$age[which(diff(tso$values) != 0)]))
+      TS_Poll[[ts]]$geo_continent
       AgeControl <- chronDataSelect[which(chronDataSelect$Dataset_ID==unique(chronDataSelect$Dataset_ID)[ts]),]$Age_Calibrated..kyr.BP*1000
       AgeControl <- AgeControl[which(AgeControl<=12000)]
       if(length(AgeControl)<=3){       thresh <- 1
@@ -245,15 +262,16 @@ for (i in 1:length(Dpoll)){
         }
       } 
       if (include){
-        TSids <- append(TSids,TS_Poll[[ts]]$paleoData_TSid)}
+        if (significance[[TS_Poll[[ts]]$geo_continent]][which(significance[[TS_Poll[[ts]]$geo_continent]]$`ID (Dataset)`==unique(chronDataSelect$Dataset_ID)[ts]),54]<=0.1){
+          TSids <- append(TSids,TS_Poll[[ts]]$paleoData_TSid)
+        }
+      }
   }
   if(!is.na(unique(chronDataSelect$Dataset_ID)[ts+1])){print(Dselect$dataSetName)}
 }
-
+dir<-"/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/Data/Proxy/LegacyClimate"
 print(length(TSids))
-View(as.data.frame(TSids))
-write.csv(as.data.frame(TSids),"/Users/clh624/Desktop/Data")
-
+write.csv(as.data.frame(TSids),file.path(dir,"LegacyClimateTSidPassQC.csv"))
 ```
 
 ```{r}  

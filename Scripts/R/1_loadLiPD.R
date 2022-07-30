@@ -328,7 +328,7 @@ plotSettings$shape[which(plotSettings$names=="Speleothem (δ18O)")]       <- 11
 
 
 
-for (reg in as.character(refregions@data[["Acronym"]][1:3])){
+for (reg in as.character(refregions@data[["Acronym"]])){
   n <- which(as.character(refregions@data[["Acronym"]])==reg)
   tsSelect <- lipdTSO#[which(pullTsVariable(lipdTSO,'geo_ipccRegion')==reg)]
   if (length(tsSelect) == 0){next}
@@ -361,10 +361,10 @@ for (reg in as.character(refregions@data[["Acronym"]][1:3])){
     if (i != 0){
       chronTable <- Dselect[["chronData"]][[i]][["measurementTable"]][[1]]
       agenames <- names(chronTable)[grepl(c('age'),names(chronTable),ignore.case=TRUE)]
-      for (name in c('type','error','min','max','hi','lo','radio','14',"Uncorr","unc","up","old","young","std","reservoir","σ","low","Rejected","±","comment","err")){
+      for (name in c('type','error','min','max','hi','lo','comment','use','radio','14',"Uncorr","unc","up","old","young","std","reservoir","σ","low","Rejected","±","comment","err")){
         agenames <- agenames[which(grepl(name,agenames,ignore.case=TRUE)==FALSE)]
       }
-      for (name in c(agenames,'age','Age','CalAge','CalibratedAge','Calibrated Age')){
+      for (name in c(tail(agecontrol,1),'age','Age','calAge','CalAge','CalibratedAge','Calibrated Age')){
         if (name %in% names(chronTable)){
           ageColName <- name
         } 
@@ -394,7 +394,7 @@ for (reg in as.character(refregions@data[["Acronym"]][1:3])){
       geom_path(aes(x=ages,y=values),color=col,alpha=0.7) + 
       scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),n.breaks=7,oob=scales::squish) +
       theme_bw() +
-      ggtitle(paste(reg,": ",siteDf$dataset," (",siteDf$proxy,")",sep="")) 
+      ggtitle(paste(reg,": ",tso$dataSetName," (",tso$paleoData_proxy,")",sep="")) 
     if (tso$climateInterpretation1_interpDirection == 'negative'){
       plt <- plt + 
         geom_point(aes(x=agecontrol,y=agecontrol*0+max(df$values,na.rm=TRUE)), color="black",size=2,shape=17)+
@@ -404,7 +404,6 @@ for (reg in as.character(refregions@data[["Acronym"]][1:3])){
         geom_point(aes(x=agecontrol,y=agecontrol*0+min(df$values,na.rm=TRUE)), color="black",size=2,shape=17)+
         scale_y_continuous(name=paste(tso$paleoData_variableName,' (',tso$paleoData_units,')',sep=''))
     }
-    plt
     #
     map <- regMap + geom_star(data=siteDf,
                               aes(x=longitude.1, y=latitude.1), starshape=shp, fill=col,
