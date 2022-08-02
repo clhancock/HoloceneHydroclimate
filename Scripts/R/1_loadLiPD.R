@@ -19,9 +19,11 @@
 library(cowplot)
 library(ggstar)
 library(ggplot2)
+library(gsheet)
 library(lipdR)
 library(maptools)
 library(proj4)
+library(RCurl)
 library(sf)
 library(sp)
 library(tidyverse)
@@ -32,7 +34,7 @@ library(tidyverse)
 dir <- getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
 
 tempVers <- '1_0_2' #Which versions of datesets to use
-hcVers   <- '0_4_0' #Which versions of datesets to use
+hcVers   <- '0_6_0' #Which versions of datesets to use
 
 
 #Load Data--------------------------------------------------------------------------------
@@ -40,13 +42,13 @@ hcVers   <- '0_4_0' #Which versions of datesets to use
 #Load ipcc region spatial data
 PROJ <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
 PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'))
+load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
 refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
 
 #Load Lipd Files
 D__t <- readLipd(paste('http://lipdverse.org/Temp12k/',tempVers,'/Temp12k',tempVers,'.zip',sep=''))
 D_hc <- readLipd(paste('http://lipdverse.org/HoloceneHydroclimate/',hcVers,'/HoloceneHydroclimate',hcVers,'.zip',sep=''))
-
+D_hc <- readLipd(file.path(dir,"Data","Proxy","LiPD","HoloceneHydroclimate0_6_0"))
 
 #Assign tsids for data compilations based on within correct dataset and version--------------------------------------------------------------------------------
 
@@ -73,8 +75,18 @@ getTSfromLiPDs <- function(input,compilationName,versNo){
 TS__t <- getTSfromLiPDs(TS__t,'Temp12k',tempVers)
 TS_hc <- getTSfromLiPDs(TS_hc,'HoloceneHydroclimate',hcVers)
 
+
 print(paste("Temp:",length(TS__t)))
 print(paste("HC:",  length(TS_hc)))
+
+qcsheet <- gsheet2tbl('docs.google.com/spreadsheets/d/1rhYoL0B5OfE5A-rNwuQZfnmjI3Vj3NCX07r-Mif3Ncs') %>%
+  filter(inThisCompilation==TRUE)
+
+TS_hc<-TS_hc[which(pullTsVariable(TS_hc,"paleoData_TSid")%in%qcsheet$TSid)]
+
+print(paste("HC:",  length(TS_hc)))
+
+
 
 
 #Adjust metadata (mostly for HC)--------------------------------------------------------------------------------
@@ -152,7 +164,7 @@ for (var in names(lipdData)){
         } else{
           tso$CategorySpecific <- 'Speleothem (other)'
         }
-      } else if (tso$climateInterpretation1_variableDetail == 'lakeLevel@surface'){
+      } else if (tolower(tso$climateInterpretation1_variableDetail) == 'lakelevel@surface'){
         tso$Category           <- 'Shoreline'
         tso$CategorySpecific   <- 'Shoreline (Lake Level)'
       } else if (archive == 'GlacierIce'){
@@ -233,8 +245,8 @@ for (var in names(lipdData)){
   }
 }
 
-print(paste("Temp:",length(lipdData$T)))  #810
-print(paste("HC:",  length(lipdData$HC))) #663
+print(paste("Temp:",length(lipdData$T)))  #1319
+print(paste("HC:",  length(lipdData$HC))) #817
 
 
 #Save--------------------------------------------------------------------------------

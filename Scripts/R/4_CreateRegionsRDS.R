@@ -55,9 +55,9 @@ for (reg in sort(as.vector(refregions$Acronym))){
     if (regionData[[reg]][[var]]$nproxy > 0){
       regionData[[reg]][[var]]$SummaryDF <- read.csv(file.path(dir,'Data','Proxy',paste('proxyMetadata_',var,'.csv',sep=''))) %>% 
         filter(ipccReg==reg)
-      pltTimeAvail <- plotTimeAvailabilityTs(regionData[[reg]][[var]]$LiPD,age.range=c(0,12000),group.var ='CategorySpecific',step=200)$dat %>% 
+      pltTimeAvail <- plotTimeAvailabilityTs(regionData[[reg]][[var]]$LiPD,age.range=c(0,12000),group.var ='CategorySpecific',step=100)$dat %>% 
         group_by(yvec) %>% summarise(count=sum(value),nPct=round(100*sum(value)/regionData[[reg]][[var]]$nproxy,1))
-      regionData[[reg]][[var]]$pltTimeAvail50range <- c(max(0,which(pltTimeAvail$yvec<6000 & pltTimeAvail$nPct < 50)+1),
+      regionData[[reg]][[var]]$pltTimeAvail50range <- seq(max(0,which(pltTimeAvail$yvec<6000 & pltTimeAvail$nPct < 50)+1),
                                 min(nrow(pltTimeAvail),which(pltTimeAvail$yvec>6000 & pltTimeAvail$nPct < 50)-1))
     } else{
       regionData[[reg]][[var]]$SummaryDF <- NA
@@ -103,9 +103,12 @@ regionData[['SEAF']]$yadjust <- -0.002
 regionData[['WSAF']]$xadjust <- -0.032  
 regionData[['ESAF']]$xadjust <-  0.03   
 #Asia/Australasia  
+regionData[['WSB']]$xadjust <-  -0.04
+regionData[['ESB']]$yadjust <-  0.014  
 regionData[['ESB']]$yadjust <-  0.014  
 regionData[['ESB']]$xadjust <- -0.01   
-regionData[['RFE']]$xadjust <- -0.04   
+regionData[['RFE']]$xadjust <- 0.04
+regionData[['RFE']]$yadjust <- -0.02   
 regionData[['WCA']]$xadjust <- -0.021  
 regionData[['ECA']]$xadjust <- -0.0035  
 regionData[['ECA']]$yadjust <-  0.015   

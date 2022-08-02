@@ -21,7 +21,7 @@ library(tidyverse)
 
 dir  <- getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
 var  <- 'HC'
-save <- FALSE
+save <- TRUE
 saveDir <- file.path(dir,'Data','RegionComposites',var)
 
 
@@ -55,7 +55,7 @@ regNames <- data.frame(name=pullTsVariable(lipdTSO,'geo_ipccRegion')) %>%
   group_by(name) %>% 
   summarise(n = n()) %>% 
   filter(n >= nThresh)
-regNames <- c(as.character(regNames$name))#,'EAN','SSA') #Add 2 SH regions with fewer records to gain global coverage
+regNames <- c(as.character(regNames$name),'EAN','SSA') #Add 2 SH regions with fewer records to gain global coverage
 
 
 #Calculate reconstructions--------------------------------------------------------------------------------

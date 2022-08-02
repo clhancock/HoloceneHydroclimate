@@ -9,9 +9,9 @@ var     <- 'HC'
 #dir  <- getwd()
 dir  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
 
-lipdTSO <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))#[[var]]
+lipdTSO <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
 proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',var,'.csv',sep='')))
-
+regionData <- readRDS(file.path(dir,'Data','FigureSettings','regionData.rds'))
 
 PROJ <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
 PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
@@ -24,6 +24,7 @@ countries  <- sp::spTransform(countries,  CRSobj = PROJ)
 ###Figure Settings
 figFont <- 'sans'
 figText <- 8
+figSize <- c(10,5)
 ```
 
 ###Plot Settings
@@ -39,7 +40,7 @@ if (var == 'HC'){
     plotSettings$names <- sort(unique(proxyDf$CategorySpec))
     #
     plotSettings$color <- as.character(plotSettings$names)
-    plotSettings$color[which(plotSettings$names=="Glacier Ice")] <- "powder blue"
+    plotSettings$color[which(plotSettings$names=="Glacial Ice (Accumulation)")] <- "powder blue"
     plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "corn flower blue"
     plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "dark blue"
     plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "dark orchid" #δ
@@ -52,7 +53,7 @@ if (var == 'HC'){
     plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "firebrick"
     #
     plotSettings$shape <- as.character(plotSettings$names) 
-    plotSettings$shape[which(plotSettings$names=="Glacier Ice")] <- 12
+    plotSettings$shape[which(plotSettings$names=="Glacial Ice (Accumulation)")] <- 12
     plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
     plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
     plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
