@@ -47,7 +47,7 @@ refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
 
 #Load Lipd Files
 D__t <- readLipd(paste('http://lipdverse.org/Temp12k/',tempVers,'/Temp12k',tempVers,'.zip',sep=''))
-D_hc <- readLipd(paste('http://lipdverse.org/HoloceneHydroclimate/',hcVers,'/HoloceneHydroclimate',hcVers,'.zip',sep=''))
+#D_hc <- readLipd(paste('http://lipdverse.org/HoloceneHydroclimate/',hcVers,'/HoloceneHydroclimate',hcVers,'.zip',sep=''))
 D_hc <- readLipd(file.path(dir,"Data","Proxy","LiPD","HoloceneHydroclimate0_6_0"))
 
 #Assign tsids for data compilations based on within correct dataset and version--------------------------------------------------------------------------------
@@ -209,16 +209,16 @@ for (var in names(lipdData)){
       if (is.null(tso$pub1_doi)){tso$pub1_doi <- ''}
       if (is.null(tso$pub2_doi)){tso$pub2_doi <- ''}
       #
-      if (grepl(tso$createdBy,'oxfordLakeStatus2Lipd')){
+      if (grepl('oxfordLakeStatus2Lipd',tso$createdBy)){
         tso$Source = 'Oxford Lake Level Database'
       }
-      else if (grepl(tso$createdBy,'paleoDiver2lipd')){
+      else if (grepl('paleoDiver2lipd',tso$createdBy)){
         tso$Source = 'Liefert and Shuman, 2020'
       }
       else if (tso$createdBy =='sisal2lipd'){
         tso$Source = 'SISALv2'
       }
-      else if (grepl(tso$createdBy,'LegacyClimate2LiPD')){
+      else if (grepl('LegacyClimate2LiPD',tso$createdBy)){
         tso$Source = 'Legacy Climate v1.0'
       }
       else if (tso$originalDataUrl == 'geochange.er.usgs.gov/midden/'){

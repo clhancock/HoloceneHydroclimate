@@ -24,11 +24,14 @@ library(tidyverse)
 
 ###Input Data
 ```{r, warning=FALSE}
-save     <- TRUE
+save     <- FALSE
+proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetadata_',var,'.csv',sep='')))
+
 ```
 
 ###Pie Chart for Sproxy data source
 ```{r}
+
 pieData <- proxyDf %>% group_by(source) %>% summarise(n = n())
 names <- as.character(pieData$source)
 names[which(names=='Arctic Holocene')]             <- 'Arctic Holocene (Sundqvist et al., 2014)'
@@ -36,7 +39,7 @@ names[which(names=='iso2k')]                       <- 'Iso2k (Konecky et al., 20
 names[which(names=='Other')]                       <- 'Miscellaneous'
 names[which(names=='SISAL')]                       <- 'SISAL (Comas-Bru et al., 2020)'
 names[which(names=='Oxford Lake Levels Database')] <- 'Lake-Level Database (Street-Perrott et al., 1989)'
-names[which(names=='Liefert and Shuman, 2020')] <- 'NA Lake Level Database (Liefert and Shuman, 2020')
+names[which(names=='Liefert and Shuman, 2020')] <- 'NA Lake Level Database (Liefert and Shuman, 2020)'
 names[which(names=='Temp12k')]                     <- 'Temp12k (Kaufman et al., 2020)'
 names[which(names=='wNA')]                         <- 'Western North America (Routson et al., 2021)'
 

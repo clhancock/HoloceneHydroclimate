@@ -10,7 +10,7 @@ library(rworldmap)
 library(sp)
 
 var  <- 'HC'
-modelVar <- NA
+modelVar <- 'p-e_ANN'
 project = TRUE
 
 #Load Data----
@@ -20,10 +20,13 @@ ySize <- 0.07
 
 Data <- vector(mode='list')
 Data$proxy <- read.csv(file.path(dir,'Data','RegionComposites',var,'MedianTS_byRegion.csv'))
-#for (model in c('trace','hadcm','cmip6')){
- # Data[[model]]<- read.csv(file.path(dir,'Data','Model','RegionTS',
-  #                                   paste('regional_',modelVar,'_',model,'.csv',sep='')))
-#}
+if (!is.na(modelVar)){
+  for (model in c('trace','hadcm','cmip6')){
+    Data[[model]]<- read.csv(file.path(dir,'Data','Model','RegionTS',
+                                       paste('regional_',modelVar,'_',model,'.csv',sep='')))
+  }
+}
+
 regionData <- readRDS(file.path(dir,'Data','FigureSettings','regionData.rds'))
 regionData[['GIC']]$xadjust  <-  -0.01
 regionData[['NEU']]$xadjust  <-  0.0  
@@ -55,9 +58,9 @@ if (var=='T'){ Csettings  <- c("#fddbc7","#d6604d","#b2182b") #reds
   Csettings <- c("#E1E6EA","#8599AB",'#434D55') #Blues
   
 }
-Csettings <- c("#80DBF1","#253DA1",'#000137') #Blues
-Chadcm <- '#AB8599'
-Ctrace <- '#99AB85'
+Csettings <- c("#92C5DE","#4393C3",'#2166AC') #Blues
+Chadcm <- '#DDAA33'
+Ctrace <- '#BB5566'
 alph<-0.8
 map<- ggdraw(basemap) #+ borders(database = regionsSelect$composite, fill=NA, colour='grey40',size=0.1)) 
 
@@ -74,26 +77,30 @@ for (reg in regNames){
   traceVals <- (Data[['trace']][[reg]]-mean(Data[['trace']][1:5,reg],na.rm=TRUE))[1:121]*scaleVal
   #Standardize mean at 0
   regEnsNA <- as.matrix(regEnsNA - as.numeric(apply(regEnsNA[which(between(binvec,0,500)),],2,mean,na.rm=TRUE)))
-  #if (var == 'HC'){
-   # regEnsNA <- regEnsNA / as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
-    #if (!is.na(modelVar)){regEnsNA <- regEnsNA * mean(sd(traceVals,na.rm=TRUE),sd(hadcmVals,na.rm=TRUE))}
-  #}
+  if (var == 'HC'){
+    regEnsNA <- regEnsNA / as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
+    if (!is.na(modelVar)){regEnsNA <- regEnsNA * mean(sd(traceVals,na.rm=TRUE),sd(hadcmVals,na.rm=TRUE))}
+  }
   regEns   <- matrix(NA,nrow(regEnsNA),ncol(regEnsNA))
   regEns[regionData[[reg]][[var]][["pltTimeAvail50range"]],] <- regEnsNA[regionData[[reg]][[var]][["pltTimeAvail50range"]],]
   plotlimit_set <- max(abs(regEns),na.rm=TRUE)
   regPlt <- ggdraw(ggplot()+theme_void()+theme(plot.background= element_rect(colour='White',fill='White')))
   compBands <- vector(mode = 'list')
   compBands$na <-  plotTimeseriesEnsRibbons(ggplot()+geom_hline(yintercept=0,size=0.05,color='black'),
-                                            X=timeN$yvec, Y=regEnsNA, alp=alph,line.width=0.1,
+                                            X=binvec, Y=regEnsNA, alp=alph,line.width=0.1,
                                             color.low='grey90',
                                             color.high='grey50',
                                             color.line='grey20')
-  compBands$ts <- plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=alph-0.2,line.width=0.1,
+  compBands$ts <- plotTimeseriesEnsRibbons(X=binvec, Y=regEns, alp=alph-0.2,line.width=0.1,
                                            color.low=Csettings[1],
                                            color.high=Csettings[2],
                                            color.line=Csettings[3])
   if (!is.na(modelVar)){
-    plotlimit_set <- max(abs(c(traceVals,hadcmVals,Data[['cmip6']][[reg]],apply(regEns,1,mean))),na.rm=TRUE)*1.2
+    plotlimit_set <- range(c(traceVals,hadcmVals,Data[['cmip6']][[reg]],
+                             apply(regEns,1,mean,na.rm=TRUE)+apply(regEns,1,sd,na.rm=TRUE),apply(regEns,1,mean,na.rm=TRUE)-apply(regEns,1,sd,na.rm=TRUE)
+    ),na.rm=TRUE) 
+    plotlimit_set <- plotlimit_set + diff(range(plotlimit_set))*c(-0.1,0.1)
+    #plotlimit_set <- c(max(abs(plotlimit_set))*c(-1.02,1.01))
     compBands$ts <- compBands$ts + geom_hline(yintercept=0,size=0.05,color='black') +
       geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=hadcmVals),color=Chadcm,size=0.3,alpha=alph)+
       geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=traceVals),color=Ctrace,size=0.3,alpha=alph)+
@@ -103,8 +110,8 @@ for (reg in regNames){
   for (plt in names(compBands)){
     compBands[[plt]] <- compBands[[plt]] + 
       scale_x_reverse(limits=c(12100,-100), expand=c(0,0), n.breaks=7,sec.axis = dup_axis())+ 
-      scale_y_continuous(limits=c(plotlimit_set*c(-1000,1000)),breaks=seq(-100,100,2),sec.axis = dup_axis())+
-      coord_cartesian(xlim=c(12000,0), ylim=c(plotlimit_set*c(-1,1))) +
+      scale_y_continuous(limits=c(-1000,1000),breaks=seq(-100,100,2),sec.axis = dup_axis())+
+      coord_cartesian(xlim=c(12000,0), ylim=c(plotlimit_set),expand	=FALSE) +
       theme_void() +
       theme(panel.border    = element_rect(color='Black',fill=NA,size=0.5),
             axis.ticks      = element_line(color='Black',size=0.1), 
@@ -130,12 +137,12 @@ scale <- ggplot() +
   #geom_segment(aes(x=11.5,xend=6,y=1,yend=1),size=2,color='Black') +
   #geom_segment(aes(x=11.5,xend=6,y=2,yend=2),size=2,color='Black') +
   #geom_segment(aes(x=11.5,xend=6,y=3,yend=3),size=2,color='Black') +
-  #geom_segment(aes(x=11.4,xend=6.1,y=1,yend=1),size=1.5,color=Chadcm,alpha=alph) +
-  #geom_segment(aes(x=11.4,xend=6.1,y=2,yend=2),size=1.5,color=Ctrace,alpha=alph) +
-  #geom_segment(aes(x=11.4,xend=6.1,y=3,yend=3),size=1.5,color=Csettings[2],alpha=alph) +
-  #annotate("text",label="HadCM", x = 3, y = 1,family='sans',color='Black',size = 1.7)+
-  #annotate("text",label="TraCE", x = 3, y = 2,family='sans',color='Black',size = 1.7) + 
-  #annotate("text",label="Proxy", x = 3, y = 3,family='sans',color='Black',size = 1.7) + 
+  geom_segment(aes(x=11.4,xend=6.1,y=1,yend=1),size=1,color=Chadcm,alpha=alph) +
+  geom_segment(aes(x=11.4,xend=6.1,y=2,yend=2),size=1,color=Ctrace,alpha=alph) +
+  geom_segment(aes(x=11.4,xend=6.1,y=3,yend=3),size=1,color=Csettings[2],alpha=alph) +
+  annotate("text",label="HadCM", x = 3, y = 1,family='sans',color='Black',size = 1.7)+
+  annotate("text",label="TraCE", x = 3, y = 2,family='sans',color='Black',size = 1.7) + 
+  annotate("text",label="Proxy", x = 3, y = 3,family='sans',color='Black',size = 1.7) + 
   scale_y_continuous(limits=c(0,3.7),expand=c(0,0))+
   theme_void()+ 
   theme(panel.background=element_rect(colour='White',fill='White'),
@@ -152,7 +159,7 @@ scale <- ggplot() +
 if (var == 'HC'){
   map2 <- map +
     theme(plot.margin = unit(c(0,rep(0,4)), "in"))
-    #annotate("text",label="(a) Hydroclimate", x = 0.11, y = 0.93,family='sans',color='Black',size = 2)
+    annotate("text",label="(a) Hydroclimate", x = 0.11, y = 0.93,family='sans',color='Black',size = 2)
 } else{
   map2 <- map +annotate("text",label="(b) Temperature", x = 0.11, y = 0.93,family='sans',color='Black',size = 2.2)
   

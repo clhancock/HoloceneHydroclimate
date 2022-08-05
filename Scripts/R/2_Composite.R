@@ -39,7 +39,7 @@ if(var == 'T'){
 
 #Set variables for composite code--------------------------------------------------------------------------------
 
-nens          <- 200     #Ensemble numbers (lower = faster)
+nens          <- 500     #Ensemble numbers (lower = faster)
 binsize       <- 100     #years (median resolution = 107yrs)
 ageMin        <- 0       #age BP
 ageMax        <- 12400   #age BP
