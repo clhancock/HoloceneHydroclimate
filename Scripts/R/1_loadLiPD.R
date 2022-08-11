@@ -31,8 +31,8 @@ library(tidyverse)
 
 #Set up directories and names--------------------------------------------------------------------------------
 
-dir <- getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
-
+dir <-  '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
+#getwd()
 tempVers <- '1_0_2' #Which versions of datesets to use
 hcVers   <- '0_6_0' #Which versions of datesets to use
 
@@ -299,6 +299,12 @@ for (var in names(lipdData)){
 }
 
 
+proxyDf %>% 
+  group_by(climInterp) %>% 
+  summarize(count = n(),
+            range = median(ageRange)/1000,
+            resolution = median(ageRes))
+
 #Other --------------------------------------------------------------------------------
 
 var <- 'HC'
@@ -310,10 +316,11 @@ proxyDf <- as.data.frame(spTransform(SpatialPointsDataFrame(proxyDf[,c("longitud
 
 lipdTSO <- lipdData[[var]]
 
+plotSettings <- vector(mode='list')
 plotSettings$names <- sort(unique(proxyDf$CategorySpec))
 #
 plotSettings$color <- as.character(plotSettings$names)
-plotSettings$color[which(plotSettings$names=="Glacier Ice (Accumulation)")]             <- "powder blue"
+plotSettings$color[which(plotSettings$names=="Glacial Ice (Accumulation)")]             <- "powder blue"
 plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "corn flower blue"
 plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "dark blue"
 plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "dark orchid" #δ
@@ -326,7 +333,7 @@ plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "li
 plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "firebrick"
 #
 plotSettings$shape <- as.character(plotSettings$names) 
-plotSettings$shape[which(plotSettings$names=="Glacier Ice (Accumulation)")]             <- 12
+plotSettings$shape[which(plotSettings$names=="Glacial Ice (Accumulation)")]             <- 12
 plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
 plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
 plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
@@ -338,11 +345,11 @@ plotSettings$shape[which(plotSettings$names=="Speleothem (other)")]      <- 17
 plotSettings$shape[which(plotSettings$names=="Speleothem (δ13C)")]       <- 23
 plotSettings$shape[which(plotSettings$names=="Speleothem (δ18O)")]       <- 11 
 
-
+plotSettings$shape <- as.numeric(plotSettings$shape)
 
 for (reg in as.character(refregions@data[["Acronym"]])){
   n <- which(as.character(refregions@data[["Acronym"]])==reg)
-  tsSelect <- lipdTSO#[which(pullTsVariable(lipdTSO,'geo_ipccRegion')==reg)]
+  tsSelect <- lipdTSO[which(pullTsVariable(lipdTSO,'geo_ipccRegion')==reg)]
   if (length(tsSelect) == 0){next}
   refrenceRegShp <- subset(refregions, Acronym ==reg)
   regionDf <- proxyDf[which(proxyDf$ipccReg==reg),]
@@ -364,11 +371,13 @@ for (reg in as.character(refregions@data[["Acronym"]])){
     theme(legend.position = 'none') 
   #
   print(paste(n,reg,sep=". "))
-  for (ts in 1:length(tsSelect)){
-    siteDf  <- regionDf[which(regionDf$tsid==tso$paleoData_TSid),]
-    tso     <- tsSelect[[ts]]
+  tsn <- 0
+  for (ts in arrange(regionDf, desc(latitude), longitude)$tsid){
+    siteDf  <- regionDf[which(regionDf$tsid==ts),]
+    tso     <- tsSelect[[which(pullTsVariable(tsSelect,'paleoData_TSid')==ts)]]
     Dselect <- D_hc[[tso$dataSetName]]
     i       <- min(length(Dselect[["chronData"]]),1)
+    tsn     <- tsn+1
     ageColName <- NA
     if (i != 0){
       chronTable <- Dselect[["chronData"]][[i]][["measurementTable"]][[1]]
@@ -381,16 +390,14 @@ for (reg in as.character(refregions@data[["Acronym"]])){
           ageColName <- name
         } 
       }
-      agecontrol <- chronTable[[ageColName]]$values
+      agecontrol <- as.numeric(chronTable[[ageColName]]$values)
       if (!is.null(chronTable[[ageColName]][["units"]])){
         if (grepl("ka",chronTable[[ageColName]][["units"]])){
           agecontrol <- agecontrol*1000
         }
       }
     }
-    if (is.na(name)){agecontrol<-NA}
-    print(name)
-    print(agecontrol)
+    if (is.na(ageColName)){agecontrol<-NA}
     col <- plotSettings$color[which(plotSettings$names == tso$CategorySpecific)]
     shp <- plotSettings$shape[which(plotSettings$names == tso$CategorySpecific)]
     df <- data.frame(
@@ -444,7 +451,7 @@ for (reg in as.character(refregions@data[["Acronym"]])){
       draw_plot(map, x = 0,   y = 0,   width = 0.5, height = 0.5) +
       draw_plot(txt, x = 0.5, y = 0,   width = 0.5, height = 0.5) 
     ggsave(file.path(dir,"Figures","Dashboard",
-                     paste(n,reg,ts,tso$paleoData_TSid,'.pdf',sep='_')),device='pdf',
+                     paste(n,'_',reg,'_',tsn,'_',tso$paleoData_TSid,'.png',sep='')),device='png',
            plot=summary,width=10,height=6,units='in')
   }
 }

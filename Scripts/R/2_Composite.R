@@ -20,7 +20,7 @@ library(tidyverse)
 #Set up directories and names--------------------------------------------------------------------------------
 
 dir  <- getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
-var  <- 'HC'
+var  <- 'T'
 save <- TRUE
 saveDir <- file.path(dir,'Data','RegionComposites',var)
 
@@ -28,7 +28,7 @@ saveDir <- file.path(dir,'Data','RegionComposites',var)
 #Load Data without winter+ or summer+ seasonality--------------------------------------------------------------------------------
 
 lipdData <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
-lipdTSO  <- lipdData[-which(pullTsVariable(lipdData,"climateInterpretation1_seasonalityGeneral") %in% c('Summer+','Winter+'))]
+lipdTSO  <- lipdData[-which(pullTsVariable(lipdData,"climateInterpretation1_seasonalityGeneral") %in% c('winter+','summer','Summer+','Winter+'))]
 
 if(var == 'T'){
   lipdTSO <- filterTs(lipdTSO,'paleoData_units == degC')
@@ -43,7 +43,7 @@ nens          <- 500     #Ensemble numbers (lower = faster)
 binsize       <- 100     #years (median resolution = 107yrs)
 ageMin        <- 0       #age BP
 ageMax        <- 12400   #age BP
-searchDur     <- 4000    #yrs (for 3 lake deposit data points)
+searchDur     <- 3500    #yrs (for 3 lake deposit data points)
 nThresh       <- 6       #minimum no. of records, else skip 
 
 #Set bin vectors
@@ -82,7 +82,7 @@ for (reg in c(regNames)) {
                              alignInterpDirection = FALSE,
                              spread               = TRUE,
                              duration             = searchDur,
-                             searchRange          = c(1000,9000),
+                             searchRange          = c(1000,10000),
                              normalizeVariance    = std,
                              minN                 = 3)
     return(list(composite = tc$composite,count = tc$count))

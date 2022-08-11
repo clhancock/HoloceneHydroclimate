@@ -4,7 +4,8 @@
 ```{r, warning=FALSE}
 
 library(RCurl)
-var     <- 'HC'
+library(sp)
+var     <- 'T'
 
 #dir  <- getwd()
 dir  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
@@ -111,13 +112,19 @@ if (var == 'HC'){
 }
 plotSettings$shape <- as.numeric(plotSettings$shape)
 
+
+if (var=='T'){ Csettings  <- c("#fddbc7","#d6604d","#b2182b") #reds
+}else{
+  Csettings <- c("#92C5DE","#4393C3",'#2166AC') #Blues
+}
+Csettings <- c("#92C5DE","#4393C3",'#2166AC')
 ```
 
 ```{r, warning=FALSE}
 regionsSelect <- vector(mode='list')
 regionsSelect$all       <- refregions
 regionsSelect$select    <- subset(refregions, Acronym %in% proxyDf$ipccReg)
-regionsSelect$composite <- subset(refregions, Acronym %in% colnames(read.csv(file.path(dir,'Data','RegionComposites','T','MedianTSbyRegion.csv'))))
+regionsSelect$composite <- subset(refregions, Acronym %in% colnames(read.csv(file.path(dir,'Data','RegionComposites',var,'MedianTS_byRegion.csv'))))
 
 ```
 
@@ -140,6 +147,19 @@ basemap
 ```{r, warning=FALSE}
 
 
+
+basemapMercator <- ggplot() +
+  #Set Border around plot - probably not the best way to do this
+  borders(aggregate(IPCC_WGI_reference_regions_v4, FUN=length), fill='aliceblue', colour='white', size=2) +
+  geom_map(data=IPCC_WGI_reference_regions_v4, map=fortify(IPCC_WGI_reference_regions_v4),
+           aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
+  #Add Country data (basemap)
+  geom_map(data=rworldmap::getMap("less islands"), map=fortify(rworldmap::getMap("less islands")),
+           aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
+  coord_fixed(1) + 
+  theme_void()  
+
+basemapMercator
 
 ```
 

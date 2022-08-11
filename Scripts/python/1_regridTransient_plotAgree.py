@@ -10,7 +10,7 @@ import pandas            as pd
 import regionmask        as rm
 import xarray            as xr
 
-dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
+dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
 
 
 

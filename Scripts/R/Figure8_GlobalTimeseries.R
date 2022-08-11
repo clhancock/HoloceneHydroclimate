@@ -9,15 +9,10 @@ library(proj4)
 library(rworldmap)
 library(sp)
 
-var  <- 'HC'
-modelVar <- 'p-e_ANN'
-project = TRUE
+var      <- 'T'
+modelVar <- 'tas_ANN'
 
 #Load Data----
-#Projections
-xSize <- 0.1
-ySize <- 0.07
-
 Data <- vector(mode='list')
 Data$proxy <- read.csv(file.path(dir,'Data','RegionComposites',var,'MedianTS_byRegion.csv'))
 if (!is.na(modelVar)){
@@ -26,44 +21,22 @@ if (!is.na(modelVar)){
                                        paste('regional_',modelVar,'_',model,'.csv',sep='')))
   }
 }
+regNames <-names(Data$proxy)[-1]
+binvec   <- Data$proxy$time
 
 regionData <- readRDS(file.path(dir,'Data','FigureSettings','regionData.rds'))
-regionData[['GIC']]$xadjust  <-  -0.01
-regionData[['NEU']]$xadjust  <-  0.0  
-regionData[['NEU']]$yadjust  <-  0.01  
-regionData[['WCE']]$xadjust  <- -0.02  
-regionData[['WSB']]$xadjust <-  -0.035
-regionData[['WSB']]$yadjust <-  0.015
-regionData[['RFE']]$xadjust <- 0.01
-regionData[['RFE']]$yadjust <- -0.03 
-regionData[['EAN']]$yadjust <- 0.01   
-
-
-regNames <-names(Data$proxy)[-1]
-binvec <- Data$proxy$time
-#ageMin <- min(binvec)
-#ageMax <- max(binvec)
+xSize <- 0.1
+ySize <- 0.07
 
 #Figure Settings----
 #Climate variable Settings for HC vs T
 
-
-
-#Basemap----
-
-if (var=='T'){ Csettings  <- c("#fddbc7","#d6604d","#b2182b") #reds
-}else{
-  Csettings <- c("#ebfaeb","#145214","#0a290a") #greens
-  Csettings <- c("#f6e8c3","#bf812d","#8c510a") #yellows
-  Csettings <- c("#E1E6EA","#8599AB",'#434D55') #Blues
-  
-}
-Csettings <- c("#92C5DE","#4393C3",'#2166AC') #Blues
+Csettings <- Csettings
 Chadcm <- '#DDAA33'
 Ctrace <- '#BB5566'
-alph<-0.8
-map<- ggdraw(basemap) #+ borders(database = regionsSelect$composite, fill=NA, colour='grey40',size=0.1)) 
 
+alph <- 0.8
+map <- ggdraw(basemap) #+ borders(database = regionsSelect$composite, fill=NA, colour='grey40',size=0.1)) 
 
 #Plot---- 
 
@@ -88,9 +61,9 @@ for (reg in regNames){
   compBands <- vector(mode = 'list')
   compBands$na <-  plotTimeseriesEnsRibbons(ggplot()+geom_hline(yintercept=0,size=0.05,color='black'),
                                             X=binvec, Y=regEnsNA, alp=alph,line.width=0.1,
-                                            color.low='grey90',
-                                            color.high='grey50',
-                                            color.line='grey20')
+                                            color.low='grey95',
+                                            color.high='grey80',
+                                            color.line='grey40')
   compBands$ts <- plotTimeseriesEnsRibbons(X=binvec, Y=regEns, alp=alph-0.2,line.width=0.1,
                                            color.low=Csettings[1],
                                            color.high=Csettings[2],
@@ -158,7 +131,7 @@ scale <- ggplot() +
 
 if (var == 'HC'){
   map2 <- map +
-    theme(plot.margin = unit(c(0,rep(0,4)), "in"))
+    theme(plot.margin = unit(c(0,rep(0,4)), "in"))+
     annotate("text",label="(a) Hydroclimate", x = 0.11, y = 0.93,family='sans',color='Black',size = 2)
 } else{
   map2 <- map +annotate("text",label="(b) Temperature", x = 0.11, y = 0.93,family='sans',color='Black',size = 2.2)

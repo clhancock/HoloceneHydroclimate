@@ -48,7 +48,7 @@ for (reg in sort(as.vector(refregions$Acronym))){
   regionData[[reg]]$longitude <- regionData[[reg]]$polygon@polygons[[1]]@labpt[[2]]
   regionData[[reg]]$xadjust   <- NA
   regionData[[reg]]$yadjust   <- NA
-  for (var in c('HC')){
+  for (var in c('HC','T')){
     regionData[[reg]][[var]] <- vector(mode='list')
     regionData[[reg]][[var]]$LiPD   <- filterTs(lipdData[[var]],paste('geo_ipccRegion ==',reg))
     regionData[[reg]][[var]]$nproxy <- length(regionData[[reg]][[var]]$LiPD)
@@ -75,7 +75,7 @@ for (reg in sort(as.vector(refregions$Acronym))){
 #Nudge values for global figure--------------------------------------------------------------------------------
 
 #Americas
-regionData[['GIC']]$xadjust  <-  0
+regionData[['GIC']]$xadjust  <-  -0.01
 regionData[['NWN']]$xadjust  <- -0.002
 regionData[['NWN']]$yadjust  <- -0.02
 regionData[['NEN']]$yadjust  <- -0.028
@@ -93,9 +93,9 @@ regionData[['NSA']]$yadjust  <-  0.048
 regionData[['NES']]$yadjust  <-  0.022
 regionData[['SAM']]$yadjust  <- -0.03
 #Eruope/Africa
-regionData[['NEU']]$xadjust  <-  0.015  
+regionData[['NEU']]$xadjust  <-  0.0  
 regionData[['NEU']]$yadjust  <-  0.01  
-regionData[['WCE']]$xadjust  <- -0.005  
+regionData[['WCE']]$xadjust  <- -0.02  
 regionData[['MED']]$xadjust  <- -0.02   
 regionData[['CAF']]$xadjust  <- -0.054   
 regionData[['NEAF']]$yadjust <-  0.002   
@@ -103,12 +103,14 @@ regionData[['SEAF']]$yadjust <- -0.002
 regionData[['WSAF']]$xadjust <- -0.032  
 regionData[['ESAF']]$xadjust <-  0.03   
 #Asia/Australasia  
-regionData[['WSB']]$xadjust <-  -0.04
+
+regionData[['WSB']]$xadjust <-  -0.035
+regionData[['WSB']]$yadjust <-  0.015
 regionData[['ESB']]$yadjust <-  0.014  
 regionData[['ESB']]$yadjust <-  0.014  
 regionData[['ESB']]$xadjust <- -0.01   
-regionData[['RFE']]$xadjust <- 0.04
-regionData[['RFE']]$yadjust <- -0.02   
+regionData[['RFE']]$xadjust <- 0.01
+regionData[['RFE']]$yadjust <- -0.03   
 regionData[['WCA']]$xadjust <- -0.021  
 regionData[['ECA']]$xadjust <- -0.0035  
 regionData[['ECA']]$yadjust <-  0.015   
@@ -120,6 +122,8 @@ regionData[['SAS']]$xadjust <-  0.0
 regionData[['SEA']]$xadjust <- -0.017  
 regionData[['SAU']]$xadjust <- -0.044
 regionData[['NZ']]$xadjust  <- -0.017
+regionData[['EAN']]$yadjust <- 0.01   
+
 #Ocean  
 regionData[['EPO']]$xadjust <- -0.02   
 regionData[['ARO']]$xadjust <- -0.18  

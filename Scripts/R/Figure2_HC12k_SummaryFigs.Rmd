@@ -23,39 +23,42 @@ library(tidyverse)
 ```
 
 ###Input Data
-```{r, warning=FALSE}
-save     <- FALSE
-proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetadata_',var,'.csv',sep='')))
-
+```{r}
+save     <- TRUE
 ```
 
 ###Pie Chart for Sproxy data source
 ```{r}
 
-pieData <- proxyDf %>% group_by(source) %>% summarise(n = n())
+pieData <- proxyDf %>% 
+  group_by(source) %>% 
+  summarise(n = n()) %>% 
+  mutate(csum = rev(cumsum(rev(n))), pos = n/2 + lead(csum, 1),pos = if_else(is.na(pos), n/2, pos)) %>%
+  arrange(source)
+
+
 names <- as.character(pieData$source)
 names[which(names=='Arctic Holocene')]             <- 'Arctic Holocene (Sundqvist et al., 2014)'
-names[which(names=='iso2k')]                       <- 'Iso2k (Konecky et al., 2020)'
+names[which(names=='Iso2k')]                       <- 'Iso2k (Konecky et al., 2020)'
 names[which(names=='Other')]                       <- 'Miscellaneous'
-names[which(names=='SISAL')]                       <- 'SISAL (Comas-Bru et al., 2020)'
-names[which(names=='Oxford Lake Levels Database')] <- 'Lake-Level Database (Street-Perrott et al., 1989)'
-names[which(names=='Liefert and Shuman, 2020')] <- 'NA Lake Level Database (Liefert and Shuman, 2020)'
-names[which(names=='Temp12k')]                     <- 'Temp12k (Kaufman et al., 2020)'
+names[which(names=='SISAL')]                       <- 'SISALv2 (Comas-Bru et al., 2020)'
+names[which(names=='Oxford Lake Level Database')] <-  'Oxford Lake Level Database (Street-Perrott et al., 1989)'
+names[which(names=='Liefert and Shuman, 2020')]    <- 'N.A. Lake Level Database (Liefert and Shuman, 2020)'
+names[which(names=='Legacy Climate v1.0')]         <- 'Legacy Climate v1.0 (Herzschuh et al., 2022)'
+names[which(names=='Mid-Latitude Holocene')]       <- 'Mid-Latitude Holocene (Routson et al., 2019)'
 names[which(names=='wNA')]                         <- 'Western North America (Routson et al., 2021)'
 
-pieData <- pieData %>% arrange(source)
+pieData$source <- names
+pieData %>% arrange(source)
 
-pieData2 <- pieData %>% 
-  mutate(csum = rev(cumsum(rev(n))), pos = n/2 + lead(csum, 1),pos = if_else(is.na(pos), n/2, pos))
-
-pie <- ggplot(pieData2,aes(x="", y=n, fill=source)) +
+pie <- ggplot(pieData,aes(x="", y=n, fill=source)) +
   geom_bar(stat="identity", width=1, color= 'black') +
   coord_polar("y", start=0) +
-  geom_label_repel(data = pieData2,
+  geom_label_repel(data = pieData,
                    aes(y = pos, label = n),fill='White',
                    size = 2, nudge_x = 0.04, show.legend = FALSE) +
-  scale_fill_manual(values=c("powder blue","dark blue","corn flower blue","forest green",
-                             "grey","firebrick","yellowgreen","grey40"),name='Data Source') +
+  scale_fill_manual(values=c("powder blue","dark blue","forest green","yellowgreen",
+                             "grey","corn flower blue","royal blue","firebrick","orange"),name='Data Source') +
   theme_void() + 
   theme(text = element_text(family=figFont,size=figText),
         plot.background = element_rect(fill = 'white',color='Black'),
@@ -151,7 +154,7 @@ if (save) {
 ```{r}
 plotTimeData <- plotTimeAvailabilityTs(lipdTSO,age.range = c(0,12000),step=100,group='CategorySpecific')
 plotTime <- ggplot(plotTimeData$data,aes(yvec,value))+
-  geom_area(alpha=0.7,aes(fill=group),color='Black',size=0.2)+
+  geom_area(alpha=1,aes(fill=group),color='Black',size=0.2)+
   scale_fill_manual(values=plotSettings$color) +
   scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),n.breaks=7)+
   scale_y_continuous(name = "Count of Records",limits=c(0,length(lipdTSO)),expand=c(0,0),
@@ -198,9 +201,9 @@ figlabels <- c(paste("<",figBreaks[1]+1),
                paste(">",figBreaks[length(figBreaks)]))
 figPalette <- c("#CCCCCC",RColorBrewer::brewer.pal(n=7, name = "YlOrRd"))
 
-for (reg in list(levels(regionsSelect$select@data[["Acronym"]]))[[1]]){
+for (reg in as.character(regionsSelect$select@data[["Acronym"]])){
   i = which(refregions@data[["Acronym"]]==reg)
-  count <- length(which(proxyDf$region==reg))
+  count <- length(which(proxyDf$ipccReg==reg))
   if (count == 0){         countName <- NA
   } else if (count <= figBreaks[1]){ countName <- 0
   } else if (count <= figBreaks[2]){ countName <- 1
@@ -213,8 +216,6 @@ for (reg in list(levels(regionsSelect$select@data[["Acronym"]]))[[1]]){
   dataTable$Count[which(dataTable$id==reg)]     <- count
   dataTable$CountName[which(dataTable$id==reg)] <- countName
   dataTable$Region[which(dataTable$id==reg)]    <-reg
-  print(reg)
-  print(count)
 }
 
 #Plot
@@ -285,6 +286,7 @@ if (save) {
        filename = file.path(dir,"Figures",paste('PlotProxyTypeRegion_',var,'.png',sep='')))
 }
 ```
+
 ```{r}
 map <- ggarrange(proxyMapSites+theme(legend.position = c(0.05,0.3)), 
                  plotTime+theme(legend.position = 'none'),
