@@ -23,8 +23,10 @@ library(tidyverse)
 ```
 
 ###Input Data
-```{r}
+```{r, warning=FALSE}
 save     <- TRUE
+proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetadata_',var,'.csv',sep='')))
+
 ```
 
 ###Pie Chart for Sproxy data source
@@ -68,7 +70,7 @@ pie <- ggplot(pieData,aes(x="", y=n, fill=source)) +
         #legend.title = element_blank())#,legend.position = 'none')# legend.position = c(0.5,0.7))
 if (save) {
   ggsave(plot=pie , width = figSize[1], height = figSize[2], units='in', dpi = 600,
-       filename = file.path(dir,"Figures","PlotProxySource.png"))
+       filename = file.path(dir,"Figures","Proxy","PlotProxySource.png"))
 }
 pie
 ```
@@ -117,9 +119,9 @@ plotResPlus
 
 if (save) {
   ggsave(plot=plotRes, width = figSize[1], height = figSize[2], units='in', dpi = 600,
-         filename = file.path(dir,"Figures","PlotProxyAgeRes.png"))
+         filename = file.path(dir,"Figures","Proxy","PlotProxyAgeRes.png"))
   ggsave(plot=plotResPlus, width = figSize[1], height = figSize[2], dpi = 600,
-         filename = file.path(dir,"Figures","PlotProxyAgeResPlus.png"))
+         filename = file.path(dir,"Figures","Proxy","PlotProxyAgeResPlus.png"))
 }
 ```
 
@@ -146,7 +148,7 @@ plotRange <- ggplot(proxyDf)+
 plotRange
 if (save) {
   ggsave(plot=plotRange, width = figSize[1], height = figSize[2], units='in', dpi = 600,
-         filename = file.path(dir,"Figures","PlotProxyAgeRange.png"))
+         filename = file.path(dir,"Figures","Proxy","PlotProxyAgeRange.png"))
 }
 ```
 
@@ -154,7 +156,7 @@ if (save) {
 ```{r}
 plotTimeData <- plotTimeAvailabilityTs(lipdTSO,age.range = c(0,12000),step=100,group='CategorySpecific')
 plotTime <- ggplot(plotTimeData$data,aes(yvec,value))+
-  geom_area(alpha=1,aes(fill=group),color='Black',size=0.2)+
+  geom_area(alpha=0.7,aes(fill=group),color='Black',size=0.2)+
   scale_fill_manual(values=plotSettings$color) +
   scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),n.breaks=7)+
   scale_y_continuous(name = "Count of Records",limits=c(0,length(lipdTSO)),expand=c(0,0),
@@ -170,7 +172,7 @@ plotTime <- ggplot(plotTimeData$data,aes(yvec,value))+
 plotTime
 if (save) {
   ggsave(plot=plotTime, width = figSize[1], height = figSize[2], units='in', dpi = 600,
-         filename = file.path(dir,"Figures","PlotTimeAvailability.png"))
+         filename = file.path(dir,"Figures","Proxy","PlotTimeAvailability.png"))
 }
 ```
 
@@ -186,7 +188,7 @@ proxyDf$latsPrj <- pointData@coords[,2]
 
 regionsSelect$all       <- refregions
 regionsSelect$select    <- subset(refregions, Acronym %in% proxyDf$ipccReg)
-regionsSelect$composite <- subset(refregions, Acronym %in% colnames(read.csv(file.path(dir,'Data','RegionComposites','T','MedianTSbyRegion.csv'))))
+regionsSelect$composite <- subset(refregions, Acronym %in% colnames(read.csv(file.path(dir,'Data','RegionComposites',var,'MedianTS_byRegion.csv'))))
 
 dataTable <- fortify(regionsSelect$select)
 dataTable$Count     <- NA
@@ -243,7 +245,7 @@ proxyMapRegions
 
 if (save) {
   ggsave(plot=proxyMapRegions, width = 6, height = (6/1.97+0.5), dpi = 600,
-       filename = file.path(dir,"Figures",paste('PlotCountByRegion_',var,'.png',sep='')))
+       filename = file.path(dir,"Figures","Proxy",paste('PlotCountByRegion_',var,'.png',sep='')))
 }
 
 
@@ -283,7 +285,7 @@ proxyMapSites <- basemap +
 proxyMapSites
 if (save) {
   ggsave(plot=proxyMapSites, width = 6, height = 3.5, dpi = 600,
-       filename = file.path(dir,"Figures",paste('PlotProxyTypeRegion_',var,'.png',sep='')))
+       filename = file.path(dir,"Figures","Proxy",paste('PlotProxyTypeRegion_',var,'.png',sep='')))
 }
 ```
 
@@ -294,9 +296,10 @@ map <- ggarrange(proxyMapSites+theme(legend.position = c(0.05,0.3)),
 map
 if (save) {
   ggsave(plot=map, width = 6.5, height = 5, dpi = 600,
-       filename = file.path(dir,"Figures",paste('PlotProxyTypeRegion_',var,'_withTime.png',sep='')))
+       filename = file.path(dir,"Figures","Proxy",paste('PlotProxyTypeRegion_',var,'_withTime.png',sep='')))
 }
 ```
+
 
 
 

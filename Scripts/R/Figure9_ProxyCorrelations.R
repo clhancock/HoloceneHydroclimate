@@ -2,17 +2,17 @@ library(dplyr)
 library(geoChronR)
 
 dataDir<-getwd()
-hcNames <- names(read.csv(file.path(dataDir,'Data','RegionComposites','HC','MedianTSbyRegion.csv')))
-tNames  <- names(read.csv(file.path(dataDir,'Data','RegionComposites','T','MedianTSbyRegion.csv')))
-time <- as.matrix(read.csv(file.path(dataDir,'Data','RegionComposites','HC','MedianTSbyRegion.csv'))[,'time'])
+hcNames <- names(read.csv(file.path(dir,'Data','RegionComposites','HC','MedianTS_byRegion.csv')))
+tNames  <- names(read.csv(file.path(dir,'Data','RegionComposites','T','MedianTS_byRegion.csv')))
+time <- as.matrix(read.csv(file.path(dir,'Data','RegionComposites','HC','MedianTS_byRegion.csv'))[,'time'])
 regNames <- hcNames[which(hcNames %in% tNames)][-1]
 
-x = 250
+x = 500
 Proxy_HC_T_Rvals = matrix(nrow= x*x,ncol=length(regNames))
 for (reg in regNames){
-  HCseries <- read.csv(file.path(dataDir,'Data','RegionComposites','HC',
+  HCseries <- read.csv(file.path(dir,'Data','RegionComposites','HC',
                                  paste(reg,'.csv',sep='')))
-  T_series <- read.csv(file.path(dataDir,'Data','RegionComposites','T',
+  T_series <- read.csv(file.path(dir,'Data','RegionComposites','T',
                                  paste(reg,'.csv',sep='')))
   HCseries <- as.matrix(HCseries[which(between(time,0,12000)),])
   T_series <- as.matrix(T_series[which(between(time,0,12000)),])

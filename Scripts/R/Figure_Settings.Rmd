@@ -2,10 +2,14 @@
 
 ###Input Data
 ```{r, warning=FALSE}
-
+library(maptools)
+library(proj4)
 library(RCurl)
+library(sf)
 library(sp)
-var     <- 'T'
+library(tidyverse)
+
+var     <- 'HC'
 
 #dir  <- getwd()
 dir  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
@@ -16,8 +20,9 @@ regionData <- readRDS(file.path(dir,'Data','FigureSettings','regionData.rds'))
 
 PROJ <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
 PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'))
+load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
 refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
+
 
 countries  <- rworldmap::getMap("less islands")
 countries  <- sp::spTransform(countries,  CRSobj = PROJ)
@@ -111,12 +116,6 @@ if (var == 'HC'){
   plotSettings$color[which(plotSettings$names=="pollen")]            <- 14 
 }
 plotSettings$shape <- as.numeric(plotSettings$shape)
-
-
-if (var=='T'){ Csettings  <- c("#fddbc7","#d6604d","#b2182b") #reds
-}else{
-  Csettings <- c("#92C5DE","#4393C3",'#2166AC') #Blues
-}
 Csettings <- c("#92C5DE","#4393C3",'#2166AC')
 ```
 
@@ -147,19 +146,6 @@ basemap
 ```{r, warning=FALSE}
 
 
-
-basemapMercator <- ggplot() +
-  #Set Border around plot - probably not the best way to do this
-  borders(aggregate(IPCC_WGI_reference_regions_v4, FUN=length), fill='aliceblue', colour='white', size=2) +
-  geom_map(data=IPCC_WGI_reference_regions_v4, map=fortify(IPCC_WGI_reference_regions_v4),
-           aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
-  #Add Country data (basemap)
-  geom_map(data=rworldmap::getMap("less islands"), map=fortify(rworldmap::getMap("less islands")),
-           aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
-  coord_fixed(1) + 
-  theme_void()  
-
-basemapMercator
 
 ```
 

@@ -10,9 +10,10 @@ import matplotlib.pyplot as plt
 import cartopy.crs       as ccrs
 
 #%% 2 Settings and names
-dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/'
-saveDir = dataDir + 'HoloceneHydroclimate/'
+dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/'
+saveDir = dataDir + '2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
 dataDir = dataDir + 'Model/'
+
 
 #Dictionary of CMIP file names
 cmip6 = {}  
@@ -71,6 +72,8 @@ for model in cmip6['mh'].keys():
             else:            conversion = [((1/1000)*(60*60*24*1000)),0] #converts kg/m2/s to m/s to mm/day
             data[var] = data[var] * conversion[0] + conversion[1]
         data['p-e'] = data.pre-data.evp
+        data.tas.attrs['unit']                                  = 'mean degC'
+        for var in ['pre','p-e','evp']: data[var].attrs['unit'] = 'mean mm/day'
         cmip6[time][model] = data
     #Calculate midHolocene Anomaly
     cmip6['diff'][model] = cmip6['mh'][model] - cmip6['pi'][model]
@@ -84,16 +87,16 @@ for model in cmip6['mh'].keys():
         cmipEns[szn].append(vals.drop('days_per_month'))
         
 monthlyMean = xr.concat(monthlyMean,dim='model').mean(dim=("model"))
-monthlyMean.to_netcdf(saveDir+'Data/Model/midHolocene/cmip6'+'_MonthlyMean.nc')
+monthlyMean.to_netcdf(saveDir+'Data/Model/cmip6/cmip6'+'_MonthlyMean.nc')
 for szn in seasons.keys(): 
     cmipEns[szn] = xr.concat(cmipEns[szn],dim='model')
     cmipEns[szn] = cmipEns[szn].assign_coords(model=list(cmip6['diff'].keys()))
-    cmipEns[szn].to_netcdf(saveDir+'Data/Model/midHolocene/cmip6'+'_'+szn+'.nc')
+    cmipEns[szn].to_netcdf(saveDir+'Data/Model/cmip6/cmip6'+'_'+szn+'.nc')
     
 
 
 #%% Plot to confirm using annual temps
-pltvals = cmipEns['ANN']['pre'].mean(dim=("model"))
+pltvals = cmipEns['ANN']['tas'].mean(dim=("model"))
 ax = plt.axes(projection=ccrs.PlateCarree())
 plt.contourf(pltvals.lon,pltvals.lat,pltvals,transform=ccrs.PlateCarree(),
              extend='both',cmap='RdBu_r',

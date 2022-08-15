@@ -224,6 +224,6 @@ for (i in 1:2){
   plt <- plt + draw_plot(scale, x = h, y = v, width = 0.5, height = dv/2)
 }
 ggsave(plot=plt, width = 6.5, height = figHeight, dpi = 600,
-       filename = file.path(dir,'Figures',paste('compositeSummaryGrid_',var,'_',sample,'.png',sep='')))
+       filename = file.path(dir,'Figures','RegionComposites',paste('compositeSummaryGrid_',var,'_',sample,'.png',sep='')))
 
 #-----

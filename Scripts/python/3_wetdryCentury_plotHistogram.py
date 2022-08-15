@@ -16,12 +16,12 @@ plt.rcParams['axes.linewidth'] = 0.5;
 plt.rcParams['axes.edgecolor'] = 'k'
 #plt.tick_params(labelsize=8)
 
-dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
+Dir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
 
 binSize = 1000
 binN = int(12000/binSize)
 #Load Proxy Data
-proxy = pd.read_csv(dataDir+'Data/proxyMetaData_HC.csv')
+proxy = pd.read_csv(Dir+'Data/Proxy/proxyMetaData_HC.csv')
 proxyData = proxy#.loc[(proxy['recordRange'] > 0)] #& (proxy['archive'] !='LakeDeposits')]
 
 proxyDataWet = np.histogram(proxyData['maxValAge'],bins=binN,range=[0,12000])[0]
@@ -40,13 +40,13 @@ for i in range(0,binN):
 #%% Calculate Wettest and Dryest Century of transient model
 models = ['trace','hadcm']
 szn = 'ANN'
-var = 'p-e'
+var = 'pre'
 vals = {}
 for model in models:
-    data = xr.open_dataset(dataDir+'Data/Model/'+model+'/'+model+'_'+szn+'.nc',decode_times=False)
+    data = xr.open_dataset(Dir+'Data/Model/'+model+'/'+model+'_'+szn+'.nc',decode_times=False)
     land = rm.defined_regions.natural_earth.land_110.mask_3D(data)
-    vals[model+'_Dry_all'] = np.argmin(data[var].data,axis=0)*(data.time[0]-data.time[1]).data
-    vals[model+'_Wet_all'] = np.argmax(data[var].data,axis=0)*(data.time[0]-data.time[1]).data
+    vals[model+'_Dry_all'] = np.argmin(data[var].data,axis=0)*abs(data.age[0]-data.age[1]).data
+    vals[model+'_Wet_all'] = np.argmax(data[var].data,axis=0)*abs(data.age[0]-data.age[1]).data
     for i in ['Wet','Dry']:
         name  = model+'_'+i
         scale = len(vals[name+'_all'].flatten())
@@ -91,7 +91,7 @@ for i in ['Wet','Dry']:
             else: plt.ylabel('\n'+'TraCE\n(% of grid cells)',fontsize=8)
         ax.tick_params(labelsize=8)
         ax.set_xlim([12,0])
-        ax.set_ylim([0,38])
+        ax.set_ylim([0,50])
         ax.spines['right'].set_visible(True);ax.spines['top'].set_visible(True)
     ax = plt.subplot(gs[0:1,col:col+1])
     if i == 'Wet': proxydata = proxyDataWet
@@ -102,7 +102,7 @@ for i in ['Wet','Dry']:
     if col == 1: plt.ylabel('',fontsize=0)
     ax.tick_params(labelsize=8)
     ax.set_xlim([12,0])
-    ax.set_ylim([0,38])
+    ax.set_ylim([0,50])
     #
     ax.tick_params(labelbottom=False) 
     ax.set_title('Largest '+i+' '+var.upper()+' Anomaly',fontsize=8)  #y=1.1, x = 0.42,loc='left', fontsize = 10)
@@ -110,7 +110,7 @@ for i in ['Wet','Dry']:
     if col == 1: ax.tick_params(labelleft=False) 
 
     
-if save: plt.savefig(dataDir+'Figures/HistWettestCentury_'+var+'_'+szn+'.png',
+if save: plt.savefig(Dir+'Figures/Model/HistWettestCentury_'+var+'_'+szn+'.png',
                          dpi=400,format='png',bbox_inches='tight')       
 else: plt.show()
 
