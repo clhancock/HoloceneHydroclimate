@@ -15,10 +15,12 @@ from   matplotlib.colors   import LinearSegmentedColormap
 import cartopy.crs         as ccrs        # Packages for mapping in python
 import cartopy.util        as cutil
 
-dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
+Dir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
+
+
 #%% 2 Define Function for calculating grid cell correlation values
-def calcCorrelation (inData,model1,model2,var1,var2,season,t0=0,t1=12,mask=False):
-    if model1 == model2:
+def calcCorrelation (inData,model1,model2,var1,var2,season,t0=0,t1=12,mask=False,regrid=True):
+    if regrid == False:
         modelData1 = inData[model1][season][var1]
         modelData2 = inData[model2][season][var2]
         lats,lons = modelData1.lat,modelData1.lon
@@ -41,38 +43,41 @@ times = [0,12]
 szn   = 'ANN'
 v_1   = 'p-e'
 v_2   = 'tas'
-m_1   = 'trace'
-m_2   = 'trace'
+m_1   = 'hadcm'
+m_2   = 'hadcm'
+regrid = True
 
 #Load data
 modelData = {}
 for model in ['hadcm','trace']:
     modelData[model] = {}
-    if m_1 == m_2:
-        modelData[model][szn]   = xr.open_dataset(dataDir+'Data/Model/'+model+'_'+szn+'.nc',decode_times=False)
-    else: modelData[model][szn] = xr.open_dataset(dataDir+'Data/Model/'+model+'_'+szn+'_regrid.nc',decode_times=False)
+    if regrid: modelData[model][szn] = xr.open_dataset(Dir+'Data/Model/'+model+'/'+model+'_'+szn+'_regrid.nc',decode_times=False)
+    else:    modelData[model][szn]   = xr.open_dataset(Dir+'Data/Model/'+model+'/'+model+'_'+szn+'.nc',decode_times=False)
+
 
 #Calculate using function
-rVals = calcCorrelation(modelData,m_1,m_2,v_1,v_2,szn,times[0],times[1])
-
-#%% #Plot 
-save = False
+#rVals = calcCorrelation(modelData,m_1,m_2,v_1,v_2,szn,times[0],times[1])
+rVals1 = calcCorrelation(modelData,'hadcm','hadcm',v_1,v_2,szn,times[0],times[1])
+rVals2 = calcCorrelation(modelData,'trace','trace',v_1,v_2,szn,times[0],times[1])
+rVals = np.mean([rVals2,rVals1],axis=0)
+#%% 
+save = True
 cramp = plt.cm.get_cmap('RdGy_r',10)
 cramp = LinearSegmentedColormap.from_list('cramp',['#7f3b08','white','#2d004b'],N=10)
 mlevels = np.array([i /10 for i in list(range(-10,11,2))])
 
-if m_1 == m_2: 
-    lats,lons = modelData[m_1][szn]['lat'],modelData[m_1][szn]['lon']
-    name = m_1+'_'+v_1+'_'+v_2+'_'+szn
-else: 
+if regrid: 
     lats,lons = modelData[m_1][szn]['lat_regrid'],modelData[m_1][szn]['lon_regrid']
     name = 'multi'+'_'+v_1+'_'+v_2+'_'+szn
+else: 
+    lats,lons = modelData[m_1][szn]['lat'],modelData[m_1][szn]['lon']
+    name = m_1+'_'+v_1+'_'+v_2+'_'+szn
 import cmasher as cmr
 
 cramp = LinearSegmentedColormap.from_list('cramp',['#40004b','white','#00441b'],N=30)
 cramp = cmr.get_sub_cmap(cramp,0.1,0.9,N=20)
  
-proxy= pd.read_csv(dataDir+'Data/'+'HC_T_RegionalProxyEnsCorrelations.csv')
+proxy= pd.read_csv(Dir+'Data/'+'HC_T_RegionalProxyEnsCorrelations.csv')
 refReg = rm.defined_regions.ar6.all
     #Calculate Proxy Percents for regions
 pltRegs, pltVals, pltlats, pltlons, = [],[],[],[]
@@ -98,12 +103,12 @@ ax.annotate('(a)',xy=(0, 0), xycoords='data', xytext=(0.05, 0.95),
             textcoords='axes fraction', fontsize=8, fontfamily = 'Arial')
 cbar = plt.colorbar(model_contour,orientation="horizontal",ticks=[-1,-0.6,-0.3,0,0.3,0.6,1],
                         fraction=0.04, pad=0.04,aspect=30)
-cbar.set_label('Pearson Correlation Coefficient')
+cbar.set_label('Pearson Correlation Coefficient',fontsize=8, fontfamily = 'Arial')
 cbar.ax.set_xticklabels([-1,-0.6,-0.3,0,0.3,0.6,1],fontsize=8)
 
 
 mask = rm.defined_regions.natural_earth.land_110.mask_3D(lons,lats).squeeze('region').data
-
+ 
 ax1 = plt.subplot(gs[2:11,6:8]) 
 rValsLand = np.full(np.shape(rVals),np.NaN) 
 for lat in range(len(lats)):
@@ -119,18 +124,20 @@ for i in range(-90,91,30):
 ax1.axis([mlevels[0],mlevels[-1],lats[-2],lats[1]])
 
 x = np.nanmean(rValsLand, axis=1) 
-x[np.isnan(x)] = 0
-ax1.plot(np.nanmean(rVals,axis=1) ,lats,c='darkslategrey',lw=1.9)
-ax1.plot(x,lats,c='darkgoldenrod',lw=1.9)
+#x[np.isnan(x)] = 0
+ax1.plot(np.nanmean(rVals,axis=1) ,lats,c='darkslategrey',lw=1.9,label='All grid cells')
+ax1.plot(x,lats,'-',c='darkgoldenrod',lw=1.9,label='Land grid cells')
 ax1.scatter(pltVals,pltlats,c='k',s=7)#plt.cm.get_cmap('BrBG',5),
 ax1.spines['right'].set_visible(False);ax1.spines['left'].set_visible(False)
-ax1.set_xticks([-1,0,1])
+ax1.set_xticks([-1,0,1],fontsize=8, fontfamily = 'Arial')
+ax1.invert_yaxis() 
 ax1.set_yticklabels([-1,0,1],fontsize=8)
 ax1.set_yticks([])
 ax1.set_yticklabels([])
+plt.legend(loc='lower center',fontsize=8,bbox_to_anchor=(0.5, -0.4))
 
 #Save or show
-if save: plt.savefig(dataDir+'Figures/Model/TransientCorrelations/'+name+'.png',
+if save: plt.savefig(Dir+'Figures/Model/TransientCorrelations/'+name+'.png',
                      dpi=400,format='png',bbox_inches='tight')       
 plt.show()
 

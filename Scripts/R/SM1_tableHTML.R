@@ -7,18 +7,18 @@ library(htmlTable)
 library(htmltools)
 library(htmlwidgets)
 library(webshot)
-dir     <- getwd() #'/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
-climVar <- 'HC'
+dir     <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
+var <- 'HC'
 
 #Load Data
-lipdData <- readRDS(file=file.path(dir,'Data','LiPD','lipdData.rds'))
-lipdTSO <- lipdData[[climVar]]
-regList <- readShapePoly(file.path(dir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'))
+lipdData <- readRDS(file=file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
+lipdTSO <- lipdData[[var]]
+#regList <- readShapePoly(file.path(dir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'))
 
 #Create table with metadata from LiPD files
 tbl <- tibble(Region         = pullTsVariable(lipdTSO,'geo_ipccRegion'),
               Dataset        = pullTsVariable(lipdTSO,'dataSetName'),
-              #TSid           = pullTsVariable(lipdTSO,'paleoData_TSid'),
+              TSid           = pullTsVariable(lipdTSO,'paleoData_TSid'),
               Archive        = pullTsVariable(lipdTSO,'archiveType'),
               Category       = pullTsVariable(lipdTSO,'CategorySpecific'),
               Proxy          = pullTsVariable(lipdTSO,'paleoData_proxy'),
@@ -42,12 +42,12 @@ for (i in 1:nrow(tbl)){
 }
 
 #Order data by region and dataset and replace region name from Acronym to full name
-tbl2 <- tbl
-tbl2[] <- NA
+tbl2 <- tbl[1,]
+#tbl2 <- NA
 start <- 1
-for (reg in regList$Acronym){
+for (reg in as.character(refregions$Acronym)){
   regData <- tbl %>% filter(tbl$Region==reg) %>% arrange(Dataset)
-  regData$Region <- as.character(regList$Name[which(regList$Acronym==reg)])
+  regData$Region <- as.character(refregions$Name[which(refregions$Acronym==reg)])
   if (nrow(regData) == 0){next}
   end <- start + nrow(regData) - 1 
   tbl2[start:end,] <- regData
@@ -89,6 +89,9 @@ outTbl <- reactable(tbl2,
   Region          = colDef(width=160,align = 'left'),
   Dataset         = colDef(width=150,align = 'left', cell = function(value, index){
     htmltools::tags$a(href = paste('http://lipdverse.org/HoloceneHydroclimate/current_version/',value,'.html',sep=''), target = "_blank", as.character(value))}),
+  TSid            = colDef(width=80, align = 'left', cell = function(value, index){
+    htmltools::tags$a(href = paste("https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Dashboard/",
+                                   filelist[which(grepl(value,filelist))],sep=""), target = "_blank", as.character(value))}),
   Archive         = colDef(width=80, align = 'left'),
   Category        = colDef(width=80, align = 'left'),
   Proxy           = colDef(width=80, align = 'left'),
@@ -112,6 +115,9 @@ outTbl <- reactable(tbl2,
             font_size=12, font_weight='normal', font_style='italic')
 
 outTbl
+
+#filelist <- as.vector(list.files(path = file.path(dir,"Figures","Proxy","Dashboard")))
+
 
 
 html_file <- file.path(dir,'Figures','Table','SM1.html')

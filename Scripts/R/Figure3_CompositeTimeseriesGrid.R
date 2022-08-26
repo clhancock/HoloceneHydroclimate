@@ -10,7 +10,7 @@ library(maptools)
 library(proj4)
 library(rworldmap)
 library(sp)
-dir <-  getwd()#'/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
+dir <-  '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate'
 var <- 'HC'
 
 basemapMercator <- ggplot() +
@@ -37,7 +37,7 @@ alph<-1
 sample = 1
 if (1==1){
   if (sample == 1){regNames <- c('NEN','GIC','NWN','WNA','CNA','ENA','NEU','WSB','WCE','ESB','MED','RFE','SAU','NZ','SSA','EAN')
-                   position <- c(letters[(length(regNames)-1):26],'aa','ab','ac','ad')
+                   position <- c(letters[(length(regNames)+1):26],'aa','ab','ac','ad','ae','af')
   } else{          regNames <- c('WCA','ECA','TIB','EAS','NCA','SAS','SCA','SEA','NWS','SAH','SAM','NEAF','NES','SEAF','WSAF','ESAF')
                    position <- c(letters[1:length(regNames)])
   }

@@ -10,7 +10,15 @@ library(rworldmap)
 library(sp)
 
 var      <- 'HC'
-modelVar <- 'pre_ANN'
+modelVar <- "p-e_ann"
+
+if (var == "HC"){
+  regions <- c('WCA','ECA','TIB','EAS','NCA','SAS','SCA','SEA','NWS','SAH','SAM','NEAF','NES','SEAF','WSAF','ESAF',
+                'NEN','GIC','NWN','WNA','CNA','ENA','NEU','WSB','WCE','ESB','MED','RFE','SAU','NZ','SSA','EAN')
+  postion <- as.character(c(paste("(",letters,")",sep=""),(paste("(a",letters[1:(length(regions)-26)],")",sep=""))))
+  postion <- c(letters,"aa","ab","ac","ad","ae","af")
+}
+
 
 if (var == 'HC'){geo <-'all'
 } else{geo<-'all'}
@@ -85,6 +93,9 @@ for (reg in regNames){
       geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=traceVals),color=Ctrace,size=0.3,alpha=alph)+
       geom_boxplot(aes(x=6000,y=cmip6Vals),width=1000,size=0.1,alpha=alph,
                    outlier.size=0.5,outlier.stroke = 0.15,outlier.alpha=1,outlier.colour='Black')
+  } else{
+    plotlimit_set <- quantile(regEns,c(0.001,0.999),na.rm=TRUE)
+    plotlimit_set<- plotlimit_set+diff(range(plotlimit_set))*0.1*c(-1,1)
   }
   for (plt in names(compBands)){
     compBands[[plt]] <- compBands[[plt]] + 
@@ -96,6 +107,18 @@ for (reg in regNames){
             axis.ticks      = element_line(color='Black',size=0.1), 
             axis.ticks.length = unit(-1,"pt"),
             plot.margin       = unit(c(0, 0, 0, 0), "in"), legend.position='none')
+    if (plt == "ts" & var == "HC"){
+      if (abs(plotlimit_set)[1] < abs(plotlimit_set)[2]){
+        yval=plotlimit_set[2]-diff(range(plotlimit_set))/5
+      } else{
+        yval=plotlimit_set[1]+diff(range(plotlimit_set))/5
+      }
+      compBands$ts <- compBands$ts +  
+        geom_label(aes(x = 1000, y = yval,
+                       label = paste("(",postion[which(regions==reg)],")",sep="")), 
+                   fill = "white",family='sans',size = 1.5,label.padding = unit(0.05, "lines"),
+                   alpha = 0.75,label.size=NA)
+    }
     regPlt <- regPlt + draw_plot(compBands[[plt]], x = 0, y = 0, width = 1, height = 1)
   }
   plotLat <- regionData[[reg]][["latitude"]]
@@ -109,6 +132,8 @@ for (reg in regNames){
 }
 
 
+
+
 #plotTimeseriesEnsRibbons(X=timeN$yvec, Y=regEns, alp=0.7,line.width=0.1,color.low='#80DBF1',color.high='#253DA1',color.line='#000137')
 
 scale <- ggplot() +
@@ -116,12 +141,12 @@ scale <- ggplot() +
   #geom_segment(aes(x=11.5,xend=6,y=1,yend=1),size=2,color='Black') +
   #geom_segment(aes(x=11.5,xend=6,y=2,yend=2),size=2,color='Black') +
   #geom_segment(aes(x=11.5,xend=6,y=3,yend=3),size=2,color='Black') +
-  geom_segment(aes(x=11.4,xend=6.1,y=1,yend=1),size=1,color=Chadcm,alpha=alph) +
-  geom_segment(aes(x=11.4,xend=6.1,y=2,yend=2),size=1,color=Ctrace,alpha=alph) +
-  geom_segment(aes(x=11.4,xend=6.1,y=3,yend=3),size=1,color=Csettings[2],alpha=alph) +
-  annotate("text",label="HadCM", x = 3, y = 1,family='sans',color='Black',size = 1.7)+
-  annotate("text",label="TraCE", x = 3, y = 2,family='sans',color='Black',size = 1.7) + 
-  annotate("text",label="Proxy", x = 3, y = 3,family='sans',color='Black',size = 1.7) + 
+  geom_segment(aes(x=11.7,xend=8.5,y=1,yend=1),size=1,color=Chadcm,alpha=alph) +
+  geom_segment(aes(x=11.7,xend=8.5,y=2,yend=2),size=1,color=Ctrace,alpha=alph) +
+  geom_segment(aes(x=11.7,xend=8.5,y=3,yend=3),size=1,color=Csettings[2],alpha=alph) +
+  annotate("text",label=paste("HadCM (",toupper(substr(modelVar,5,7)),")",sep=""), x = 4, y = 1,family='sans',color='Black',size = 1.7)+
+  annotate("text",label=paste("TraCE (",toupper(substr(modelVar,5,7)),")",sep=""), x = 4, y = 2,family='sans',color='Black',size = 1.7) + 
+  annotate("text",label="Proxy", x = 4, y = 3,family='sans',color='Black',size = 1.7) + 
   scale_y_continuous(limits=c(0,3.7),expand=c(0,0))+
   theme_void()+ 
   theme(panel.background=element_rect(colour='White',fill='White'),
@@ -138,7 +163,7 @@ scale <- ggplot() +
 if (var == 'HC'){
   map2 <- map +
     theme(plot.margin = unit(c(0,rep(0,4)), "in"))+
-    annotate("text",label="(a) Hydroclimate", x = 0.11, y = 0.93,family='sans',color='Black',size = 2)
+    annotate("text",label=paste("(a) Hydroclimate (",toupper(substr(modelVar,1,3)),")",sep=""), x = 0.11, y = 0.93,family='sans',color='Black',size = 2)
 } else{
   map2 <- map +annotate("text",label="(b) Temperature", x = 0.11, y = 0.93,family='sans',color='Black',size = 2.2)
   
@@ -148,5 +173,5 @@ map3 <- map2 + draw_plot(scale,
                         y = 0.22, 
                         width = xSize, height = ySize*2.5)
 
-ggsave(plot=map3, width = 6.5, height = 3.4, dpi = 600,
+ggsave(plot=map3, width = 6.5, height = 3.38, dpi = 600,
        filename = paste(file.path(dir,'Figures','RegionComposites','global_'),modelVar,'_compBandPlt.png',sep=''))
