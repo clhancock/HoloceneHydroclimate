@@ -37,7 +37,7 @@ pd.DataFrame(land).to_csv(dataDir+'Data/Model/cmip6LandMask.csv')
 
 #%% 3 MH anoms
 #Settings
-for var in ['pre','p-e','tas']:
+for var in ['pre','p-e','tas','evp']:
     if var == 'tas': 
         cramp, units = 'RdBu_r','degC'
         mlevels = np.array([i /100 for i in list(range(-250,251,20))])
@@ -104,7 +104,7 @@ models  = ['trace','hadcm']#,'cmip6']
 seasons = ['ANN'] 
 modelAnom = {}
 s = 3
-for var in ['pre','p-e','tas']:
+for var in ['pre','p-e','tas','evp']:
     if var == 'tas': 
         cramp, units = 'RdBu_r','degC'
         mlevels = np.array([i /100 for i in list(range(-250,251,20))])

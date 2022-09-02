@@ -1,3 +1,85 @@
+insolation <- as.data.frame(read.table(file.path(dir,'Data','insolation_bein1.dat.txt')))
+insolation$V1 <- insolation$V1*-1000
+
+insolation30 <- insolation[which(insolation$V2==30),]
+insolation30 <- data.frame(age=insolation30$V1,
+                           DJF=apply(insolation30[c(1,2,12)+2],1,sum),
+                           JJA=apply(insolation30[c(6,7,8)+2],1,sum),
+                           ANN=apply(insolation30[seq(1,12)+2],1,sum))[1:13,]
+for (i in 1:ncol(insolation30)){
+  insolation30[,i] <- insolation30[,i] - insolation30[1,i] 
+}
+
+insolationNeg30 <- insolation[which(insolation$V2==-30),]
+insolationNeg30 <- data.frame(age=insolationNeg30$V1,
+                           ANN=apply(insolationNeg30[seq(1,12)+2],1,sum),
+                           DJF=apply(insolationNeg30[c(1,2,12)+2],1,sum),
+                           JJA=apply(insolationNeg30[c(6,7,8)+2],1,sum))[1:13,]
+for (i in 1:ncol(insolationNeg30)){
+  insolationNeg30[,i] <- insolationNeg30[,i] - insolationNeg30[1,i] 
+}
+
+
+var <- 'HC'
+RegionTS <- read.csv(file.path(dir,'Data','RegionComposites',var,'MedianTS_byRegion.csv'))
+for (i in 2:ncol(RegionTS)){
+  RegionTS[,i] <- (RegionTS[,i] - mean(RegionTS[1:10,i],na.rm=TRUE))/sd(RegionTS[,i],na.rm=TRUE) 
+}
+NHmonsoon <- RegionTS[,c('EAS','TIB','SAH','NEAF','ECA','WCA')]
+SHmonsoon <- RegionTS[,c('SAM','ESAF')]
+
+
+scale <- 0.03
+shift <- 0
+#The patterns described in this paragraph (wet-dry-wet, opposite trends between hemisphere, and 6 ka shift) are difficult to see in the figure. I suggest adding a summary figure with all of the reconstructions plotted together along with the insolation forcing and ITCZ shift-DK
+
+ggplot(RegionTS)+
+  geom_line(aes(x=time,y=EAS,color='EAS'),linetype=1) +
+  geom_line(aes(x=time,y=TIB,color='TIB'),linetype=1) +
+  #geom_line(aes(x=time,y=ECA,color='ECA'),linetype=1) +
+  #geom_line(aes(x=time,y=WCA,color='WCA'),linetype=1) +
+  geom_line(aes(x=time,y=SAH,color='SAH'),linetype=1) +
+  geom_line(aes(x=time,y=NEAF,color='NEAF')) +
+  geom_line(aes(x=time,y=SAM,color='SAM'),linetype=4) +
+  geom_line(aes(x=time,y=ESAF,color='ESAF'),linetype=4) +
+  geom_smooth(data=insolation30,aes(   x=age,y=(DJF)*scale+shift,color="30S DJF Insolation"),linetype=4) +
+  geom_smooth(data=insolationNeg30,aes(x=age,y=(JJA)*scale+shift,color="30N JJA Insolation")) +
+  scale_x_reverse(limits = c(30000,0),breaks = seq(0, 12000, 2000),name="Age (ka BP)") +
+  scale_y_continuous(limits=c(-10,10),name="Proxy Composite Anomaly",sec.axis = sec_axis((~./scale),name="Insolation (W/m2)")) +
+  coord_cartesian(xlim=c(12000,0), ylim=c(-4,4),expand	=FALSE) +
+  scale_color_manual(values=c("Black","dark grey",RColorBrewer::brewer.pal(12,"Paired")[seq(2,12,2)]),name='Region') +
+  theme_bw()
+  
+  
+
+                                                                                                      geom_line(aes(color = "Drug Concentration")) +
+  geom_line(aes(y = inv_scale_function(RESP, scale, shift), color = "Biomarker (IU/mL")) +
+  scale_x_continuous(breaks = seq(0, 336, 24)) +
+  scale_y_continuous(limits = c(min_first, max_first), sec.axis = sec_axis(~scale_function(., scale, shift), name="Biomarker (IU/mL)")) +
+  labs(x = "Time (hr)", y = "Concentration (mg/L)", color = "") +
+  scale_color_manual(values = c("orange2", "gray30"))
+
+
+
+
+
+names(data[['w/m2']]) <-c('age','lat',c(1:12))
+diff <- data[['w/m2']][which(data[['w/m2']]$age==-6),] - data[['w/m2']][which(data[['w/m2']]$age==0),]
+data[['w/m2DF']] <- data.frame(lat=data[['w/m2']][which(data[['w/m2']]$age==0),'lat'],
+                               ANN=
+                                 apply(diff[,which(names(diff) %in% c(1:12))],1,sum),
+                               DJF=apply(diff[,which(names(diff) %in% c(1,2,12))],1,sum),
+                               JJA=apply(diff[,which(names(diff) %in% c(6:8))],1,sum))
+
+seq(-90,90)
+
+
+
+
+
+
+
+
 library(ncdf4) 
 library(ggplot2)
 library(ncdf4)

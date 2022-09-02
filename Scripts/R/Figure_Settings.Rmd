@@ -18,6 +18,7 @@ lipdTSO <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
 proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',var,'.csv',sep='')))
 regionData <- readRDS(file.path(dir,'Data','FigureSettings','regionData.rds'))
 
+
 PROJ <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
 PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)

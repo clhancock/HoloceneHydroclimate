@@ -10,7 +10,7 @@ library(rworldmap)
 library(sp)
 
 var      <- 'HC'
-modelVar <- "p-e_ann"
+modelVar <- NA
 
 if (var == "HC"){
   regions <- c('WCA','ECA','TIB','EAS','NCA','SAS','SCA','SEA','NWS','SAH','SAM','NEAF','NES','SEAF','WSAF','ESAF',
@@ -20,8 +20,8 @@ if (var == "HC"){
 }
 
 
-if (var == 'HC'){geo <-'all'
-} else{geo<-'all'}
+if (var == 'T'){geo <-'all'
+} else{geo<-'land'}
 
 #Load Data----
 Data <- vector(mode='list')

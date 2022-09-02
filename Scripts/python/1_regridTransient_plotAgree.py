@@ -79,7 +79,7 @@ plt.rcParams['axes.linewidth'] = 1;
 plt.rcParams['axes.edgecolor'] = 'k'
 
 szn = 'ANN'
-save = True
+save = False
 for var in ['pre','p-e','tas']:
     refReg = rm.defined_regions.ar6.all
     refRegLand = rm.defined_regions.ar6.land
@@ -116,10 +116,11 @@ for var in ['pre','p-e','tas']:
     #
     #Plot
     cramp = cmr.get_sub_cmap(cramp,0.1,0.9,N=modelN+1)
+    #cramp = cmr.get_sub_cmap(cramp,0.1,0.9,N=int(modelN/2)) 
     plt.figure(figsize=(5,3))
     ax = plt.subplot(projection=ccrs.Robinson())
     refRegLand.plot_regions(ax=ax,add_label=False,line_kws=dict(linewidth=1))
-    #refReg[pRegs].plot_regions(ax=ax,add_label=False,line_kws=dict(linewidth=1.2))
+    refReg[pRegs].plot_regions(ax=ax,add_label=False,line_kws=dict(linewidth=1.2))
     model_agree = plt.pcolormesh(modelVals.lon, modelVals.lat, 
                                  (modelAnom/modelN)*100,transform=ccrs.PlateCarree(),
                                  cmap=cramp,vmin=-100,vmax=100)
