@@ -43,7 +43,7 @@ fig<-ggplot(RegionTS)+
   geom_smooth(data=insolation30,aes(   x=age,y=(DJF)*scale+shift,fill="30\u00B0S DJF"),alpha=1,color="Grey50",linetype=2,size=s) +
   geom_smooth(data=insolationNeg30,aes(x=age,y=(JJA)*scale+shift,fill="30\u00B0N JJA"),alpha=1,color="Black",linetype=1,size=s) +
   scale_x_reverse(limits = c(30000,0),breaks = seq(0, 12000, 2000),labels=seq(0, 12, 2),name="Age (ka BP)") +
-  scale_y_continuous(limits=c(-10,10),name="Proxy Composite Anomaly",sec.axis = sec_axis((~./scale),name="Insolation Anomaly (W/m2)")) +
+  scale_y_continuous(limits=c(-10,10),name="Proxy Composite Anomaly",sec.axis = sec_axis((~./scale),name=bquote('Insolation Anomaly (W m'^-2*")"))) + 
   coord_cartesian(xlim=c(12000,0), ylim=c(-4,4),expand	=FALSE) +
   scale_linetype_manual(values=c(1,2,1,1,1,1,2,1,1,2),name='Hemisphere') +
   scale_fill_manual(values=c("White","White",rep(NA,8)),name='Insolation') +
