@@ -24,7 +24,6 @@ basemapMercator <- ggplot() +
   coord_fixed(1) + 
   theme_void()  
 
-basemapMercator
 
 #Load Data----
 regionData <- readRDS(file.path(dir,'Data','FigureSettings','regionData.rds'))
@@ -46,7 +45,7 @@ if (1==1){
   } else{          regNames <- regnames[((length(regnames)/2)+1):length(regnames)]}
 }
 
-figHeight <- (8/9)*length(regNames)/2
+figHeight <- 7#(8/9)*length(regNames)/2
   
 
 regPlts <- vector(mode='list')
@@ -56,7 +55,7 @@ for (reg in regNames){
   regTso   <- regionData[[reg]][[var]][["LiPD"]]
   #Standardize Ensemble Composite Values
   regEnsNA <- read.csv(file.path(dir,'Data','RegionComposites',var,paste(reg,'.csv',sep='')))
-  regEnsNA <- as.matrix(regEnsNA - as.numeric(apply(regEnsNA,2,mean,na.rm=TRUE))) / as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
+  regEnsNA <- as.matrix(regEnsNA) #- as.numeric(apply(regEnsNA,2,mean,na.rm=TRUE))) / as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
   #Create matrix for portion of timeseries with >50% data coverage
   regEns <- matrix(NA,nrow(regEnsNA),ncol(regEnsNA))
   regEns[regionData[[reg]][[var]][["pltTimeAvail50range"]],] <- regEnsNA[regionData[[reg]][[var]][["pltTimeAvail50range"]],]
@@ -72,12 +71,13 @@ for (reg in regNames){
                                            color.low=Csettings[1],
                                            color.high=Csettings[2],
                                            color.line=Csettings[3])
+  plotlim <- min(seq(2,8,2)[which(seq(2,8,1) > quantile(abs(regEns),0.97,na.rm=TRUE))][1],9,na.rm=TRUE)
   for (plt in names(compBands)){
     compBands[[plt]] <- compBands[[plt]] + 
       geom_hline(yintercept=0,size=0.2,color='black') +
       scale_x_reverse(limits=c(12000,0), expand=c(0,0), n.breaks=7)+ 
-      scale_y_continuous(limits=c(-1000,1000),breaks=seq(-4,4,2),labels=c(-4,'',0,'',4),position="right", expand=c(0,0))+
-      coord_cartesian(xlim=c(12000,0), ylim=c(-4.5,4.5)) +
+      scale_y_continuous(limits=c(-1000,1000),breaks=c(plotlim*-1,plotlim*-0.5,0,plotlim*0.5,plotlim),labels=c(plotlim*-1,'',0,'',plotlim),position="right", expand=c(0,0))+
+      coord_cartesian(xlim=c(12000,0), ylim=c(plotlim*-1,plotlim)) +
       ggtitle(paste('(',position[which(regNames==reg)],') ',regionData[[reg]]$name,' (',reg,')',sep='')) + 
       theme_bw() +
       theme(panel.background=element_rect(colour='Black',fill=NA),
@@ -102,6 +102,23 @@ for (reg in regNames){
   #Load Data for Region
   regionDf <- regionData[[reg]]$HC$SummaryDF
   regionDf <- as.data.frame(spTransform(SpatialPointsDataFrame(regionDf[,c("longitude", "latitude")], regionDf, proj4string=CRS(PROJorig)), CRSobj = PROJ))
+  regionDf <- regionDf[which(regionDf$season %in% c("Winter+","Summer+") == FALSE),]
+  seasons <- data.frame(season=c("Annual","Summer","Winter"),
+                        n     =c(length(which(regionDf$season=='Annual')),
+                                 length(which(regionDf$season=='Summer')),
+                                 length(which(regionDf$season=='Winter'))))
+  seasons <- seasons$n/sum(seasons$n)
+  seasons[2] <- seasons[1] +  seasons[2] 
+  seasons[3] <- seasons[2] +  seasons[3] 
+  seasonsPlt <- ggplot() +
+    geom_rect(aes(xmin=0,xmax=seasons[1],ymin=-1,ymax=1),fill='black') +
+    geom_rect(aes(xmin=seasons[1],xmax=seasons[2],ymin=-1,ymax=1),fill='red') +
+    geom_rect(aes(xmin=seasons[2],xmax=1,ymin=-1,ymax=1),fill='blue') +
+    theme_void()+
+    theme(plot.margin = unit(c(0, 0, 0, 0), "in"),
+          panel.margin = unit(c(0, 0, 0, 0), "in"))
+  
+  seasonsPlt
   idx      <- which(plotSettings$names %in% sort(unique(regionDf$CategorySpec)))
   #RegionMap
   RegShp   <- IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]#regionData[[reg]]$polygon
@@ -149,7 +166,7 @@ for (reg in regNames){
     theme(panel.border    = element_rect(colour='Black',fill=NA,size=0.75),
           plot.background = element_rect(colour='White',fill='White'),
           panel.background = element_rect(colour='Black',fill='White'),
-          plot.margin     = unit(c(0.05, 0, 0.05,0.05), "in"),
+          plot.margin     = unit(c(0.05, 0, 0,0.05), "in"),
           legend.position = 'none') 
   #Plot Time Availability for region
   if(length(regTso)<10){labs <- c('0',paste('0',length(regTso),sep=''))
@@ -179,7 +196,8 @@ for (reg in regNames){
                                             panel.background = element_rect(colour='White',fill='White')))+
     draw_plot(ggarrange(compBands$na, pltTime, nrow = 2,heights=c(0.7,0.3)), x = 0, y = 0, width = 0.7, height = 1) +
     draw_plot(ggarrange(compBands$ts, pltTime, nrow = 2,heights=c(0.7,0.3)), x = 0, y = 0, width = 0.7, height = 1) + 
-    draw_plot(regMap,  x = 0.7,   y = 0, width = 0.28, height = 0.9)
+    draw_plot(seasonsPlt,  x = 0.7,   y = 0, width = 0.29, height = 0.07)+
+    draw_plot(regMap,  x = 0.7,   y = 0.07, width = 0.28, height = 0.9)
 }
 
 scale <- ggplot() + geom_point(aes(x=0,y=0),size=0,color='white') +

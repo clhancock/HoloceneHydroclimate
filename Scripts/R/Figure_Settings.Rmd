@@ -46,18 +46,20 @@ if (var == 'HC'){
   if(specific){
     plotSettings$names <- sort(unique(proxyDf$CategorySpec))
     #
+    #,,,,,,,,#6F4070,#994E95,#666666
+    #https://carto.com/carto-colors/
     plotSettings$color <- as.character(plotSettings$names)
-    plotSettings$color[which(plotSettings$names=="Glacial Ice (Accumulation)")] <- "powder blue"
-    plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "corn flower blue"
-    plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "dark blue"
-    plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "dark orchid" #δ
-    plotSettings$color[which(plotSettings$names=="Other (calibrated)")]      <- "grey40"
-    plotSettings$color[which(plotSettings$names=="Other (not calibrated)")]  <- "grey"
-    plotSettings$color[which(plotSettings$names=="Pollen (calibrated)")]     <- "forest green"
-    plotSettings$color[which(plotSettings$names=="Pollen (not calibrated)")] <- "yellowgreen"
-    plotSettings$color[which(plotSettings$names=="Speleothem (other)")]      <- "darkorange"
-    plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "lightcoral"
-    plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "firebrick"
+    plotSettings$color[which(plotSettings$names=="Glacial Ice (Accumulation)")] <- "#5F4690" #"powder blue"
+    plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "#38A6A5" #"corn flower blue"
+    plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "#1D6996" #"dark blue"
+    plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "#94346E" # "dark orchid" #δ
+    plotSettings$color[which(plotSettings$names=="Other (calibrated)")]      <- "grey40" #"grey40"
+    plotSettings$color[which(plotSettings$names=="Other (not calibrated)")]  <- "grey" #"grey"
+    plotSettings$color[which(plotSettings$names=="Pollen (calibrated)")]     <- "#0F8554" #"forest green"
+    plotSettings$color[which(plotSettings$names=="Pollen (not calibrated)")] <- "#73AF48" #"" #"yellowgreen"
+    plotSettings$color[which(plotSettings$names=="Speleothem (other)")]      <- "#EDAD08" #"darkorange"
+    plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "#E17C05" #"lightcoral"
+    plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "#CC503E" #"firebrick"
     #
     plotSettings$shape <- as.character(plotSettings$names) 
     plotSettings$shape[which(plotSettings$names=="Glacial Ice (Accumulation)")] <- 12
