@@ -25,40 +25,54 @@ library(tidyverse)
 ###Input Data
 ```{r, warning=FALSE}
 save     <- TRUE
-proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetadata_',var,'.csv',sep='')))
+var<-'HC'
+proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',var,'.csv',sep='')))
 
 ```
+
+```{r}
+pivot <- proxyDf %>%
+  group_by(CategorySpec) %>%
+  dplyr::summarize(count =  n(),
+            ageRange=  median(ageRange),
+            ageRes = median(ageRes),
+            ageCtrlN = median(ageCtrlN,na.rm=TRUE),
+            ageCtrlMax = median(ageCtrlMax,na.rm=TRUE))
+pivot[c(1,2,3,6,7,8,11,10,9,4,5),]
+
+
+for (i in c('ageRange','ageRes','ageCtrlN','ageCtrlMax')){print(median(proxyDf[,i],na.rm=TRUE))}
+```
+
 
 ###Pie Chart for Sproxy data source
 ```{r}
 
-pieData <- proxyDf %>% 
-  group_by(source) %>% 
-  summarise(n = n()) %>% 
-  mutate(csum = rev(cumsum(rev(n))), pos = n/2 + lead(csum, 1),pos = if_else(is.na(pos), n/2, pos)) %>%
+pieData <- count(proxyDf,"source")%>%
   arrange(source)
+pieData$pos <- cumsum(pieData$freq)
 
 
 names <- as.character(pieData$source)
-names[which(names=='Arctic Holocene')]             <- 'Arctic Holocene (Sundqvist et al., 2014)'
-names[which(names=='Iso2k')]                       <- 'Iso2k (Konecky et al., 2020)'
-names[which(names=='Other')]                       <- 'Miscellaneous'
-names[which(names=='SISAL')]                       <- 'SISALv2 (Comas-Bru et al., 2020)'
-names[which(names=='Oxford Lake Level Database')] <-  'Oxford Lake Level Database (Street-Perrott et al., 1989)'
-names[which(names=='Liefert and Shuman, 2020')]    <- 'N.A. Lake Level Database (Liefert and Shuman, 2020)'
-names[which(names=='Legacy Climate v1.0')]         <- 'Legacy Climate v1.0 (Herzschuh et al., 2022)'
-names[which(names=='Mid-Latitude Holocene')]       <- 'Mid-Latitude Holocene (Routson et al., 2019)'
-names[which(names=='wNA')]                         <- 'Western North America (Routson et al., 2021)'
+names[which(names=='Arctic Holocene')]             <- paste0('Arctic Holocene (Sundqvist et al., 2014)','(n=',as.character(pieData[,'freq'][1]),')')
+names[which(names=='Iso2k')]                       <- paste0('Iso2k (Konecky et al., 2020)','(n=',as.character(pieData[,'freq'][2]),')')
+names[which(names=='Other')]                       <- paste0('Miscellaneous','(n=',as.character(pieData[,'freq'][3]),')')
+names[which(names=='SISALv2')]                     <- paste0('SISALv2 (Comas-Bru et al., 2020)','(n=',as.character(pieData[,'freq'][4]),')')
+names[which(names=='Oxford Lake Level Database')]  <- paste0('Oxford Lake Level Database (Street-Perrott et al., 1989)','(n=',as.character(pieData[,'freq'][5]),')')
+names[which(names=='Liefert and Shuman, 2020')]    <- paste0('N.A. Lake Level Database (Liefert and Shuman, 2020)','(n=',as.character(pieData[,'freq'][6]),')')
+names[which(names=='Legacy Climate v1.0')]         <- paste0('Legacy Climate v1.0 (Herzschuh et al., 2022)','(n=',as.character(pieData[,'freq'][7]),')')
+names[which(names=='Mid-Latitude Holocene')]       <- paste0('Mid-Latitude Holocene (Routson et al., 2019)','(n=',as.character(pieData[,'freq'][8]),')')
+names[which(names=='wNA')]                         <- paste0('Western North America (Routson et al., 2021)','(n=',as.character(pieData[,'freq'][9]),')')
 
 pieData$source <- names
 pieData %>% arrange(source)
 
-pie <- ggplot(pieData,aes(x="", y=n, fill=source)) +
+pie <- ggplot(pieData,aes(x="", y=freq, fill=source)) +
   geom_bar(stat="identity", width=1, color= 'black') +
   coord_polar("y", start=0) +
-  geom_label_repel(data = pieData,
-                   aes(y = pos, label = n),fill='White',
-                   size = 2, nudge_x = 0.04, show.legend = FALSE) +
+  #geom_label_repel(data = pieData,
+   #                aes(label = freq),fill='White',
+    #               size = 2, nudge_x = 0, show.legend = FALSE) +
   scale_fill_manual(values=c("powder blue","dark blue","forest green","yellowgreen",
                              "grey","corn flower blue","royal blue","firebrick","orange"),name='Data Source') +
   theme_void() + 
@@ -238,7 +252,7 @@ proxyMapRegions <- basemap +
         legend.margin=margin(t = 1, r = 1, b = 3, l = -4.5, unit = "pt"),
         legend.key.width  = (unit(35, 'pt')),
         legend.key.height = (unit(5, 'pt')),
-        legend.text = element_text(family='sans',size=8))
+        legend.text = element_text(family='Times New Roman',size=8))
 
 proxyMapRegions
 

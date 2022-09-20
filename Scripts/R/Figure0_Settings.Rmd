@@ -29,9 +29,9 @@ countries  <- rworldmap::getMap("less islands")
 countries  <- sp::spTransform(countries,  CRSobj = PROJ)
 
 ###Figure Settings
-figFont <- 'sans'
-figText <- 8
-figSize <- c(10,5)
+figFont <- 'Times New Roman'
+figText <- 10
+figSize <- c(6.5,3)
 ```
 
 ###Plot Settings
@@ -49,7 +49,7 @@ if (var == 'HC'){
     #,,,,,,,,#6F4070,#994E95,#666666
     #https://carto.com/carto-colors/
     plotSettings$color <- as.character(plotSettings$names)
-    plotSettings$color[which(plotSettings$names=="Glacial Ice (Accumulation)")] <- "#5F4690" #"powder blue"
+    plotSettings$color[which(plotSettings$names=="Glacier Ice (Accumulation)")] <- "#5F4690" #"powder blue"
     plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "#38A6A5" #"corn flower blue"
     plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "#1D6996" #"dark blue"
     plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "#94346E" # "dark orchid" #δ
@@ -62,7 +62,7 @@ if (var == 'HC'){
     plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "#CC503E" #"firebrick"
     #
     plotSettings$shape <- as.character(plotSettings$names) 
-    plotSettings$shape[which(plotSettings$names=="Glacial Ice (Accumulation)")] <- 12
+    plotSettings$shape[which(plotSettings$names=="Glacier Ice (Accumulation)")] <- 12
     plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
     plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
     plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5

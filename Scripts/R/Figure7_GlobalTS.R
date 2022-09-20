@@ -114,9 +114,9 @@ for (reg in regNames){
         yval=plotlimit_set[1]+diff(range(plotlimit_set))/5
       }
       compBands$ts <- compBands$ts +  
-        geom_label(aes(x = 1000, y = yval,
+        geom_label(aes(x = 1100, y = yval,
                        label = paste("(",postion[which(regions==reg)],")",sep="")), 
-                   fill = "white",family='sans',size = 1.5,label.padding = unit(0.05, "lines"),
+                   fill = "white",family=figFont,size = 1.5,label.padding = unit(0.05, "lines"),
                    alpha = 0.75,label.size=NA)
     }
     regPlt <- regPlt + draw_plot(compBands[[plt]], x = 0, y = 0, width = 1, height = 1)
@@ -144,34 +144,35 @@ scale <- ggplot() +
   geom_segment(aes(x=11.7,xend=8.5,y=1,yend=1),size=1,color=Chadcm,alpha=alph) +
   geom_segment(aes(x=11.7,xend=8.5,y=2,yend=2),size=1,color=Ctrace,alpha=alph) +
   geom_segment(aes(x=11.7,xend=8.5,y=3,yend=3),size=1,color=Csettings[2],alpha=alph) +
-  annotate("text",label=paste("HadCM (",toupper(substr(modelVar,5,7)),")",sep=""), x = 4, y = 1,family='sans',color='Black',size = 1.7)+
-  annotate("text",label=paste("TraCE (",toupper(substr(modelVar,5,7)),")",sep=""), x = 4, y = 2,family='sans',color='Black',size = 1.7) + 
-  annotate("text",label="Proxy", x = 4, y = 3,family='sans',color='Black',size = 1.7) + 
+  annotate("text",label=paste("HadCM (",toupper(substr(modelVar,5,7)),")",sep=""), x = 4, y = 1,family=figFont,color='Black',size = 1.7)+
+  annotate("text",label=paste("TraCE (",toupper(substr(modelVar,5,7)),")",sep=""), x = 4, y = 2,family=figFont,color='Black',size = 1.7) + 
+  annotate("text",label="Proxy", x = 4, y = 3,family=figFont,color='Black',size = 1.7) + 
   scale_y_continuous(limits=c(0,3.7),expand=c(0,0))+
   theme_void()+ 
   theme(panel.background=element_rect(colour='White',fill='White'),
         plot.background    =element_rect(colour='white',fill='White'),
         axis.line.x = element_line(color = 'black',size=0.3),
         axis.ticks.x  = element_line(color = 'Black',size=0.3), 
-        axis.text.x = element_text(family='sans',size=5),
-        axis.title.x = element_text(family='sans',size=5),
+        axis.text.x = element_text(family=figFont,size=6,margin = margin(t = 1, r = 0, b = 2, l = 0)),
+        axis.title.x = element_text(family=figFont,size=6, margin(t = 1, r = 0, b = 2, l = 0)),
         axis.ticks.length.x=unit(3,"pt"),
-        #plot.margin = unit(c(0.1, 0.1, 0.5,0.1), "in"),
-        text = element_text(family='sans',size=8))
+        plot.margin = unit(c(0, 0, 0.1,0), "in"))
+        #text = element_text(family=figFont,size=6))
+
 
 
 if (var == 'HC'){
   map2 <- map +
     theme(plot.margin = unit(c(0,rep(0,4)), "in"))#+
-    #annotate("text",label=paste("(a) Hydroclimate (",toupper(substr(modelVar,1,3)),")",sep=""), x = 0.11, y = 0.93,family='sans',color='Black',size = 2)
+    #annotate("text",label=paste("(a) Hydroclimate (",toupper(substr(modelVar,1,3)),")",sep=""), x = 0.11, y = 0.93,family=figFont,color='Black',size = 2)
 } else{
-  map2 <- map +annotate("text",label="(b) Temperature", x = 0.11, y = 0.93,family='sans',color='Black',size = 2.2)
+  map2 <- map +annotate("text",label="(b) Temperature", x = 0.11, y = 0.93,family=figFont,color='Black',size = 2.2)
   
 }
 map3 <- map2 + draw_plot(scale,
                         x = 0.14, 
                         y = 0.22, 
-                        width = xSize, height = ySize*2.5)
+                        width = xSize, height = ySize*3)
 
 ggsave(plot=map3, width = 6.5, height = 3.38, dpi = 600,
        filename = paste(file.path(dir,'Figures','RegionComposites','global_'),modelVar,'_compBandPlt.png',sep=''))

@@ -1,6 +1,6 @@
 dir <- getwd()#'/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
 var <- 'pre'
-
+save<-TRUE
 #Load Data
 proxyDataAgree <- read.csv(file.path(dir,'Data','Proxy','proxyMetaData_HC.csv'))
 proxyRegionTS <- read.csv(file.path(dir,'Data','RegionComposites','HC','MedianTS_byRegion.csv'))
@@ -82,13 +82,18 @@ dataTable$regType[which(dataTable$id %in% c('SAU','NZ','SSA'))] <- '#0F8554'
 dataTable$regType[which(dataTable$id %in% c('GIC','EAN'))] <- '#6F4070'
 dataTable$regType[which(dataTable$id %in% c('EAS','TIB','SAS','NEAF','SAH','ESAF','SAM'))] <- '#CC503E'
 dataTable$regType[which(dataTable$id %in% c('NCA','SCA','NES','SEAF','SEA','WSAF','NWS'))] <- '#EDAD08'
-  
+
+monsoonC <- '#ED645A'
+tropicC <- '#DAA51B'
+sml <- '#24796C'
+nml <- '#2F8AC4'
+polar <- '#A5AA99'
 
 proxyMapRegions <- basemap + 
   #Add refrence regions boundaries
-  geom_map(data=regionsSelect$composite, map=dataTable, alpha=0.75, size=0.1, color='black' , 
+  geom_map(data=regionsSelect$composite, map=dataTable, alpha=0.6, size=0.1, color='black' , 
            aes(x=long, y=lat, group=group, map_id=id,fill=as.factor(dataTable$regType))) +
-  scale_fill_manual(values=c('#0F8554','#1D6996','#6F4070','#CC503E','#EDAD08'),)+
+  scale_fill_manual(values=c(sml,nml,polar,monsoonC,tropicC))+
   #Add proxy sites
   geom_point(data=as.data.frame(proxyDf), aes(x=lonsPrj , y=latsPrj), shape=1,size=0.5,stroke=0.3) +
   #Format Legend
@@ -103,15 +108,15 @@ hulls <- ddply(df, "regType", find_hull)
 
 scatter <- ggplot(data=data,aes(x=averageRange,y=proxyAgreePct,shape=regType,fill=regType,group = regType))+
   geom_hline(yintercept = 50,size=0.2)+
-  geom_polygon(data = hulls, alpha = 0.5) +
+  geom_polygon(data = hulls, alpha = 0.6) +
   geom_point(size=2.5,color='Black')+
   geom_point(size=2.5,color='Black')+
-  annotate("text",label="50% Proxy \n Even Wet/Dry Split", x = 0.25, y = 50,family='sans',color='grey40',size=1.5)+
-  annotate("text",label="Proxy-Proxy Agreement & \n Proxy-Model Agreement", x = 0.25, y = 90,family='sans',color='grey40',size=1.5)+
-  annotate("text",label="Proxy-Proxy Agreement but \n Proxy-Model Disagreement", x = 0.25, y = 10,family='sans',color='grey40',size=1.5)+
+  annotate("text",label="50% Proxy \n Even Wet/Dry Split", x = 0.25, y = 50,family=figFont,color='grey40',size=1.5)+
+  annotate("text",label="Proxy-Proxy Agreement & \n Proxy-Model Agreement", x = 0.25, y = 90,family=figFont,color='grey40',size=1.5)+
+  annotate("text",label="Proxy-Proxy Agreement but \n Proxy-Model Disagreement", x = 0.25, y = 10,family=figFont,color='grey40',size=1.5)+
   annotate("segment", x = 0.25, xend = 0.25, y = 60, yend = 80, colour = "grey40", size=0.5, arrow=arrow(type='closed',length = unit(0.05, "inches")))+
   annotate("segment", x = 0.25, xend = 0.25, y = 40, yend = 20, colour = "grey40", size=0.5, arrow=arrow(type='closed',length = unit(0.05, "inches")))+
-  scale_fill_manual(values=c('#1D6996','#0F8554','#6F4070','#CC503E','#EDAD08'))+
+  scale_fill_manual(values=c(nml,sml,polar,monsoonC,tropicC))+
   scale_shape_manual(values=c(24,25,23,21,22))+
   theme_bw()+
   #scale_x_continuous(limits=c(0,1000))+
@@ -135,8 +140,8 @@ scatter
 
 z <- cowplot::ggdraw(ggplot() + 
                        coord_cartesian(xlim=c(0,1),ylim=c(0,1),expand=FALSE)+
-                       annotate("text",label="(a)", x = 0.15, y = 0.97,family='sans',color='black',size=3)+
-                       annotate("text",label="(b)", x = 0.15, y = 0.67,family='sans',color='black',size=3)+
+                       annotate("text",label="(a)", x = 0.15, y = 0.97,family=figFont,color='black',size=3)+
+                       annotate("text",label="(b)", x = 0.15, y = 0.67,family=figFont,color='black',size=3)+
                        theme_void()+
                        theme(plot.background= element_rect(colour='White',fill='White'),
                              panel.background = element_rect(colour='White',fill='White')))+
@@ -145,6 +150,5 @@ z <- cowplot::ggdraw(ggplot() +
 
 if (save) {
   ggsave(plot=z, width = 3.25, height = 4.5, dpi = 600,
-         filename = file.path(dir,"Figures","Model",'ProxyAgreeByModelAnom3.png'))
+         filename = file.path(dir,"Figures","Model",'ProxyAgreeByModelAnom.png'))
 }
-save<-TRUE

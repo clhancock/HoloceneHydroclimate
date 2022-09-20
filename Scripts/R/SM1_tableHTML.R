@@ -101,9 +101,9 @@ outTbl <- reactable(tbl2,
   #else if (index %in% idx2) {list(`border-top   ` = "thin solid")}},
  columns   = list(
   Region          = colDef(width=160,align = 'left'),
-  Dataset         = colDef(width=150,align = 'left', name='Dataset Name \n (Site.Author.Year)', cell = function(value, index){
+  Dataset         = colDef(width=170,align = 'left', name='Dataset Name (Site.Author.Year)', cell = function(value, index){
     htmltools::tags$a(href = paste('http://lipdverse.org/HoloceneHydroclimate/current_version/',value,'.html',sep=''), target = "_blank", as.character(value))}),
-  TSid            = colDef(width=80, align = 'left', name='TSid \n (unique)', cell = function(value, index){
+  TSid            = colDef(width=80, align = 'left', name='TSid (unique)', cell = function(value, index){
     htmltools::tags$a(href = paste("https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Proxy/Dashboard/",
                                    filelist[which(grepl(value,filelist))],sep=""), target = "_blank", as.character(value))}),
   Archive         = colDef(width=80, align = 'left'),
@@ -114,13 +114,13 @@ outTbl <- reactable(tbl2,
   Direction       = colDef(width=60, align = 'center'),
   PublicationDOI  = colDef(width=150,align = 'left', cell = function(value, index){
     htmltools::tags$a(href = value, target = "_blank", as.character(value))}),
-  #SourceURL  = colDef(width=150,align = 'left', cell = function(value, index){
-    #htmltools::tags$a(href = value, target = "_blank", as.character(value))}),
-  SourceURL = colDef(width=150,align = 'left'),
-  AgeRange        = colDef(width=60, align = 'center', name='Age Range \n (ka)',filterable=FALSE),
-  Resolution      = colDef(width=60, align = 'center',name='Resolution \n (yrs/sample)'),
-  AgeControlN     = colDef(width=80, align = 'center', name='Age Control \n (#)'),
-  AgeControlMax   = colDef(width=120, align = 'center', name='Max Age Control Gap \n (yrs)'),
+  SourceURL  = colDef(width=150,align = 'left', cell = function(value, index){
+    htmltools::tags$a(href = value, target = "_blank", as.character(value))}),
+  #SourceURL = colDef(width=150,align = 'left'),
+  AgeRange        = colDef(width=70, align = 'center', name='Age Range (ka)',filterable=FALSE),
+  Resolution      = colDef(width=70, align = 'center',name='Resolution (yrs/sample)'),
+  AgeControlN     = colDef(width=90, align = 'center', name='Age Control (#)'),
+  AgeControlMax   = colDef(width=120, align = 'center', name='Max Age Control Gap (yrs)'),
   Lat             = colDef(width=40, align = 'right'),
   Lon             = colDef(width=50, align = 'right')
   ))  %>%
@@ -138,3 +138,5 @@ outTbl
 
 html_file <- file.path(dir,'Figures','Proxy','Appendix1_Table','Appendix1.html')
 saveWidget(widget = outTbl, file = html_file, selfcontained = TRUE)
+write.csv(View(tbl%>%arrange(Region,Dataset)),file=file.path(dir,'Figures','Proxy','Appendix1_Table','Appendix1_static.csv'))
+

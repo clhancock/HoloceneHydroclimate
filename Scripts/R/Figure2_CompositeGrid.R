@@ -51,6 +51,7 @@ figHeight <- 7#(8/9)*length(regNames)/2
 regPlts <- vector(mode='list')
 
 for (reg in regNames){
+  print(reg)
   #Load Data for Region
   regTso   <- regionData[[reg]][[var]][["LiPD"]]
   #Standardize Ensemble Composite Values
@@ -87,13 +88,13 @@ for (reg in regNames){
             axis.ticks.length.x = unit(-3,"pt"),
             axis.ticks.length.y = unit(2,"pt"),
             axis.text.x = element_blank(),
-            axis.text.y =element_text(family='sans',size=8,color='Black'),
-            plot.title = element_text(hjust = 0,vjust=-0.3,family='sans',size=8),
+            axis.text.y =element_text(family='Times New Roman',size=8,color='Black'),
+            plot.title = element_text(hjust = 0,vjust=-0.3,family='Times New Roman',size=8),
             plot.caption.position = "plot",
             axis.title      = element_blank(),
             panel.grid      = element_blank(),
             plot.margin     = unit(c(0.05, 0.05, 0, 0.05), "in"),
-            text = element_text(family='sans',size=8),
+            text = element_text(family='Times New Roman',size=8),
             legend.position='none')
   }
   compBands$na <- compBands$na +
@@ -117,8 +118,6 @@ for (reg in regNames){
     theme_void()+
     theme(plot.margin = unit(c(0, 0, 0, 0), "in"),
           panel.margin = unit(c(0, 0, 0, 0), "in"))
-  
-  seasonsPlt
   idx      <- which(plotSettings$names %in% sort(unique(regionDf$CategorySpec)))
   #RegionMap
   RegShp   <- IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]#regionData[[reg]]$polygon
@@ -185,11 +184,11 @@ for (reg in regNames){
           axis.title  = element_blank(),
           axis.ticks  = element_line(color = 'Black',size=0.4), 
           axis.text.x = element_blank(),
-          axis.text.y =element_text(family='sans',size=8,color='Black'),
+          axis.text.y =element_text(family='Times New Roman',size=8,color='Black'),
           axis.ticks.length.y=unit(2,"pt"),
           axis.ticks.length.x=unit(3,"pt"),
           plot.margin = unit(c(0, 0.05, 0.05, 0.05), "in"),
-          text = element_text(family='sans',size=8),
+          text = element_text(family='Times New Roman',size=8),
           legend.position='none')
   #
   regPlts[[reg]] <- ggdraw(ggplot() + theme(plot.background= element_rect(colour='White',fill='White'),
@@ -208,16 +207,16 @@ scale <- ggplot() + geom_point(aes(x=0,y=0),size=0,color='white') +
         panel.border    =element_rect(colour='White',fill='White'),
         panel.grid.major=element_line(colour='White'),
         axis.title.y  =  element_blank(),
-        axis.text.y =element_text(family='sans',size=8,color='White'),
+        axis.text.y =element_text(family='Times New Roman',size=8,color='White'),
         axis.line.x = element_line(color = 'black'),
         axis.ticks.x  = element_line(color = 'Black',size=0.4), 
         axis.ticks.y  = element_line(color = 'White',size=0.4), 
-        axis.text = element_text(family='sans',size=8),
-        axis.title.x = element_text(family='sans',size=8),
+        axis.text = element_text(family='Times New Roman',size=8),
+        axis.title.x = element_text(family='Times New Roman',size=8),
         axis.ticks.length.y=unit(2,"pt"),
         axis.ticks.length.x=unit(3,"pt"),
         plot.margin = unit(c(0, 0.05, 0.05, 0.05), "in"),
-        text = element_text(family='sans',size=8),
+        text = element_text(family='Times New Roman',size=8),
         legend.position='none')
 scale <- ggdraw(ggplot() + theme(plot.background= element_rect(colour='White',fill='White'),
                           panel.background = element_rect(colour='White',fill='White')))+

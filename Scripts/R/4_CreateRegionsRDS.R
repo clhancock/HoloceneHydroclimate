@@ -20,7 +20,7 @@ dir  <- getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHyd
 
 PROJ <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
 PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'))
+#load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'))
 refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
 
 lipdData  <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
