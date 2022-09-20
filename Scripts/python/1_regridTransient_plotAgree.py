@@ -73,21 +73,27 @@ for model in ['hadcm','trace','cmip6']:
         else: end =  '_regrid.nc'
         modelData[model][szn] = xr.open_dataset(Dir+'Data/Model/'+model+'/'+model+'_'+szn+end,decode_times=False)
 
-plt.rcParams['font.family'   ] = 'Arial'
+plt.rcParams['font.family'   ] = 'Times New Roman'
 plt.rcParams['axes.facecolor'] ='white'
 plt.rcParams['axes.linewidth'] = 1; 
 plt.rcParams['axes.edgecolor'] = 'k'
+import matplotlib.gridspec as gridspec
 
 szn = 'ANN'
-save = False
-for var in ['pre','p-e','tas']:
+save = True
+plt.figure(figsize=(4,6))
+gs = gridspec.GridSpec(2,1,hspace=0.1,wspace=0.1)
+#for var in ['pre','p-e','tas']:
+for var in ['pre','tas']:
+    if var == 'tas': ax = plt.subplot(gs[1:2,0:1],projection=ccrs.Robinson())
+    else:            ax = plt.subplot(gs[0:1,0:1],projection=ccrs.Robinson())
     refReg = rm.defined_regions.ar6.all
     refRegLand = rm.defined_regions.ar6.land
     if var == 'tas': 
-        cramp, units, n = 'RdBu_r','degC', ['Cooler at 6ka','Warmer at 6ka']
+        cramp, units, n = 'RdBu_r','degC', ['Cooler at 6 ka','Warmer at 6 ka']
         proxy = pd.read_csv(Dir+'Data/proxy/proxyMetaData_T.csv')
     else:            
-        cramp, units, n = 'BrBG', 'mm/day', ['Drier at 6ka','Wetter at 6ka',]
+        cramp, units, n = 'BrBG', 'mm/day', ['Drier at 6 ka','Wetter at 6 ka',]
         proxy = pd.read_csv(Dir+'Data/proxy/proxyMetaData_HC.csv')
     #
     #Calculate Proxy Percents for regions
@@ -117,29 +123,34 @@ for var in ['pre','p-e','tas']:
     #Plot
     cramp = cmr.get_sub_cmap(cramp,0.1,0.9,N=modelN+1)
     #cramp = cmr.get_sub_cmap(cramp,0.1,0.9,N=int(modelN/2)) 
-    plt.figure(figsize=(5,3))
-    ax = plt.subplot(projection=ccrs.Robinson())
+    if var == 'tas':
+        ax.annotate('(b)',xy=(0, 0), xycoords='data', xytext=(0.05, 0.95), 
+                textcoords='axes fraction', fontsize=8, fontfamily = 'Times New Roman')
+    else:
+        ax.annotate('(a)',xy=(0, 0), xycoords='data', xytext=(0.05, 0.95), 
+                textcoords='axes fraction', fontsize=8, fontfamily = 'Times New Roman')
     refRegLand.plot_regions(ax=ax,add_label=False,line_kws=dict(linewidth=1))
     refReg[pRegs].plot_regions(ax=ax,add_label=False,line_kws=dict(linewidth=1.2))
     model_agree = plt.pcolormesh(modelVals.lon, modelVals.lat, 
                                  (modelAnom/modelN)*100,transform=ccrs.PlateCarree(),
                                  cmap=cramp,vmin=-100,vmax=100)
     ax.scatter(plons, plats, c=pPcts, transform=ccrs.PlateCarree(),
-               cmap=cramp, vmin=0, vmax=100 ,s=40 ,ec='k', lw=2)
+               cmap=cramp, vmin=0, vmax=100 ,s=35 ,ec='k', lw=1.5)
     cbar = plt.colorbar(model_agree,orientation="horizontal",ticks=range(-100,101,50),
                         fraction=0.04, pad=0.145,aspect=30)
     cbar.ax.set_xticklabels(['100%\n'+n[0],'75%','50%\nEven Split','75%','100%\n'+n[1]],
-                            fontsize=8,
+                            fontsize=6,
                             verticalalignment='baseline')
     cbar.ax.xaxis.set_ticks_position("top")    
     ax.set_global()
-    cbar.ax.text(0,-1.6,'Agreement for sign of MH anomaly within model and proxy data \n(Annual '+var.upper()+')',
+    cbar.ax.text(0,-1.6,'Agreement for sign of mid-Holocene anomaly within model and proxy data \n(Annual '+var.upper()+')',
                  horizontalalignment='center',
-        verticalalignment='center',fontsize=8)
-    plt.tight_layout()
-    if save: plt.savefig(Dir+'Figures/Model/Agreement/midHoloceneAgreement_'+var+'.png',
+        verticalalignment='center',fontsize=6)
+
+plt.tight_layout()
+if save: plt.savefig(Dir+'Figures/Model/Agreement/midHoloceneAgreement_'+var+'.png',
                          dpi=400,format='png',bbox_inches='tight')       
-    plt.show()
+plt.show()
     #
 
 

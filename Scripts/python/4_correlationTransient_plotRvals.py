@@ -41,7 +41,7 @@ def calcCorrelation (inData,model1,model2,var1,var2,season,t0=0,t1=12,mask=False
 #Settings
 times = [0,12]
 szn   = 'ANN'
-v_1   = 'p-e'
+v_1   = 'pre'
 v_2   = 'tas'
 m_1   = 'hadcm'
 m_2   = 'hadcm'
@@ -77,7 +77,7 @@ import cmasher as cmr
 cramp = LinearSegmentedColormap.from_list('cramp',['#40004b','white','#00441b'],N=30)
 cramp = cmr.get_sub_cmap(cramp,0.1,0.9,N=20)
  
-proxy= pd.read_csv(Dir+'Data/'+'HC_T_RegionalProxyEnsCorrelations.csv')
+proxy= pd.read_csv(Dir+'Data/RegionComposites/'+'HC_T_RegionalProxyEnsCorrelations.csv')
 refReg = rm.defined_regions.ar6.all
     #Calculate Proxy Percents for regions
 pltRegs, pltVals, pltlats, pltlons, = [],[],[],[]
@@ -100,10 +100,10 @@ ax.scatter(pltlons,pltlats,c=pltVals,transform=ccrs.PlateCarree(),
            cmap=cramp,vmin=-1,vmax=1,s=40,ec='k',lw=2)
 ax.set_global()
 ax.annotate('(a)',xy=(0, 0), xycoords='data', xytext=(0.05, 0.95), 
-            textcoords='axes fraction', fontsize=8, fontfamily = 'Arial')
+            textcoords='axes fraction', fontsize=8, fontfamily = 'Times New Roman')
 cbar = plt.colorbar(model_contour,orientation="horizontal",ticks=[-1,-0.6,-0.3,0,0.3,0.6,1],
                         fraction=0.04, pad=0.04,aspect=30)
-cbar.set_label('Pearson Correlation Coefficient',fontsize=8, fontfamily = 'Arial')
+cbar.set_label('Pearson Correlation Coefficient',fontsize=8, fontfamily = 'Times New Roman')
 cbar.ax.set_xticklabels([-1,-0.6,-0.3,0,0.3,0.6,1],fontsize=8)
 
 
@@ -115,7 +115,7 @@ for lat in range(len(lats)):
     for lon in range(len(lons)):
         if mask[lat,lon]: rValsLand[lat,lon] = rVals[lat,lon]
 ax1.annotate('(b)',xy=(0, 0), xycoords='data', xytext=(-0.2, 0.95), 
-            textcoords='axes fraction', fontsize=8, fontfamily = 'Arial')
+            textcoords='axes fraction', fontsize=8, fontfamily = 'Times New Roman')
 ax1.axvline(x=0,color='black',lw=0.5)
 for i in range(-90,91,30):
     ax1.axhline(y=i,xmin=0,xmax=0.05,color='grey',lw=0.3)
@@ -129,7 +129,7 @@ ax1.plot(np.nanmean(rVals,axis=1) ,lats,c='darkslategrey',lw=1.9,label='All grid
 ax1.plot(x,lats,'-',c='darkgoldenrod',lw=1.9,label='Land grid cells')
 ax1.scatter(pltVals,pltlats,c='k',s=7)#plt.cm.get_cmap('BrBG',5),
 ax1.spines['right'].set_visible(False);ax1.spines['left'].set_visible(False)
-ax1.set_xticks([-1,0,1],fontsize=8, fontfamily = 'Arial')
+ax1.set_xticks([-1,0,1],fontsize=8, fontfamily = 'Times New Roman')
 ax1.invert_yaxis() 
 ax1.set_yticklabels([-1,0,1],fontsize=8)
 ax1.set_yticks([])

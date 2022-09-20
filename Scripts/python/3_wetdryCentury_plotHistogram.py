@@ -9,7 +9,7 @@ import pandas              as pd
 import regionmask          as rm
 import seaborn             as sns
 import xarray              as xr
-plt.rcParams['font.family'] = 'Arial'
+plt.rcParams['font.family'] = 'Times New Roman'
 plt.rcParams['font.size'] = '8'
 plt.rcParams['axes.facecolor'] ='white'
 plt.rcParams['axes.linewidth'] = 0.5; 
@@ -17,6 +17,7 @@ plt.rcParams['axes.edgecolor'] = 'k'
 #plt.tick_params(labelsize=8)
 
 Dir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
+
 
 binSize = 1000
 binN = int(12000/binSize)
@@ -151,7 +152,7 @@ plt.show()
 
 
 
-#cbar.set_label('Pearson Correlation Coefficient',fontsize=8, fontfamily = 'Arial')
+#cbar.set_label('Pearson Correlation Coefficient',fontsize=8, fontfamily = 'Times New Roman')
 #cbar.ax.set_xticklabels([-1,-0.6,-0.3,0,0.3,0.6,1],fontsize=8)
 plt.show()
 
@@ -169,7 +170,7 @@ ax.scatter(pltlons,pltlats,c=pltVals,transform=ccrs.PlateCarree(),
            cmap=cramp,vmin=-1,vmax=1,s=40,ec='k',lw=2)
 ax.set_global()
 ax.annotate('(a)',xy=(0, 0), xycoords='data', xytext=(0.05, 0.95), 
-            textcoords='axes fraction', fontsize=8, fontfamily = 'Arial')
+            textcoords='axes fraction', fontsize=8, fontfamily = 'Times New Roman')
 
 
 

@@ -14,7 +14,7 @@ import cartopy.feature     as cfeature
 import cartopy.util        as cutil
   
 #Plot Settings
-plt.rcParams['font.family'] = 'Arial'
+plt.rcParams['font.family'] = 'Times New Roman'
 plt.rcParams['axes.facecolor'] ='white'
 plt.rcParams['axes.linewidth'] = 0.5; 
 plt.rcParams['axes.edgecolor'] = 'k'
@@ -75,15 +75,15 @@ for var in ['pre','p-e','tas','evp']:
                         xy=(0, 0), xycoords='data',fontsize=8, xytext=(0.5, 1.1), 
                         textcoords='axes fraction',horizontalalignment='center', verticalalignment='center')  
             ax.annotate('Annual', xy=(0, 0), xycoords='data', xytext=(-0.05, 0.5), 
-                    textcoords='axes fraction', fontsize=8, fontfamily = 'Arial',
+                    textcoords='axes fraction', fontsize=8, fontfamily = 'Times New Roman',
                     rotation=90, horizontalalignment='center', verticalalignment='center') 
         else: 
             ax.annotate(szn, xy=(0, 0), xycoords='data', xytext=(-0.05, 0.5), 
-                    textcoords='axes fraction', fontsize=8, fontfamily = 'Arial',
+                    textcoords='axes fraction', fontsize=8, fontfamily = 'Times New Roman',
                     rotation=90, horizontalalignment='center', verticalalignment='center') 
         ax.annotate(labels[label], 
                         xy=(0, 0), xycoords='data', xytext=(0.05, 0.95), 
-                        textcoords='axes fraction', fontsize=8, fontfamily = 'Arial')
+                        textcoords='axes fraction', fontsize=8, fontfamily = 'Times New Roman')
         label+=1
     ax = plt.subplot(gs[(h*s):(h*s+1),0:s])
     ax.axis('off')
@@ -113,12 +113,12 @@ for var in ['pre','p-e','tas','evp']:
         cramp, units = 'BrBG', 'mm/day'
         mlevels = np.array([i /100 for i in list(range(-75,76,6))])
         ticklabels = [-0.6,-0.3,0,0.3,0.6]
-    labels=['(a)','(b)','(c)','(d)']
+    labels=['(c)','(d)','(a)','(b)']
     label=0
     #Plot Figure
     save = True
     plt.style.use('ggplot')
-    plt.figure(figsize=(3.25*len(models),4),dpi=400); 
+    plt.figure(figsize=(3.25*len(models),4),dpi=600); 
     h=len(seasons)*(len(ka)-1)
     gs = gridspec.GridSpec(h*s+1,len(models)*s)
     for t in range(0,len(ka)-1):
@@ -132,7 +132,9 @@ for var in ['pre','p-e','tas','evp']:
                 data = data.squeeze('age_bins')
                 i = [x for x, val in enumerate(seasons) if val == szn][0]
                 j = [x for x, val in enumerate(models) if val == model][0]
-                ax = plt.subplot(gs[(i+t)*s:(i+t)*s+s,j*s:j*s+s],projection=ccrs.Robinson()) 
+                if t == 0: tt = 1
+                elif t == 1: tt = 0
+                ax = plt.subplot(gs[j*s:j*s+s,(i+tt)*s:(i+tt)*s+s],projection=ccrs.Robinson()) 
                 ax.spines['geo'].set_edgecolor('black')
                 ax.set_global()
                 ax.coastlines()
@@ -143,19 +145,22 @@ for var in ['pre','p-e','tas','evp']:
                                              data_cyclic,transform=ccrs.PlateCarree(),
                                              levels=mlevels,extend='both',cmap=cramp)
                 if j == 0:
-                    ax.annotate(str(ka[t+1])+'ka - '+str(ka[t])+'ka', 
-                        xy=(0, 0), xycoords='data', xytext=(-0.05, 0.5), 
-                        textcoords='axes fraction', fontsize=8, fontfamily = 'Arial',
-                        rotation=90, horizontalalignment='center', verticalalignment='center')  
+                    ax.annotate(str(ka[t+1])+' - '+str(ka[t])+' ka', 
+                        xy=(0, 0), xycoords='data', fontsize=8,
+                        xytext=(0.5, 1.1),
+                        textcoords='axes fraction', fontfamily = 'Times New Roman',
+                        horizontalalignment='center', verticalalignment='center')  
                 if t == 0:
                     if   model == 'hadcm': modelName = 'HadCM'
                     elif model == 'trace': modelName = 'TraCE'
-                    ax.annotate(modelName, xy=(0, 0), xycoords='data',fontsize=8,
-                        xytext=(0.5, 1.1), textcoords='axes fraction',
+                    ax.annotate(modelName, 
+                        xy=(0, 0), xycoords='data',fontsize=8,
+                        xytext=(-1.1, 0.5), rotation=90, 
+                        textcoords='axes fraction', fontfamily = 'Times New Roman',
                         horizontalalignment='center', verticalalignment='center')  
                 ax.annotate(labels[label], 
                         xy=(0, 0), xycoords='data', xytext=(0.05, 0.95), 
-                        textcoords='axes fraction', fontsize=8, fontfamily = 'Arial')
+                        textcoords='axes fraction', fontsize=8, fontfamily = 'Times New Roman')
                 label+=1
     ax = plt.subplot(gs[(h*s):(h*s+1),0:len(models)*s])
     ax.axis('off')
@@ -207,7 +212,7 @@ for var in ['pre','p-e','tas']:
     #Plot FIugres
     plt.style.use('ggplot')
     plt.figure(figsize=(6.5,5),dpi=400); 
-    plt.rcParams['font.family'] = 'Arial'
+    plt.rcParams['font.family'] = 'Times New Roman'
     plt.rcParams['axes.facecolor'] ='white'
     plt.rcParams['axes.linewidth'] = 0.5; 
     plt.rcParams['axes.edgecolor'] = 'k'

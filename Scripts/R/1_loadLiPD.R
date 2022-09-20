@@ -33,37 +33,38 @@ library(tidyverse)
 
 dir <-  '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
 #getwd()
-tempVers <- '1_0_2' #Which versions of datesets to use
-hcVers   <- '0_6_0' #Which versions of datesets to use
+tempVers <- '1_0_2' #Which versions of temp12k datesets to use
+hcVers   <- '0_7_0' #Which versions of Holocene hydroclimate datesets to use
 
 
 #Load Data--------------------------------------------------------------------------------
 
-#Load ipcc region spatial data
+#Load IPCC Region Spatial Data
 PROJ <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
 PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
 refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
 
-#Load Lipd Files
-D__t <- readLipd(paste('http://lipdverse.org/Temp12k/',tempVers,'/Temp12k',tempVers,'.zip',sep=''))
-#D_hc <- readLipd(paste('http://lipdverse.org/HoloceneHydroclimate/',hcVers,'/HoloceneHydroclimate',hcVers,'.zip',sep=''))
-D_hc <- readLipd(file.path(dir,"Data","Proxy","LiPD","HoloceneHydroclimate0_6_0"))
+#Load Temperature and Hydroclimate Lipd Files
+#D__t <- readLipd(paste0('https://lipdverse.org/Temp12k/',tempVers,'/Temp12k',tempVers,'.zip'))
+#D_hc <- readLipd(paste0('https://lipdverse.org/HoloceneHydroclimate/',hcVers,'/HoloceneHydroclimate',hcVers,'.zip'))
+#D_hc <- readLipd(file.path(dir,"Data","Proxy","LiPD",paste0("HoloceneHydroclimate",hcVers)))
 
 #Assign tsids for data compilations based on within correct dataset and version--------------------------------------------------------------------------------
-
 TS__t <- splitInterpretationByScope(extractTs(D__t))
 TS_hc <- splitInterpretationByScope(extractTs(D_hc))
+
+TS_hc[[which(pullTsVariable(TS_hc, "paleoData_TSID") == "S2LRbRVYOu2hWu")]][["age"]] <- TS_hc[[which(pullTsVariable(TS_hc, "paleoData_TSID") == "S2LRbRVYOu2hWu")]][["age"]]/1000
 
 getTSfromLiPDs <- function(input,compilationName,versNo){
   out <- vector(mode='list')
   for (tso in input){
     tsNo <- 1
-    if (sum(!is.na(tso$paleoData_values[which(tso$age <= 12400)])) < 10){next}
     while (!is.null(tso[[paste('inCompilationBeta',tsNo,'_compilationName',sep='')]])){
       tsName <- tso[[paste('inCompilationBeta',tsNo,'_compilationName',sep='')]]
       tsVers <- tso[[paste('inCompilationBeta',tsNo,'_compilationVersion',sep='')]]
       if (tsName == compilationName & any(tsVers == versNo)){
+        if (sum(!is.na(tso$paleoData_values[which(tso$age <= 12400)])) < 10){print(tso$paleoData_TSid)}
         out[[length(out)+1]] <- tso
       }
       tsNo <- tsNo+1
@@ -75,16 +76,65 @@ getTSfromLiPDs <- function(input,compilationName,versNo){
 TS__t <- getTSfromLiPDs(TS__t,'Temp12k',tempVers)
 TS_hc <- getTSfromLiPDs(TS_hc,'HoloceneHydroclimate',hcVers)
 
-
 print(paste("Temp:",length(TS__t)))
 print(paste("HC:",  length(TS_hc)))
 
-qcsheet <- gsheet2tbl('docs.google.com/spreadsheets/d/1rhYoL0B5OfE5A-rNwuQZfnmjI3Vj3NCX07r-Mif3Ncs') %>%
-  filter(inThisCompilation==TRUE)
+#qcsheet <- gsheet2tbl('docs.google.com/spreadsheets/d/1rhYoL0B5OfE5A-rNwuQZfnmjI3Vj3NCX07r-Mif3Ncs') %>%
+#  filter(inThisCompilation==TRUE)
+#TS_hc<-TS_hc[which(pullTsVariable(TS_hc,"paleoData_TSid")%in%qcsheet$TSid)]
+#print(paste("HC:",  length(TS_hc)))
 
-TS_hc<-TS_hc[which(pullTsVariable(TS_hc,"paleoData_TSid")%in%qcsheet$TSid)]
 
-print(paste("HC:",  length(TS_hc)))
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB6e660f3d")]]$originalDataUrl <-"https://doi.org/10.1016/j.geomorph.2021.107896"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB8b32a2e0")]]$originalDataUrl <-"https://www.ncei.noaa.gov/access/paleo-search/study/5451"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-a7bc6-3c3f-4541-b2f0-c02b6")]]$originalDataUrl <-"http://ncdc.noaa.gov/paleo/study/16677"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB8d973712")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/32033'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEBa5fcc0ed")]]$originalDataUrl <- 'https://doi.org/10.17632/zkn8rs76hy.1'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB22a46599")]]$originalDataUrl <-'https://doi.org/10.17632/zkn8rs76hy.1'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB8c80a27c")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/13378'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="LPD292174f8xxx")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/18355'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="NAm2kHydro096")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/8640'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="NAm2kHydro208")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/23072'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="NAm2kHydro215")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/23072'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEBe297c3e8")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/33654'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEBbf48ea2b")]]$originalDataUrl <- 'https://doi.org/10.6084/m9.figshare.12480344'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-49aac-c148-4e76-809a-362e4")]]$originalDataUrl <- 'https://doi.org/10.1594/PANGAEA.832385'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-84c26-cf61-4730-a2fb-5101f")]]$originalDataUrl <-'https://doi.org/10.1594/PANGAEA.921255'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB21852084")]]$originalDataUrl <- 'https://doi.org/10.1594/PANGAEA.111890'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="GH28d0af42")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/11931'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-49d07-0b65-4966-88d1-10bad")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/29692'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-af994-241c-4196-a6fa-3589e")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/35393'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB29098c59")]]$originalDataUrl <- "https://www.iceandclimate.nbi.ku.dk/data/"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-c74a1-de1f-477c-becc-15b90")]]$originalDataUrl <- 'https://figshare.com/s/b4b5431fd9577afd95ef'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-8358f-5546-4fa4-9716-b98f3")]]$originalDataUrl <- 'https://doi.org/10.5880/GFZ.4.3.2021.005'
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="GH31325f74")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/13097'
+  
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-a7bc6-3c3f-4541-b2f0-c02b6")]]$pub1_doi <- "10.1016/j.palaeo.2014.04.014"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-7cf3f-ffa5-4f6d-8f4c-250b0")]]$pub1_doi <- "10.1016/j.quascirev.2021.107178"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEBa5fcc0ed")]]$pub1_doi <- "10.1016/j.quascirev.2021.106825"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB22a46599")]]$pub1_doi <- "10.1016/j.quascirev.2021.106825"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB15b6e09f")]]$pub1_doi <- "10.1016/j.palaeo.2017.09.032"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-49aac-c148-4e76-809a-362e4")]]$pub1_doi <- "10.1016/j.quascirev.2014.04.006"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-84c26-cf61-4730-a2fb-5101f")]]$pub1_doi <- "10.1016/j.quascirev.2014.04.006"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB21852084")]]$pub1_doi <- "10.1126/science.1080325"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="LPD17ad91b2")]]$pub1_doi <- "10.1016/j.epsl.2015.12.014"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="LPD277e0621")]]$pub1_doi <- "10.1016/j.epsl.2015.12.014"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB279cd5b2")]]$pub1_doi <- "10.1016/j.epsl.2015.12.014"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEBb00c1138")]]$pub1_doi <- "10.1016/j.epsl.2021.117148"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB19b9d003")]]$pub1_doi <- "10.1016/j.epsl.2021.117148"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB7baf4af4")]]$pub1_doi <- "10.1016/j.quascirev.2018.05.030"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-49d07-0b65-4966-88d1-10bad")]]$pub1_doi <- "10.5194/cp-16-1097-2020"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-af994-241c-4196-a6fa-3589e")]]$pub1_doi <- "10.1029/2021GL096611"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-f9320-c765-469f-b4ee-6276b")]]$pub1_doi <- "10.1029/2020GL089183"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-747c6-735e-4b08-a565-465fb")]]$pub1_doi <- "10.1002/jqs.2759"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-85b98-f377-4cb2-a58b-dc9c3")]]$pub1_doi <- "10.1016/j.epsl.2005.02.025"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="LPD1d1e6750")]]$pub1_doi <- "10.1038/nature13196"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="LPD1756fdf4")]]$pub1_doi <- "10.1038/nature13196"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-c74a1-de1f-477c-becc-15b90")]]$pub1_doi <- "10.1038/s41598-019-38626-3"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-8358f-5546-4fa4-9716-b98f3")]]$pub1_doi <- "10.1038/s43247-022-00368-y"
+TS_hc[[which(pullTsVariable(TS_hc,'paleoData_TSid')=="WEB-9119d-899e-4084-82c1-1fac9")]]$pub1_doi <- "10.1016/j.epsl.2012.03.016"
+  
+  
 
 
 
@@ -121,9 +171,10 @@ for (var in names(lipdData)){
       arrange(age)
     tso$ageMin     <- max(min(df$age),0)
     tso$ageMax     <- min(max(df$age),12000)
-    tso$ageRange   <- min(diff(range(df$age)),12000)
+    tso$ageRange   <- tso$ageMax-tso$ageMin
     tso$ageRes     <- median(diff(df$age))
     tso$ageResPlus <- median(diff(df$age[which(diff(df$values) != 0)]))
+    
     tso$paleoData_HoloceneValues <- df
     #
     #Revise seasonality & interpretation variable (M->P-E)
@@ -144,6 +195,96 @@ for (var in names(lipdData)){
         tso$climateInterpretation1_variable <- 'P-E'
       } else if (tso$climateInterpretation1_variable == 'M'){
         tso$climateInterpretation1_variable <- 'P-E'
+      }
+    }
+    #
+    #Add Chron MetaData 
+    #
+    if (var == 'HC'){
+      Dselect <- D_hc[[tso$dataSetName]]
+      n_chron <- length(Dselect[["chronData"]][[1]][["measurementTable"]])
+      n_paleo <- max(length(Dselect[["paleoData"]]),length(Dselect[["paleoData"]][[1]][["measurementTable"]]))
+      if (n_chron == 0){                                         i_chron <- NA
+      } else if (n_chron*n_paleo == 1){                          i_chron <- 1
+      } else if (grepl("Composite",tso$paleoData_variableName)){
+        offset<-c()
+        for (j in 1:n_chron){
+          chronAges <- Dselect[["chronData"]][[1]][["measurementTable"]][[j]][["age"]]$values
+          offset <- c(offset,max(abs(tso$ageMin-min(chronAges,na.rm=TRUE)),
+                                 abs(tso$ageMax-max(chronAges,na.rm=TRUE))))
+        }
+        i_chron <- which(offset==min(offset))
+      } else if (n_chron != n_paleo & (n_chron+1 != n_paleo | tso$archiveType!='Speleothem')){      
+        offset<-c()
+        for (j in 1:n_chron){
+          chronAges <- Dselect[["chronData"]][[1]][["measurementTable"]][[j]][["age"]]$values
+          offset <- c(offset,max(abs(tso$ageMin-min(chronAges,na.rm=TRUE)),
+                                 abs(tso$ageMax-max(chronAges,na.rm=TRUE))))
+        }
+        i_chron <- which(offset==min(offset))
+      } else{
+        for (i in 1:n_paleo){
+          if (!is.null(Dselect[["paleoData"]][[1]][["measurementTable"]][[i]][[tso$paleoData_variableName]]$TSid)){
+            if (Dselect[["paleoData"]][[1]][["measurementTable"]][[i]][[tso$paleoData_variableName]]$TSid == tso$paleoData_TSid){
+              i_chron <- i
+            }
+          }
+        }
+      }
+      if (tso$paleoData_TSid %in% c('lcRpbhIeSqLqRxKnBNF','lcRseG41EyZPFn7vBuL','LPD1498ea89','LPD03892251')){i_chron<-NA}
+      if (!is.na(i_chron)){
+        tso$chronData_table <- Dselect[["chronData"]][[1]][["measurementTable"]][[i_chron]]
+        names <- names(tso$chronData_table)[grepl(c('age'),names(tso$chronData_table),ignore.case=TRUE)]
+        for (name in c('type','error','min','max','hi','radio','14','lo','comment','use',"up","old","young","std","reservoir","σ","low","Rejected","±","comment","err","uncertainty","unc")){
+          names <- names[which(grepl(name,names,ignore.case=TRUE)==FALSE)]
+        }
+        ageColName <- NA
+        for (name in c("Th230/Th232","Median","calib.14C","14C.raw","14C Age","14C age BP","Cal yr chosen","age14C","14C age (yr BP)","C14 age dated",
+                       tail(names,1),"corrected 230Th Age",
+                       "Median Year BP",'age','Age','calAge','CalAge','CalibratedAge','Calibrated Age')){
+          if (name %in% names(tso$chronData_table)){
+            ageColName <- name
+          } 
+        }
+        tso$chronData_ageName <- ageColName
+        tso$chronData_ages <- as.numeric(tso$chronData_table[[tso$chronData_ageName]]$values)
+        if (grepl("Composite",tso$paleoData_variableName)){
+          tso$chronData_ages <- c()
+          for (j in 1:n_chron){
+            tso$chronData_ages <- c(tso$chronData_ages,as.numeric(Dselect[["chronData"]][[1]][["measurementTable"]][[j]][["age"]]$values))
+          }
+        }
+        if ((length(which(tso$chronData_ages<13000))<=1) | is.na(sum(tso$chronData_ages)) | (sum(!is.na(tso$chronData_ages))<length(tso$chronData_ages)*0.5)){
+          tso$chronData_table             <- NA
+          tso$chronData_ageName           <- NA
+          tso$chronData_ages              <- NA
+          tso$chronData_ages_12k          <- NA
+          tso$chronData_agesN_12k         <- NA
+          tso$chronData_agesMaxGap_12k    <- NA
+          tso$chronData_agesMedianGap_12k <- NA
+        }else{
+          tso$chronData_ages <- tso$chronData_ages[which(!is.na(tso$chronData_ages))]
+          if(mean(tso$chronData_ages,na.rm=TRUE)<0){
+            tso$chronData_ages<-tso$chronData_ages*-1 #
+          }
+          if(grepl("ka",tso$chronData_table[[tso$chronData_ageName]]$units)){
+            tso$chronData_ages<-tso$chronData_ages*1000 #d 
+          } else if(max(tso$chronData_ages,na.rm=TRUE)<300){
+            tso$chronData_ages<-tso$chronData_ages*1000 #d 
+          }
+          tso$chronData_ages_12k          <- tso$chronData_ages[which(tso$chronData_ages<13000)]
+          tso$chronData_agesN_12k         <- length(which(diff(tso$chronData_ages_12k)>0))+1
+          tso$chronData_agesMaxGap_12k    <- max(diff(sort(c(tso$ageMin,tso$chronData_ages_12k,tso$ageMax))))
+          tso$chronData_agesMedianGap_12k <- median(abs(diff(sort(c(tso$ageMin,tso$chronData_ages_12k,tso$ageMax)))))
+        }
+      } else{
+        tso$chronData_table             <- NA
+        tso$chronData_ageName           <- NA
+        tso$chronData_ages              <- NA
+        tso$chronData_ages_12k          <- NA
+        tso$chronData_agesN_12k         <- NA
+        tso$chronData_agesMaxGap_12k    <- NA
+        tso$chronData_agesMedianGap_12k <- NA
       }
     }
     #
@@ -168,8 +309,8 @@ for (var in names(lipdData)){
         tso$Category           <- 'Shoreline'
         tso$CategorySpecific   <- 'Shoreline (Lake Level)'
       } else if (archive == 'GlacierIce'){
-        tso$Category           <- 'Glacial Ice'
-        tso$CategorySpecific   <- 'Glacial Ice (Accumulation)'
+        tso$Category           <- 'Glacier Ice'
+        tso$CategorySpecific   <- 'Glacier Ice (Accumulation)'
       } else if (archive == 'LakeSediment' & proxy == 'd18O'){
         tso$Category           <- 'Lake Sediment (δ18O)'
         tso$CategorySpecific   <- 'Lake Sediment (δ18O)'
@@ -255,7 +396,7 @@ saveRDS(lipdData, file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
 
 
 #Create and Save Summary Table for Data--------------------------------------------------------------------------------
-for (var in names(lipdData)){
+for (var in 'HC'){
   lipdTSO <- lipdData[[var]]
   proxyDf <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
                     tsid          = pullTsVariable(lipdTSO,'paleoData_TSid'),
@@ -271,6 +412,9 @@ for (var in names(lipdData)){
                     ageRange      = pullTsVariable(lipdTSO,'ageRange'),
                     ageRes        = pullTsVariable(lipdTSO,'ageRes'),
                     ageResPlus    = pullTsVariable(lipdTSO,'ageResPlus'),
+                    ageCtrlN      = pullTsVariable(lipdTSO,'chronData_agesN_12k'),
+                    ageCtrlMax    = pullTsVariable(lipdTSO,'chronData_agesMaxGap_12k'),
+                    ageCtrlMedian = pullTsVariable(lipdTSO,'chronData_agesMedianGap_12k'),
                     season        = pullTsVariable(lipdTSO,'climateInterpretation1_seasonalityGeneral'),
                     climInterp    = pullTsVariable(lipdTSO,'climateInterpretation1_variable'),
                     source        = pullTsVariable(lipdTSO,'Source'),
@@ -320,7 +464,7 @@ plotSettings <- vector(mode='list')
 plotSettings$names <- sort(unique(proxyDf$CategorySpec))
 #
 plotSettings$color <- as.character(plotSettings$names)
-plotSettings$color[which(plotSettings$names=="Glacial Ice (Accumulation)")]             <- "powder blue"
+plotSettings$color[which(plotSettings$names=="Glacier Ice (Accumulation)")]             <- "powder blue"
 plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "corn flower blue"
 plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "dark blue"
 plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "dark orchid" #δ
@@ -333,7 +477,7 @@ plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "li
 plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "firebrick"
 #
 plotSettings$shape <- as.character(plotSettings$names) 
-plotSettings$shape[which(plotSettings$names=="Glacial Ice (Accumulation)")]             <- 12
+plotSettings$shape[which(plotSettings$names=="Glacier Ice (Accumulation)")]             <- 12
 plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
 plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
 plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
@@ -349,8 +493,8 @@ plotSettings$shape <- as.numeric(plotSettings$shape)
 
 for (reg in as.character(refregions@data[["Acronym"]])){
   n <- which(as.character(refregions@data[["Acronym"]])==reg)
-  tsSelect <- lipdTSO[which(pullTsVariable(lipdTSO,'geo_ipccRegion')==reg)]
-  if (length(tsSelect) == 0){next}
+  regTSO <- lipdTSO[which(pullTsVariable(lipdTSO,'geo_ipccRegion')==reg)]
+  if (length(regTSO) == 0){next}
   refrenceRegShp <- subset(refregions, Acronym ==reg)
   regionDf <- proxyDf[which(proxyDf$ipccReg==reg),]
   idx <- which(plotSettings$names %in% regionDf$CategorySpec)
@@ -373,31 +517,9 @@ for (reg in as.character(refregions@data[["Acronym"]])){
   print(paste(n,reg,sep=". "))
   tsn <- 0
   for (ts in arrange(regionDf, desc(latitude), longitude)$tsid){
+    tsn<-tsn+1
     siteDf  <- regionDf[which(regionDf$tsid==ts),]
-    tso     <- tsSelect[[which(pullTsVariable(tsSelect,'paleoData_TSid')==ts)]]
-    Dselect <- D_hc[[tso$dataSetName]]
-    i       <- min(length(Dselect[["chronData"]]),1)
-    tsn     <- tsn+1
-    ageColName <- NA
-    if (i != 0){
-      chronTable <- Dselect[["chronData"]][[i]][["measurementTable"]][[1]]
-      agenames <- names(chronTable)[grepl(c('age'),names(chronTable),ignore.case=TRUE)]
-      for (name in c('type','error','min','max','hi','lo','comment','use','radio','14',"Uncorr","unc","up","old","young","std","reservoir","σ","low","Rejected","±","comment","err")){
-        agenames <- agenames[which(grepl(name,agenames,ignore.case=TRUE)==FALSE)]
-      }
-      for (name in c(tail(agecontrol,1),'age','Age','calAge','CalAge','CalibratedAge','Calibrated Age')){
-        if (name %in% names(chronTable)){
-          ageColName <- name
-        } 
-      }
-      agecontrol <- as.numeric(chronTable[[ageColName]]$values)
-      if (!is.null(chronTable[[ageColName]][["units"]])){
-        if (grepl("ka",chronTable[[ageColName]][["units"]])){
-          agecontrol <- agecontrol*1000
-        }
-      }
-    }
-    if (is.na(ageColName)){agecontrol<-NA}
+    tso     <- regTSO[[which(pullTsVariable(regTSO,'paleoData_TSid')==ts)]]
     col <- plotSettings$color[which(plotSettings$names == tso$CategorySpecific)]
     shp <- plotSettings$shape[which(plotSettings$names == tso$CategorySpecific)]
     df <- data.frame(
@@ -413,14 +535,14 @@ for (reg in as.character(refregions@data[["Acronym"]])){
       geom_path(aes(x=ages,y=values),color=col,alpha=0.7) + 
       scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),n.breaks=7,oob=scales::squish) +
       theme_bw() +
-      ggtitle(paste(reg,": ",tso$dataSetName," (",tso$paleoData_proxy,")",sep="")) 
+      ggtitle(paste0(reg,": ",tso$dataSetName," (",tso$paleoData_TSid,")")) 
     if (tso$climateInterpretation1_interpDirection == 'negative'){
       plt <- plt + 
-        geom_point(aes(x=agecontrol,y=agecontrol*0+max(df$values,na.rm=TRUE)), color="black",size=2,shape=17)+
+        geom_point(aes(x=tso$chronData_ages_12k,y=tso$chronData_ages_12k*0+max(df$values,na.rm=TRUE)), color="black",size=2,shape=17)+
         scale_y_reverse(name=paste(tso$paleoData_variableName,' (',tso$paleoData_units,')',sep=''))
     } else{
       plt <- plt + 
-        geom_point(aes(x=agecontrol,y=agecontrol*0+min(df$values,na.rm=TRUE)), color="black",size=2,shape=17)+
+        geom_point(aes(x=tso$chronData_ages_12k,y=tso$chronData_ages_12k*0+min(df$values,na.rm=TRUE)), color="black",size=2,shape=17)+
         scale_y_continuous(name=paste(tso$paleoData_variableName,' (',tso$paleoData_units,')',sep=''))
     }
     #
@@ -429,12 +551,12 @@ for (reg in as.character(refregions@data[["Acronym"]])){
                               size=3,color='gold',alpha=1,starstroke=2)
     h <- 0
     txt <- ggplot(siteDf) 
-    for (name in c('paleoData_TSid','dataSetName',
-                   'geo_latitude','geo_longitude','geo_elevation',
+    for (name in c('geo_latitude','geo_longitude','geo_elevation',
                    'archiveType','Category','CategorySpecific',
                    'paleoData_proxyGeneral','paleoData_proxy','paleoData_proxyDetail','paleoData_variableName',
                    'climateInterpretation1_seasonalityGeneral',
                    'climateInterpretation1_variable','paleoData_units',
+                   "chronData_agesN_12k" , "chronData_agesMaxGap_12k",
                    'Source','pub1_title','pub1_doi','pub2_doi','originalDataUrl')){
       h <- h-1
       #if (name %in% names(tso) == FALSE){tso[[name]]<- NA}
@@ -450,8 +572,8 @@ for (reg in as.character(refregions@data[["Acronym"]])){
       draw_plot(plt, x = 0,   y = 0.5, width = 1,   height = 0.5) +
       draw_plot(map, x = 0,   y = 0,   width = 0.5, height = 0.5) +
       draw_plot(txt, x = 0.5, y = 0,   width = 0.5, height = 0.5) 
-    ggsave(file.path(dir,"Figures","Dashboard",
-                     paste(n,'_',reg,'_',tsn,'_',tso$paleoData_TSid,'.png',sep='')),device='png',
+    ggsave(file.path(dir,"Figures","Proxy","Dashboard",
+                     paste(n,'_',reg,'_',tsn,'_',tso$paleoData_TSid,'.pdf',sep='')),device='pdf',
            plot=summary,width=10,height=6,units='in')
   }
 }
