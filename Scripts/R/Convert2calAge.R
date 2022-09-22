@@ -1,3 +1,6 @@
+library(ggplot2)
+library(oxcAAR)
+quickSetupOxcal()
 getCalMedian <- function(c14,unc){
  calout <- oxcAAR::oxcalCalibrate(c14,unc,)
  cp <- cumsum(calout$`1`$raw_probabilities$probabilities)
@@ -9,40 +12,26 @@ getCalMedian <- function(c14,unc){
 #setOxcalExecutablePath("/Users/chrishancock/Desktop/OxCal")
 
 
-z <- c(1040,
-       1650,
-       2410,
-       3910,
-       5340,
-       6580,
-       7010,
-       7790,
-       9100,
-       9990,
-       10290,
-       11520,
-       34980,
-       34260,
-       34080)
+z <- c(0,
+       0.5,
+       1,
+       1.5,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10,
+       11,
+       12)
 
-i <- c(180,
-       150,
-       130,
-       130,
-       150,
-       140,
-       210,
-       180,
-       190,
-       100,
-       140,
-       110,
-       690,
-       580,
-       650)
+i <- rep(200,length(z))
 
 for (n in 1:length(z)){
- print(getCalMedian(z[n],i[n]))
+ print(getCalMedian(z[n]*1000,i[n]))
 }
 
 
