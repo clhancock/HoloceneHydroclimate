@@ -46,9 +46,9 @@ load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions
 refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
 
 #Load Temperature and Hydroclimate Lipd Files
-#D__t <- readLipd(paste0('https://lipdverse.org/Temp12k/',tempVers,'/Temp12k',tempVers,'.zip'))
+D__t <- readLipd(paste0('https://lipdverse.org/Temp12k/',tempVers,'/Temp12k',tempVers,'.zip'))
 #D_hc <- readLipd(paste0('https://lipdverse.org/HoloceneHydroclimate/',hcVers,'/HoloceneHydroclimate',hcVers,'.zip'))
-#D_hc <- readLipd(file.path(dir,"Data","Proxy","LiPD",paste0("HoloceneHydroclimate",hcVers)))
+D_hc <- readLipd(file.path(dir,"Data","Proxy","LiPD",paste0("HoloceneHydroclimate",hcVers)))
 
 #Assign tsids for data compilations based on within correct dataset and version--------------------------------------------------------------------------------
 TS__t <- splitInterpretationByScope(extractTs(D__t))
@@ -146,6 +146,8 @@ lipdData <- list(T = TS__t, HC = TS_hc)
 for (var in names(lipdData)){
   for (ts in 1:length(lipdData[[var]])){
     #
+    #id<-'S2LR9ZYusd9uRM'
+    #ts <- which(pullTsVariable(lipdData[[var]],"paleoData_TSid")==id)
     tso                  <- lipdData[[var]][[ts]]
     tso$age              <- as.numeric(tso$age)
     tso$paleoData_values <- as.numeric(tso$paleoData_values)
@@ -214,7 +216,15 @@ for (var in names(lipdData)){
                                  abs(tso$ageMax-max(chronAges,na.rm=TRUE))))
         }
         i_chron <- which(offset==min(offset))
-      } else if (n_chron != n_paleo & (n_chron+1 != n_paleo | tso$archiveType!='Speleothem')){      
+      } else if(n_chron+1 == n_paleo & tso$archiveType=='Speleothem'){
+          for (i in 1:n_paleo){
+            if (!is.null(Dselect[["paleoData"]][[1]][["measurementTable"]][[i]][[tso$paleoData_variableName]]$TSid)){
+              if (Dselect[["paleoData"]][[1]][["measurementTable"]][[i]][[tso$paleoData_variableName]]$TSid == tso$paleoData_TSid){
+                i_chron <- i
+              }
+            }
+          }
+      } else if (n_chron != n_paleo){      
         offset<-c()
         for (j in 1:n_chron){
           chronAges <- Dselect[["chronData"]][[1]][["measurementTable"]][[j]][["age"]]$values
@@ -235,7 +245,8 @@ for (var in names(lipdData)){
       if (!is.na(i_chron)){
         tso$chronData_table <- Dselect[["chronData"]][[1]][["measurementTable"]][[i_chron]]
         names <- names(tso$chronData_table)[grepl(c('age'),names(tso$chronData_table),ignore.case=TRUE)]
-        for (name in c('type','error','min','max','hi','radio','14','lo','comment','use',"up","old","young","std","reservoir","σ","low","Rejected","±","comment","err","uncertainty","unc")){
+        for (name in c('type','error','min','max','hi','radio','14','lo','comment','use',"up","old","young","std",
+                       "reservoir","σ","low","Rejected","±","comment","err","uncertainty","unc")){
           names <- names[which(grepl(name,names,ignore.case=TRUE)==FALSE)]
         }
         ageColName <- NA
@@ -254,7 +265,7 @@ for (var in names(lipdData)){
             tso$chronData_ages <- c(tso$chronData_ages,as.numeric(Dselect[["chronData"]][[1]][["measurementTable"]][[j]][["age"]]$values))
           }
         }
-        if ((length(which(tso$chronData_ages<13000))<=1) | is.na(sum(tso$chronData_ages)) | (sum(!is.na(tso$chronData_ages))<length(tso$chronData_ages)*0.5)){
+        if ((length(which(tso$chronData_ages<13000))<=1) | is.na(sum(tso$chronData_ages,na.rm=TRUE)) | (sum(!is.na(tso$chronData_ages))<length(tso$chronData_ages)*0.5)){
           tso$chronData_table             <- NA
           tso$chronData_ageName           <- NA
           tso$chronData_ages              <- NA

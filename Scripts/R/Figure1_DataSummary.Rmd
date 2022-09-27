@@ -28,6 +28,7 @@ save     <- TRUE
 var<-'HC'
 proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',var,'.csv',sep='')))
 
+
 ```
 
 ```{r}
@@ -39,6 +40,24 @@ pivot <- proxyDf %>%
             ageCtrlN = median(ageCtrlN,na.rm=TRUE),
             ageCtrlMax = median(ageCtrlMax,na.rm=TRUE))
 pivot[c(1,2,3,6,7,8,11,10,9,4,5),]
+
+print(nrow(proxyDf))
+z<- proxyDf[which(is.na(proxyDf$ageCtrlMax)),]
+print(nrow(z))
+z<- z[which(z$archive != 'Wood'),]
+print(nrow(z))
+z<- z[which(z$archive != 'GlacierIce'),]
+print(nrow(z))
+z<- z[which(z$Category != 'Shoreline'),]
+print(nrow(z))
+z %>%
+  group_by(CategorySpec) %>%
+  dplyr::summarize(count =  n())
+
+z<- z[which(is.na(proxyDf$ageCtrlMax)),]
+
+length(which(proxyDf[which(is.na(proxyDf$ageCtrlMax)),]$archive == 'Wood'))
+length(which(proxyDf[which(is.na(proxyDf$ageCtrlMax)),]$Category == 'Shoreline'))
 
 
 for (i in c('ageRange','ageRes','ageCtrlN','ageCtrlMax')){print(median(proxyDf[,i],na.rm=TRUE))}

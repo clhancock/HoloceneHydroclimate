@@ -91,7 +91,7 @@ for szn in ['ANN','JJA','DJF']:
         if model == 'hadcm': dataOrig = dataOrig.isel(lat=list(range(1,len(dataOrig.lat)-1)))
         #Regrid
         regridder = xe.Regridder(dataOrig,dataReGr,'conservative')
-        #regridder = xe.Regridder(dataOrig,dataReGr,'conservative',periodic=True,ignore_degenerate=True)
+        #regridder = xe.Regridder(dataOrig,dataReGr,'conservative_norm',periodic=True,ignore_degenerate=True)
         #regridder = xe.Regridder(dataOrig,dataReGr,'bilinear')         
         dataReGr = regridder(dataOrig,keep_attrs=True)
         #Plot to make sure it looks right
