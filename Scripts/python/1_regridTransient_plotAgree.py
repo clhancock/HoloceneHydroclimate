@@ -12,7 +12,12 @@ import xarray            as xr
 
 Dir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
 
-
+#Plot Settings
+plt.rcParams['font.family'] = 'Times New Roman'
+plt.rcParams['axes.facecolor'] ='white'
+plt.rcParams['axes.linewidth'] = 0.5; 
+plt.rcParams['axes.edgecolor'] = 'k'
+plt.rcParams.update({'font.size': 10})
 
 #%%Load Regridded Model Data For Plotting
 
@@ -81,20 +86,22 @@ import matplotlib.gridspec as gridspec
 
 szn = 'ANN'
 save = True
-plt.figure(figsize=(4,6))
-gs = gridspec.GridSpec(2,1,hspace=0.1,wspace=0.1)
+plt.figure(figsize=(6.5,4))
+gs = gridspec.GridSpec(1,2,hspace=0.1,wspace=0.11)
 #for var in ['pre','p-e','tas']:
 for var in ['pre','tas']:
-    if var == 'tas': ax = plt.subplot(gs[1:2,0:1],projection=ccrs.Robinson())
+    if var == 'tas': ax = plt.subplot(gs[0:1,1:2],projection=ccrs.Robinson())
     else:            ax = plt.subplot(gs[0:1,0:1],projection=ccrs.Robinson())
     refReg = rm.defined_regions.ar6.all
     refRegLand = rm.defined_regions.ar6.land
     if var == 'tas': 
         cramp, units, n = 'RdBu_r','degC', ['Cooler at 6 ka','Warmer at 6 ka']
         proxy = pd.read_csv(Dir+'Data/proxy/proxyMetaData_T.csv')
+        varname = 'Temperature'
     else:            
         cramp, units, n = 'BrBG', 'mm/day', ['Drier at 6 ka','Wetter at 6 ka',]
         proxy = pd.read_csv(Dir+'Data/proxy/proxyMetaData_HC.csv')
+        varname = 'Precipitation'
     #
     #Calculate Proxy Percents for regions
     #Calculate Proxy Percents for regions
@@ -135,15 +142,15 @@ for var in ['pre','tas']:
                                  (modelAnom/modelN)*100,transform=ccrs.PlateCarree(),
                                  cmap=cramp,vmin=-100,vmax=100)
     ax.scatter(plons, plats, c=pPcts, transform=ccrs.PlateCarree(),
-               cmap=cramp, vmin=0, vmax=100 ,s=35 ,ec='k', lw=1.5)
+               cmap=cramp, vmin=0, vmax=100 ,s=25 ,ec='k', lw=1.5)
     cbar = plt.colorbar(model_agree,orientation="horizontal",ticks=range(-100,101,50),
-                        fraction=0.04, pad=0.145,aspect=30)
+                        fraction=0.025, pad=0.1,aspect=25)
     cbar.ax.set_xticklabels(['100%\n'+n[0],'75%','50%\nEven Split','75%','100%\n'+n[1]],
                             fontsize=6,
                             verticalalignment='baseline')
     cbar.ax.xaxis.set_ticks_position("top")    
     ax.set_global()
-    cbar.ax.text(0,-1.6,'Agreement for sign of mid-Holocene anomaly within model and proxy data \n(Annual '+var.upper()+')',
+    cbar.ax.text(0,-1.6,'Annual '+varname+' (% Agreement Among Proxy and Model Data)',
                  horizontalalignment='center',
         verticalalignment='center',fontsize=6)
 
@@ -160,87 +167,3 @@ plt.show()
 
 
 
-
-
-
-
-
-
-
-#%%
-
-model='trace'
-szn='ANN'
-data =  modelData[model][szn]
-values = data[var]
-lats = values.lat
-lons = values.lon
-geo='all'
-wghts  = np.cos(np.deg2rad(lats))                                                                                          
-#IPCC ref regions
-refReg = rm.defined_regions.ar6.all.mask_3D(lons,lats)  
-
-
-
-#%%
-import regionmask
-data =  modelData[model][szn]
-values = data
-airtemps=values
-mask_3D = regionmask.defined_regions.srex.mask_3D(airtemps)
-weights = np.cos(np.deg2rad(airtemps.lat))
-ts_airtemps_regional = airtemps.weighted(mask_3D * weights).mean(dim=("lat", "lon"))
-ts_airtemps_regional.pre.plot(col="region", col_wrap=6);
-
-#%%
-var='tas'
-
-filename = 'trace.01-36.22000BP.cam2.'+key[model][var]['varName']+'.22000BP_decavg'+szn+'_400BCE'
-data = xr.open_dataset(dataDir+model+'/'+filename+'.nc',decode_times=False)
-#Change variable names
-data = data.rename({key[model]['age']['varName']: 'age'})
-data = data.rename({key[model]['lat']:            'lat'})
-data = data.rename({key[model]['lon']:            'lon'})
-data = data.rename({key[model][var]['varName']:    var})
-data = data[var]
-#conversion   = key[model]['age']['conv']
-#data = data.assign_coords(age = (data['age'] * conversion[0] + conversion[1]) )  
-
-airtemps = data# xr.tutorial.load_dataset("air_temperature")
-
-proj = ccrs.Robinson()
-
-ax = plt.subplot(111, projection=proj)
-
-(airtemps.isel(age=1)).plot.pcolormesh(ax=ax, transform=ccrs.PlateCarree())
-
-ax.coastlines();
-#%%
-
-mask_3D   = rm.defined_regions.ar6.all.mask_3D(airtemps)
-mask_full = rm.defined_regions.ar6.all.mask_3D(airtemps, drop=False)
-r2 = mask_3D.isel(region=(mask_3D.abbrevs == "EAS"))
-airtemps_EAS = airtemps.where(r2)
-proj = ccrs.Robinson()
-ax = plt.subplot(111, projection=proj)
-(airtemps_EAS.isel(age=5)-airtemps_EAS.isel(age=4))[:,:,0].plot.pcolormesh(ax=ax, transform=ccrs.PlateCarree())
-ax.coastlines()
-#%%
-airtemps_EAS = airtemps.where(r2)
-weights = np.cos(np.deg2rad(airtemps_EAS.lat))
-ts_airtemps_regional = airtemps_EAS.weighted(mask_3D * weights).mean(dim=("lat", "lon"))
-ts_airtemps_regional.plot()
-
-#%%
-
-mask = regionmask.defined_regions.srex.mask_3D(lon, lat)
-mask
-r2 = refReg.isel(region=(refReg.abbrevs == "EAS"))
-airtemps_cna = values.where(r2)
-
-mask = refReg*1
-z = values.weighted(mask * wghts).mean(dim=("lat", "lon")).data
-z = pd.DataFrame(z) 
-try: z.index  = list(values.age.data)
-except:  z.index  = list(values.model.data)
-z.columns= list(mask.abbrevs.data)

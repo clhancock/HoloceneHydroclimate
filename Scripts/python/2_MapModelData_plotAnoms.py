@@ -18,6 +18,7 @@ plt.rcParams['font.family'] = 'Times New Roman'
 plt.rcParams['axes.facecolor'] ='white'
 plt.rcParams['axes.linewidth'] = 0.5; 
 plt.rcParams['axes.edgecolor'] = 'k'
+plt.rcParams.update({'font.size': 10})
 #plt.tick_params(labelsize=8)
 
 #%% 2 Load Data
@@ -46,6 +47,10 @@ for var in ['pre','p-e','tas','evp']:
         cramp, units = 'BrBG', 'mm/day'
         mlevels = np.array([i /100 for i in list(range(-75,76,6))])
         ticklabels = [-0.6,-0.3,0,0.3,0.6]
+    if   var == 'tas': varname='Temperature ('+u'\N{DEGREE SIGN}'+'C)'
+    elif var == 'pre': varname='Precipitation (mm/day)'
+    elif var == 'p-e': varname='P-E (mm/day)'
+    elif var == 'evp': varname='Evaporation (mm/day)'
     labels=['(a)','(b)','(c)']
     label=0
     seasons = ['ANN','JJA','DJF'] 
@@ -53,7 +58,7 @@ for var in ['pre','p-e','tas','evp']:
     #Plot Figure
     save = True
     plt.style.use('ggplot')
-    plt.figure(figsize=(3.25,6),dpi=600); 
+    plt.figure(figsize=(3.25,5.5),dpi=600); 
     h=len(seasons)
     gs = gridspec.GridSpec(h*s+1,s)
     for szn in seasons:
@@ -89,8 +94,7 @@ for var in ['pre','p-e','tas','evp']:
     ax.axis('off')
     cbar = plt.colorbar(model_contour,orientation="horizontal",
                         cax=inset_axes(ax,width='90%',height="30%",loc="upper center"),
-                ticks=ticklabels).set_label(var.upper()+' ('+units+')',
-                                                       fontsize=8,c='black')
+                ticks=ticklabels).set_label(varname,fontsize=8,c='black')
     plt.tick_params(labelsize=8)
     #Save or show
     if save: plt.savefig(dataDir+'Figures/Model/Anomalies/CMIP_MH-PI_bySeason_'+var+'.png',
@@ -113,6 +117,10 @@ for var in ['pre','p-e','tas','evp']:
         cramp, units = 'BrBG', 'mm/day'
         mlevels = np.array([i /100 for i in list(range(-75,76,6))])
         ticklabels = [-0.6,-0.3,0,0.3,0.6]
+    if   var == 'tas': varname='Temperature ('+u'\N{DEGREE SIGN}'+'C)'
+    elif var == 'pre': varname='Precipitation (mm/day)'
+    elif var == 'p-e': varname='P-E (mm/day)'
+    elif var == 'evp': varname='Evaporation (mm/day)'
     labels=['(c)','(d)','(a)','(b)']
     label=0
     #Plot Figure
@@ -167,7 +175,7 @@ for var in ['pre','p-e','tas','evp']:
     #cbar = plt.colorbar(model_contour,cax=inset_axes(ax,width='80%',height="30%",loc="upper center"),
      #           orientation="horizontal",ticks=[-0.55,-0.25,0,0.25,0.55]).set_label(var+' Difference ('+units+')',fontsize=8,c='black')
     cbar = plt.colorbar(model_contour,cax=inset_axes(ax,width='90%',height="30%",loc="upper center"),
-                orientation="horizontal",ticks=ticklabels).set_label('Annual '+var.upper()+' ('+units+')',fontsize=8,c='black')
+                orientation="horizontal",ticks=ticklabels).set_label('Annual '+varname,fontsize=8,c='black')
     plt.tick_params(labelsize=8)
     #Save or show
     if save: plt.savefig(dataDir+'Figures/Model/Anomalies/Trans_Anoms_byAge_byModel_'+var+'.png',
@@ -242,7 +250,7 @@ for var in ['pre','p-e','tas']:
                 orientation="horizontal").set_label(units+'/ka',fontsize=8,c='black')
     plt.tick_params(labelsize=8)
     #plt.set_ticklabels(mlevels)
-    plt.title(var+' '+szn+' Holocene Trends',fontsize=10)
+    plt.title(varname+' '+szn+' Holocene Trends',fontsize=10)
     if save: plt.savefig(dataDir+'Figures/Model/TransientTrends/HoloceneTrends_'+var+'_'+szn+'.png',
                          dpi=400,format='png',bbox_inches='tight')       
     else: plt.show()

@@ -11,8 +11,8 @@ library(tidyverse)
 
 var     <- 'HC'
 
-dir  <- getwd()
-#dir  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
+#dir  <- getwd()
+dir  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
 
 lipdTSO <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
 proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',var,'.csv',sep='')))
@@ -42,7 +42,7 @@ figSize <- c(6.5,3)
 plotSettings <- vector(mode='list')
 
 if (var == 'HC'){
-  specific <- TRUE
+  specific <- TRUE 
   if(specific){
     plotSettings$names <- sort(unique(proxyDf$CategorySpec))
     #

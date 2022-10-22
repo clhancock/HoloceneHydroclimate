@@ -19,8 +19,8 @@ library(tidyverse)
 
 #Set up directories and names--------------------------------------------------------------------------------
 
-dir  <- getwd()# '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
-var  <- 'T'
+dir  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
+var  <- 'HC'
 save <- TRUE
 saveDir <- file.path(dir,'Data','RegionComposites',var)
 
