@@ -1,0 +1,192 @@
+
+\###Input Data
+
+``` r
+library(maptools)
+```
+
+    ## Loading required package: sp
+
+    ## Checking rgeos availability: TRUE
+    ## Please note that 'maptools' will be retired by the end of 2023,
+    ## plan transition at your earliest convenience;
+    ## some functionality will be moved to 'sp'.
+
+``` r
+library(proj4)
+library(RCurl)
+library(sf)
+```
+
+    ## Linking to GEOS 3.10.2, GDAL 3.4.2, PROJ 8.2.1; sf_use_s2() is TRUE
+
+``` r
+library(sp)
+library(tidyverse)
+```
+
+    ## ── Attaching packages
+    ## ───────────────────────────────────────
+    ## tidyverse 1.3.2 ──
+
+    ## ✔ ggplot2 3.3.6      ✔ purrr   0.3.5 
+    ## ✔ tibble  3.1.8      ✔ dplyr   1.0.10
+    ## ✔ tidyr   1.2.1      ✔ stringr 1.4.1 
+    ## ✔ readr   2.1.3      ✔ forcats 0.5.2 
+    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ✖ tidyr::complete() masks RCurl::complete()
+    ## ✖ dplyr::filter()   masks stats::filter()
+    ## ✖ dplyr::lag()      masks stats::lag()
+
+``` r
+var     <- 'HC'
+
+#dir  <- getwd()
+dir  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
+
+lipdTSO <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
+proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',var,'.csv',sep='')))
+regionData <- readRDS(file.path(dir,'Data','FigureSettings','regionData.rds'))
+
+
+PROJ <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
+PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
+```
+
+    ## Loading objects:
+    ##   IPCC_WGI_reference_regions_v4
+
+``` r
+refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
+
+
+countries  <- rworldmap::getMap("less islands")
+countries  <- sp::spTransform(countries,  CRSobj = PROJ)
+
+###Figure Settings
+figFont <- 'Times New Roman'
+figText <- 10
+figSize <- c(6.5,3)
+```
+
+\###Plot Settings
+
+``` r
+##############################
+###Create list of color information
+
+plotSettings <- vector(mode='list')
+
+if (var == 'HC'){
+  specific <- TRUE 
+  if(specific){
+    plotSettings$names <- sort(unique(proxyDf$CategorySpec))
+    #
+    #,,,,,,,,#6F4070,#994E95,#666666
+    #https://carto.com/carto-colors/
+    plotSettings$color <- as.character(plotSettings$names)
+    plotSettings$color[which(plotSettings$names=="Glacier Ice (Accumulation)")] <- "#5F4690" #"powder blue"
+    plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "#38A6A5" #"corn flower blue"
+    plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "#1D6996" #"dark blue"
+    plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "#94346E" # "dark orchid" #δ
+    plotSettings$color[which(plotSettings$names=="Other (calibrated)")]      <- "grey40" #"grey40"
+    plotSettings$color[which(plotSettings$names=="Other (not calibrated)")]  <- "grey" #"grey"
+    plotSettings$color[which(plotSettings$names=="Pollen (calibrated)")]     <- "#0F8554" #"forest green"
+    plotSettings$color[which(plotSettings$names=="Pollen (not calibrated)")] <- "#73AF48" #"" #"yellowgreen"
+    plotSettings$color[which(plotSettings$names=="Speleothem (other)")]      <- "#EDAD08" #"darkorange"
+    plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "#E17C05" #"lightcoral"
+    plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "#CC503E" #"firebrick"
+    #
+    plotSettings$shape <- as.character(plotSettings$names) 
+    plotSettings$shape[which(plotSettings$names=="Glacier Ice (Accumulation)")] <- 12
+    plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
+    plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
+    plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
+    plotSettings$shape[which(plotSettings$names=="Other (calibrated)")]      <- 6
+    plotSettings$shape[which(plotSettings$names=="Other (not calibrated)")]  <- 13
+    plotSettings$shape[which(plotSettings$names=="Pollen (calibrated)")]     <- 14
+    plotSettings$shape[which(plotSettings$names=="Pollen (not calibrated)")] <- 1
+    plotSettings$shape[which(plotSettings$names=="Speleothem (other)")]      <- 17
+    plotSettings$shape[which(plotSettings$names=="Speleothem (δ13C)")]       <- 23
+    plotSettings$shape[which(plotSettings$names=="Speleothem (δ18O)")]       <- 11  
+  } else{
+    plotSettings$names <- sort(unique(proxyDf$Category))
+    #
+    plotSettings$color <- as.character(plotSettings$names)
+    plotSettings$color[which(plotSettings$names=="Glacier Ice")]             <- "powder blue"
+    plotSettings$color[which(plotSettings$names=="Shoreline")]               <- "corn flower blue"
+    plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "dark blue"
+    plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "dark orchid"
+    plotSettings$color[which(plotSettings$names=="Other")]                   <- "grey"
+    plotSettings$color[which(plotSettings$names=="Pollen")]                  <- "forest green"
+    plotSettings$color[which(plotSettings$names=="Speleothem")]              <- "firebrick"
+    #
+    plotSettings$shape <- as.character(plotSettings$names) 
+    plotSettings$shape[which(plotSettings$names=="Glacier Ice")]             <- 12
+    plotSettings$shape[which(plotSettings$names=="Shoreline")]               <- 21
+    plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
+    plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
+    plotSettings$shape[which(plotSettings$names=="Other")]                   <- 13
+    plotSettings$shape[which(plotSettings$names=="Pollen")]                  <- 14
+    plotSettings$shape[which(plotSettings$names=="Speleothem")]              <- 11
+  }
+} else if (var == 'T'){
+  plotSettings$names <- sort(unique(proxyDf$Category))
+  #
+  plotSettings$color <- as.character(plotSettings$names)
+  plotSettings$color[which(plotSettings$names=="alkenone")]          <- "tomato"
+  plotSettings$color[which(plotSettings$names=="biophysical")]       <- "skyblue4"
+  plotSettings$color[which(plotSettings$names=="chironomid")]        <- "firebrick"
+  plotSettings$color[which(plotSettings$names=="isotope")]           <- "orange"
+  plotSettings$color[which(plotSettings$names=="Mg/Ca")]             <- "midnight blue"
+  plotSettings$color[which(plotSettings$names=="other biomarker")]   <- "medium blue"
+  plotSettings$color[which(plotSettings$names=="other ice")]         <- "powder blue"
+  plotSettings$color[which(plotSettings$names=="other microfossil")] <- "plum4"
+  plotSettings$color[which(plotSettings$names=="pollen")]            <- "forest green"
+  #
+  plotSettings$color[which(plotSettings$names=="alkenone")]          <- 22 
+  plotSettings$color[which(plotSettings$names=="biophysical")]       <- 1 
+  plotSettings$color[which(plotSettings$names=="chironomid")]        <- 30 
+  plotSettings$color[which(plotSettings$names=="isotope")]           <- 15 
+  plotSettings$color[which(plotSettings$names=="Mg/Ca")]             <- 25 
+  plotSettings$color[which(plotSettings$names=="other biomarker")]   <- 13 
+  plotSettings$color[which(plotSettings$names=="other ice")]         <- 12
+  plotSettings$color[which(plotSettings$names=="other microfossil")] <- 5 
+  plotSettings$color[which(plotSettings$names=="pollen")]            <- 14 
+}
+plotSettings$shape <- as.numeric(plotSettings$shape)
+Csettings <- c("#92C5DE","#4393C3",'#2166AC')
+```
+
+``` r
+regionsSelect <- vector(mode='list')
+regionsSelect$all       <- refregions
+regionsSelect$select    <- subset(refregions, Acronym %in% proxyDf$ipccReg)
+regionsSelect$composite <- subset(refregions, Acronym %in% colnames(read.csv(file.path(dir,'Data','RegionComposites',var,'MedianTS_byRegion.csv'))))
+```
+
+``` r
+library(ggplot2)
+basemap <- ggplot() +
+  #Set Border around plot - probably not the best way to do this
+  borders(aggregate(refregions, FUN=length), fill=NA, colour='black', size=2) +
+  geom_map(data=refregions, map=fortify(refregions),
+           aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
+  #Add Country data (basemap)
+  geom_map(data=countries, map=fortify(countries),
+           aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
+  coord_fixed(1) + 
+  theme_void() 
+```
+
+    ## Regions defined for each Polygons
+    ## Regions defined for each Polygons
+    ## Regions defined for each Polygons
+    ## Regions defined for each Polygons
+
+``` r
+basemap
+```
+
+![](Figure0_Settings_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
