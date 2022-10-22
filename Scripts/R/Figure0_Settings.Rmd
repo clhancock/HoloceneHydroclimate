@@ -1,7 +1,6 @@
 ---
-output: html_notebook
+output: rmarkdown::github_document
 ---
-rmarkdown::github_document
 
 ###Input Data
 
