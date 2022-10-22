@@ -1,6 +1,7 @@
-
+rmarkdown::github_document
 
 ###Input Data
+
 ```{r, warning=FALSE}
 library(maptools)
 library(proj4)
@@ -35,6 +36,7 @@ figSize <- c(6.5,3)
 ```
 
 ###Plot Settings
+
 ```{r}
 ##############################
 ###Create list of color information
@@ -151,11 +153,3 @@ basemap
 
 
 ```
-
-
-
-
-
-
-
-

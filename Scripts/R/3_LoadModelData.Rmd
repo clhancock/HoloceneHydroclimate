@@ -1,3 +1,5 @@
+rmarkdown::github_document
+
 ---
 goal: Convert netcdf data from model simulations into common time, units, and variable names 
 input: model netcdf files; LiPD files; refRegions;
@@ -5,11 +7,10 @@ output: rdata for trace and hadcm
 author: chris hancock
 ---
 
-setwd(githubDir)
-###Settings in script
-
+setwd(githubDir) ###Settings in script
 
 ###Load Packages
+
 ```{r}
 library(dplyr)
 library(lipdR)
@@ -28,8 +29,8 @@ ageres   <- 200
 binyears <- seq(0,12000,ageres)
 ```
 
-
 ###Define model names and convesions in a constant form
+
 ```{r}
 modelDict <- vector(mode="list")
 #TRACE
@@ -73,6 +74,7 @@ modelDict$hadcm$lon    <- c(name='longitude',slope=1,intercept=0)
 ```
 
 ###Load netcdf file and standardize names/units... into list format and save
+
 ```{r}
 for (model in names(modelDict)){
   modelData<-vector(mode='list')
@@ -115,6 +117,3 @@ for (model in names(modelDict)){
           file.path(githubDir,'Data','Model_transient','rData','raw',paste(model,'rds',sep='.')))
 }
 ```
-
-
-
