@@ -1,7 +1,9 @@
 ---
 output: rmarkdown::github_document
 ---
-
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 ###Input Data
 
 ```{r, warning=FALSE}
