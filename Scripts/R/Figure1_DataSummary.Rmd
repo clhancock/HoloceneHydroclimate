@@ -5,7 +5,8 @@ output: 4 figures (histogram of record length and resolution, graph of ts availa
 author: chris hancock
 ---
 ###Load packages 
-```{r warning=FALSE}
+```{r messege=FALSE}
+#Load Packages
 library(cowplot)
 library(egg)
 library(geoChronR)
@@ -20,15 +21,27 @@ library(rworldmap)
 library(scales)
 library(sp)
 library(tidyverse)
+
+#Input Data: 
+proxyDFpath <- file.path('Data','Proxy')
+
+print("Packages Loaded")
 ```
+
+
+```{r messege=FALSE, warning=FALSE}
+#Set Working Directory
+wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
+setwd(wd)
+print(paste0('Working directory set to: ',wd))
+```
+
 
 ###Input Data
 ```{r, warning=FALSE}
-save     <- TRUE
-var<-'HC'
-proxyDf <- read.csv(file=file.path(dir,'Data','Proxy',paste('proxyMetaData_',var,'.csv',sep='')))
-
-
+save    <- FALSE
+var     <- 'HC'
+proxyDf <- read.csv(file=file.path(wd,proxyDFpath,paste0('proxyMetaData_','HC','.csv')))
 ```
 
 ```{r}
@@ -39,28 +52,24 @@ pivot <- proxyDf %>%
             ageRes = median(ageRes),
             ageCtrlN = median(ageCtrlN,na.rm=TRUE),
             ageCtrlMax = median(ageCtrlMax,na.rm=TRUE))
-pivot[c(1,2,3,6,7,8,11,10,9,4,5),]
+#pivot[c(1,2,3,6,7,8,11,10,9,4,5),]
 
 print(nrow(proxyDf))
 z<- proxyDf[which(is.na(proxyDf$ageCtrlMax)),]
-print(nrow(z))
 z<- z[which(z$archive != 'Wood'),]
-print(nrow(z))
 z<- z[which(z$archive != 'GlacierIce'),]
-print(nrow(z))
 z<- z[which(z$Category != 'Shoreline'),]
-print(nrow(z))
 z %>%
   group_by(CategorySpec) %>%
   dplyr::summarize(count =  n())
 
 z<- z[which(is.na(proxyDf$ageCtrlMax)),]
 
-length(which(proxyDf[which(is.na(proxyDf$ageCtrlMax)),]$archive == 'Wood'))
-length(which(proxyDf[which(is.na(proxyDf$ageCtrlMax)),]$Category == 'Shoreline'))
+#length(which(proxyDf[which(is.na(proxyDf$ageCtrlMax)),]$archive == 'Wood'))
+#length(which(proxyDf[which(is.na(proxyDf$ageCtrlMax)),]$Category == 'Shoreline'))
 
 
-for (i in c('ageRange','ageRes','ageCtrlN','ageCtrlMax')){print(median(proxyDf[,i],na.rm=TRUE))}
+#for (i in c('ageRange','ageRes','ageCtrlN','ageCtrlMax')){print(median(proxyDf[,i],na.rm=TRUE))}
 ```
 
 
