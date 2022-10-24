@@ -1,7 +1,9 @@
 ---
-title: "Figures 2 (grid) & Figure 6 (map) - Holocene Hydroclimate Proxy Composites"
+title: "Figures 2 - Holocene Hydroclimate Proxy Composites (grid)"
 author: "Chris Hancock"
-output: html_document
+output:
+  #pdf_document: default
+  html_document: default
 ---
 
 #### Load Packages
