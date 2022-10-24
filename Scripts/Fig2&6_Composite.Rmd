@@ -1,0 +1,673 @@
+---
+title: "Figure 1 & Table 1 - Holocene Hydroclimate Proxy Summary"
+author: "Chris Hancock"
+output: html_document
+---
+
+#### Load Packages
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(cowplot)
+library(egg)
+library(geoChronR)
+library(ggrepel)
+library(ggplot2)
+library(ggstar)
+library(lipdR)
+library(maptools)
+library(proj4)
+library(RColorBrewer)
+library(rworldmap)
+library(scales)
+library(sp)
+library(tidyverse)
+
+print("Packages Loaded")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Set Working Directory
+
+wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
+#knitr::opts_knit$set(root.dir = wd)
+```
+
+#### Load Data
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+var      <- 'HC'
+modelVar <- 'pre_ANN'
+
+lipdTSO <- readRDS(file.path(wd,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
+proxyDf <- read.csv(file=file.path(wd,'Data','Proxy',paste0('proxyMetaData_',var,'.csv')))
+proxyDf <- proxyDf %>% filter(season %in% c("Winter+","Summer+") == FALSE)
+print("Proxy data loaded ")
+
+#Get x axis 
+binvec <- read.csv(file.path(wd,'Data','RegionComposites',var,'MedianTS_byRegion.csv'))$time
+
+#Load IPCC region data
+load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
+
+regionData <- vector(mode='list')
+
+for (reg in sort(unique(proxyDf$ipccReg))){
+  regionData[[reg]]$polygon   <- IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]
+  regionData[[reg]]$name      <- as.character(regionData[[reg]]$polygon$Name)
+  regionData[[reg]]$type      <- as.character(regionData[[reg]]$polygon$Type)
+  regionData[[reg]]$latitude  <- regionData[[reg]]$polygon@polygons[[1]]@labpt[[1]]
+  regionData[[reg]]$longitude <- regionData[[reg]]$polygon@polygons[[1]]@labpt[[2]]
+  regionData[[reg]]$LiPD      <- lipdTSO[which(pullTsVariable(lipdTSO,'geo_ipccRegion')==reg)]
+  regionData[[reg]]$LiPD      <- regionData[[reg]]$LiPD[which(pullTsVariable(regionData[[reg]]$LiPD,'climateInterpretation1_seasonalityGeneral') %in% c("Winter+","Summer+") == FALSE)]
+  regionData[[reg]]$nproxy    <- length(regionData[[reg]]$LiPD)
+  regionData[[reg]]$SummaryDF <- proxyDf %>% filter(ipccReg==reg)
+  #ID times during region with <50% proxy availability
+  regionData[[reg]]$pltTime   <- plotTimeAvailabilityTs(regionData[[reg]]$LiPD,age.range=c(0,12000),
+                                                        group.var ='CategorySpecific',step=100)
+  limits <- regionData[[reg]]$pltTime$dat %>% group_by(yvec) %>% summarise(pct=round(100*sum(value)/regionData[[reg]]$nproxy,1))
+  regionData[[reg]]$Limits50  <- seq(max(0,which(limits$yvec<6000 & limits$pct < 50)+1),
+                                     min(nrow(limits),which(limits$yvec>6000 & limits$pct < 50)-1))
+  tryCatch(
+    expr = {regionData[[reg]]$compEnsemble <- read.csv(file.path(wd,'Data','RegionComposites',var,paste(reg,'.csv',sep='')))},
+    error = function(e){regionData[[reg]]$compEnsemble <- NA}
+  )
+}
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Set Projections
+PROJ     <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
+PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+#Transform projection
+refregions <-  IPCC_WGI_reference_regions_v4#spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
+#Countries for basemap
+countries  <- rworldmap::getMap("less islands")
+countries  <- sp::spTransform(countries,  CRSobj = PROJ)
+#Transform proxy projections
+pointData  <- data.frame(longitude=c(proxyDf$longitude),latitude=c(proxyDf$latitude))
+pointData  <- SpatialPointsDataFrame(coords=pointData, data=pointData, 
+                                     proj4string=CRS(PROJorig))
+#pointData  <- spTransform(pointData,CRSobj = PROJ)
+#proxyDf$lonsPrj <- pointData@coords[,1]
+#proxyDf$latsPrj <- pointData@coords[,2]
+```
+
+#### Figure Settings
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+save     <- TRUE
+specific <- TRUE 
+
+if (save){ print(paste0("save ",var," figs"))
+} else{    print(paste0("plot ",var," figs"))}
+
+figFont <- 'Times New Roman'
+figText <- 10
+figSize <- c(6.5,7)
+alph    <- 1
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+#Colors and Shapes - should be the same in each rmd file
+
+plotSettings <- vector(mode='list')
+Csettings <- c("#92C5DE","#4393C3",'#2166AC') #For ensemble
+Chadcm <- '#DDAA33'
+Ctrace <- '#BB5566'
+#
+if (var == 'HC'){
+  if(specific){
+    plotSettings$names <- sort(unique(proxyDf$CategorySpec))
+    #https://carto.com/carto-colors/
+    plotSettings$color <- as.character(plotSettings$names)
+    plotSettings$color[which(plotSettings$names=="Glacier Ice (Accumulation)")] <- "#5F4690" #"powder blue"
+    plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "#38A6A5" #"corn flower blue"
+    plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "#1D6996" #"dark blue"
+    plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "#94346E" # "dark orchid" #δ
+    plotSettings$color[which(plotSettings$names=="Other (calibrated)")]      <- "grey40" #"grey40"
+    plotSettings$color[which(plotSettings$names=="Other (not calibrated)")]  <- "grey" #"grey"
+    plotSettings$color[which(plotSettings$names=="Pollen (calibrated)")]     <- "#0F8554" #"forest green"
+    plotSettings$color[which(plotSettings$names=="Pollen (not calibrated)")] <- "#73AF48" #"" #"yellowgreen"
+    plotSettings$color[which(plotSettings$names=="Speleothem (other)")]      <- "#EDAD08" #"darkorange"
+    plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "#E17C05" #"lightcoral"
+    plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "#CC503E" #"firebrick"
+    #
+    plotSettings$shape <- as.character(plotSettings$names) 
+    plotSettings$shape[which(plotSettings$names=="Glacier Ice (Accumulation)")] <- 12
+    plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
+    plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
+    plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
+    plotSettings$shape[which(plotSettings$names=="Other (calibrated)")]      <- 6
+    plotSettings$shape[which(plotSettings$names=="Other (not calibrated)")]  <- 13
+    plotSettings$shape[which(plotSettings$names=="Pollen (calibrated)")]     <- 14
+    plotSettings$shape[which(plotSettings$names=="Pollen (not calibrated)")] <- 1
+    plotSettings$shape[which(plotSettings$names=="Speleothem (other)")]      <- 17
+    plotSettings$shape[which(plotSettings$names=="Speleothem (δ13C)")]       <- 23
+    plotSettings$shape[which(plotSettings$names=="Speleothem (δ18O)")]       <- 11  
+  } else{
+    plotSettings$names <- sort(unique(proxyDf$Category))
+    #
+    plotSettings$color <- as.character(plotSettings$names)
+    plotSettings$color[which(plotSettings$names=="Glacier Ice")]             <- "powder blue"
+    plotSettings$color[which(plotSettings$names=="Shoreline")]               <- "corn flower blue"
+    plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "dark blue"
+    plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "dark orchid"
+    plotSettings$color[which(plotSettings$names=="Other")]                   <- "grey"
+    plotSettings$color[which(plotSettings$names=="Pollen")]                  <- "forest green"
+    plotSettings$color[which(plotSettings$names=="Speleothem")]              <- "firebrick"
+    #
+    plotSettings$shape <- as.character(plotSettings$names) 
+    plotSettings$shape[which(plotSettings$names=="Glacier Ice")]             <- 12
+    plotSettings$shape[which(plotSettings$names=="Shoreline")]               <- 21
+    plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
+    plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
+    plotSettings$shape[which(plotSettings$names=="Other")]                   <- 13
+    plotSettings$shape[which(plotSettings$names=="Pollen")]                  <- 14
+    plotSettings$shape[which(plotSettings$names=="Speleothem")]              <- 11
+  }
+} else if (var == 'T'){
+  plotSettings$names <- sort(unique(proxyDf$Category))
+  #
+  plotSettings$color <- as.character(plotSettings$names)
+  plotSettings$color[which(plotSettings$names=="alkenone")]          <- "tomato"
+  plotSettings$color[which(plotSettings$names=="biophysical")]       <- "skyblue4"
+  plotSettings$color[which(plotSettings$names=="chironomid")]        <- "firebrick"
+  plotSettings$color[which(plotSettings$names=="isotope")]           <- "orange"
+  plotSettings$color[which(plotSettings$names=="Mg/Ca")]             <- "midnight blue"
+  plotSettings$color[which(plotSettings$names=="other biomarker")]   <- "medium blue"
+  plotSettings$color[which(plotSettings$names=="other ice")]         <- "powder blue"
+  plotSettings$color[which(plotSettings$names=="other microfossil")] <- "plum4"
+  plotSettings$color[which(plotSettings$names=="pollen")]            <- "forest green"
+  #
+  plotSettings$color[which(plotSettings$names=="alkenone")]          <- 22 
+  plotSettings$color[which(plotSettings$names=="biophysical")]       <- 1 
+  plotSettings$color[which(plotSettings$names=="chironomid")]        <- 30 
+  plotSettings$color[which(plotSettings$names=="isotope")]           <- 15 
+  plotSettings$color[which(plotSettings$names=="Mg/Ca")]             <- 25 
+  plotSettings$color[which(plotSettings$names=="other biomarker")]   <- 13 
+  plotSettings$color[which(plotSettings$names=="other ice")]         <- 12
+  plotSettings$color[which(plotSettings$names=="other microfossil")] <- 5 
+  plotSettings$color[which(plotSettings$names=="pollen")]            <- 14 
+}
+plotSettings$shape <- as.numeric(plotSettings$shape)
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#### BaseMap
+
+#BaseMap
+IPCC <- TRUE
+basemap <- ggplot() +
+  #Set Border around plot - probably not the best way to do this
+  borders(aggregate(IPCC_WGI_reference_regions_v4, FUN=length), fill='white', colour='white', size=2) +
+  geom_map(data=IPCC_WGI_reference_regions_v4, map=fortify(IPCC_WGI_reference_regions_v4),
+           aes(x=long, y=lat, group=group, map_id=id), fill="#F4F7FF", colour='NA', size=1)+
+  #Add Country data (basemap)
+  geom_map(data=rworldmap::getMap("less islands"), map=fortify(rworldmap::getMap("less islands")),
+           aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
+  coord_fixed(1) + 
+  theme_void()  
+if (IPCC){ 
+  basemap <- basemap +
+    geom_map(data=subset(refregions, Acronym %in% proxyDf$ipccReg), 
+             map=fortify(subset(refregions, Acronym %in% proxyDf$ipccReg)), 
+             aes(x=long, y=lat, group=group, map_id=id),
+             alpha=0.75, size=0.1, color='black' , fill=NA,linetype = "dashed") 
+}
+
+```
+
+
+####Plot Grid
+```{r message=FALSE, warning=FALSE}
+page1<- c('WCA','ECA','TIB','EAS','NCA','SAS','SCA','SEA',
+          'NWS','SAH','SAM','NEAF','NES','SEAF','WSAF','ESAF')
+page2<- c('NEN','GIC','NWN','WNA','CNA','ENA','NEU','WSB',
+          'WCE','ESB','MED','RFE','SAU','NZ','SSA','EAN')
+for (sample in c(1,2)){
+  if (sample == 1){
+    regNames <- page1
+    position <- c(letters[1:length(page1)])
+  } else{
+    regNames <- page2
+    position <- c(letters[(length(page1)+1):26],paste0('a',letters[1:(length(page1)+length(page2)-26)]))
+  }
+  #
+  regPlts <- vector(mode='list')
+  for (reg in regNames){
+    #Load Data for Region
+    regTso   <- regionData[[reg]]$LiPD
+    regionDf <- regionData[[reg]]$SummaryDF
+    #Ensemble Composite Values
+    regEnsNA <- regionData[[reg]]$compEnsemble
+    #zscore: regEnsNA <- as.numeric(apply(regEnsNA,2,mean,na.rm=TRUE))) / as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
+    #Create matrix for portion of timeseries with >50% data coverage
+    regEns  <- matrix(NA,nrow(regEnsNA),ncol(regEnsNA))
+    regEns[regionData[[reg]]$Limits50,] <- as.matrix(regEnsNA[regionData[[reg]]$Limits50 ,])
+    #Set up plot
+    plotlim <- min(seq(2,8,2)[which(seq(2,8,1) > quantile(abs(regEns),0.97,na.rm=TRUE))][1],9,na.rm=TRUE)
+    regPlt <- ggdraw(ggplot()+
+                       theme_void()+
+                       theme(plot.background= element_rect(colour='White',fill='White')))
+    ###Plot timeseries for region
+    compBands <- vector(mode = 'list')
+    compBands$na <-  plotTimeseriesEnsRibbons(X=binvec, Y=as.matrix(regEnsNA), alp=alph,line.width=0.1,
+                                              color.low='grey95',
+                                              color.high='grey80',
+                                              color.line='grey40')
+    compBands$ts <- plotTimeseriesEnsRibbons(X=binvec, Y=regEns, alp=alph-0.2,line.width=0.1,
+                                             color.low=Csettings[1],
+                                             color.high=Csettings[2],
+                                             color.line=Csettings[3])
+    #Adjust figure settings
+    for (plt in names(compBands)){
+      compBands[[plt]] <- compBands[[plt]] + 
+        geom_hline(yintercept=0,size=0.2,color='black') +
+        scale_x_reverse(limits=c(12000,0), expand=c(0,0), n.breaks=7)+ 
+        scale_y_continuous(limits=c(-1000,1000),breaks=c(plotlim*-1,plotlim*-0.5,0,plotlim*0.5,plotlim),labels=c(plotlim*-1,'',0,'',plotlim),position="right", expand=c(0,0))+
+        coord_cartesian(xlim=c(12000,0), ylim=c(plotlim*-1,plotlim)) +
+        ggtitle(paste('(',position[which(regNames==reg)],') ',regionData[[reg]]$name,' (',reg,')',sep='')) + 
+        theme_bw() +
+        theme(panel.background=element_rect(colour='Black',fill=NA),
+              panel.border    =element_rect(colour='Black',fill=NA),
+              plot.background =element_rect(colour='White',fill=NA),
+              axis.ticks      =element_line(color = 'black', size=0.4), 
+              axis.ticks.length.x = unit(-3,"pt"),
+              axis.ticks.length.y = unit(2,"pt"),
+              axis.text.x = element_blank(),
+              axis.text.y =element_text(family='Times New Roman',size=8,color='Black'),
+              plot.title = element_text(hjust = 0,vjust=-0.3,family='Times New Roman',size=8),
+              plot.caption.position = "plot",
+              axis.title      = element_blank(),
+              panel.grid      = element_blank(),
+              plot.margin     = unit(c(0.05, 0.05, 0, 0.05), "in"),
+              text = element_text(family='Times New Roman',size=8),
+              legend.position='none')
+    }
+    compBands$na <- compBands$na +
+      theme(plot.background= element_rect(colour='White',fill='White'),
+            panel.border    =element_rect(colour='Black',fill=NA))
+    #
+    ###Add seasons
+    seasons  <- data.frame(season=c("Annual","Summer","Winter"),n = rep(NA,3))
+    for (szn in seasons$season){seasons$n[which(seasons$season==szn)]<-length(which(regionDf$season==szn))}
+    seasons <- cumsum(seasons$n/sum(seasons$n))
+    seasonsPlt <- ggplot() +
+      geom_rect(aes(xmin=0,xmax=seasons[1],ymin=-1,ymax=1),fill='black') +
+      geom_rect(aes(xmin=seasons[1],xmax=seasons[2],ymin=-1,ymax=1),fill='red') +
+      geom_rect(aes(xmin=seasons[2],xmax=1,ymin=-1,ymax=1),fill='blue') +
+      theme_void()+
+      theme(plot.margin = unit(c(0, 0, 0, 0), "in"), panel.margin = unit(c(0, 0, 0, 0), "in"))
+    #
+    idx      <- which(plotSettings$names %in% sort(unique(regionDf$CategorySpec)))
+    ###RegionMap
+    RegShp   <- regionData[[reg]]$polygon
+    latrange <- range(fortify(RegShp)$lat)
+    lonrange <- range(fortify(RegShp)$long)
+    range <- 1.2*(max(diff(latrange),diff(lonrange))/2)
+    if(diff(latrange)>diff(lonrange)){
+      latrange <- mean(latrange) + c(range*-1,range)*1.2
+      lonrange <- mean(lonrange) + c(range*-1,range)*1.8
+    } else{
+      latrange <- mean(latrange) + c(range*-1,range)*0.8
+      lonrange <- mean(lonrange) + c(range*-1,range)*1.2
+    }
+    if (lonrange[1]< -180){
+      lonrange[2] <- lonrange[2] + (abs(lonrange[1])-180)
+      lonrange[1] <- -180
+    }
+    if (lonrange[2]> 180){
+      lonrange[1] <- lonrange[1] - (abs(lonrange[2])-180)
+      lonrange[2] <- 180
+    }
+    if (latrange[1]< -90){
+      latrange[2] <- latrange[2] + (abs(latrange[1])-90)
+      latrange[1] <- -90
+    }
+    if (latrange[2]> 90){
+      latrange[1] <- latrange[1] - (abs(latrange[2])-90)
+      latrange[2] <- 90
+    }
+    if (reg == 'EAN'){
+      lonrange <- c(-120,150)
+      latrange <- c(-90,90)
+    }
+    regMap   <-  basemap +
+      geom_map(data=RegShp, map=fortify(RegShp),fill=NA, alpha=0.75, size=0.35, color='black',
+               aes(x=long, y=lat, group=group, map_id=id)) +
+      geom_star(data=regionDf,size=1.5,color='Black',alpha=1,starstroke=0.4,
+                aes(x=longitude,y=latitude,starshape=CategorySpec,fill=CategorySpec)) +####lat lons to change when prj
+      coord_fixed(xlim=lonrange,ylim=latrange)+
+      scale_fill_manual(values=plotSettings$color[idx],name= 'Proxy Category') +
+      scale_starshape_manual(values=plotSettings$shape[idx],name= 'Proxy Category') +
+      theme_void() + 
+      theme(panel.border    = element_rect(colour='Black',fill=NA,size=0.75),
+            plot.background = element_rect(colour='White',fill='White'),
+            panel.background = element_rect(colour='Black',fill='White'),
+            plot.margin     = unit(c(0.05, 0, 0,0.05), "in"),
+            legend.position = 'none') 
+    #
+    #Plot Time Availability for region
+    if(length(regTso)<10){labs <- c('0',paste('0',length(regTso),sep=''))
+    } else{labs <- c(0,length(regTso))}
+    pltTime <- ggplot(regionData[[reg]]$pltTime$data,aes(yvec,value))+
+      geom_area(aes(fill=group),color='Black',size=0.2) +
+      scale_fill_manual(values=plotSettings$color[idx],name= 'Proxy Category') +
+      scale_x_reverse(limits=c(12000,0),expand=c(0,0),n.breaks=7,labels=seq(0,12,2))+
+      scale_y_continuous(limits=c(0,max(length(regTso)*1.2),expand=c(0,0)),
+                         labels=labs,breaks=c(0,length(regTso)),expand=c(0,0))+
+      theme_bw()+ 
+      theme(panel.background=element_rect(colour='Black',fill=NA),
+            panel.border= element_rect(colour='Black',color=,fill=NA),
+            panel.grid  = element_blank(),
+            axis.title  = element_blank(),
+            axis.ticks  = element_line(color = 'Black',size=0.4), 
+            axis.text.x = element_blank(),
+            axis.text.y =element_text(family='Times New Roman',size=8,color='Black'),
+            axis.ticks.length.y=unit(2,"pt"),
+            axis.ticks.length.x=unit(3,"pt"),
+            plot.margin = unit(c(0, 0.05, 0.05, 0.05), "in"),
+            text = element_text(family='Times New Roman',size=8),
+            legend.position='none')
+    #
+    regPlts[[reg]] <- ggdraw(ggplot() + theme(plot.background= element_rect(colour='White',fill='White'),
+                                              panel.background = element_rect(colour='White',fill='White')))+
+      draw_plot(compBands$na, x = 0.052, y = 0.3, width = 0.665, height = 0.7) +
+      draw_plot(compBands$ts, x = 0.052, y = 0.3, width = 0.665, height = 0.7) +
+      draw_plot(pltTime,      x = 0, y = 0, width = 0.671, height = 0.3) +
+      draw_plot(seasonsPlt,  x = 0.7,   y = 0, width = 0.29, height = 0.07)+
+      draw_plot(regMap,  x = 0.7,   y = 0.07, width = 0.28, height = 0.9)
+  }
+  #
+  scale <- ggplot() + geom_point(aes(x=0,y=0),size=0,color='white') +
+    scale_x_reverse('Age (ka BP)',limits=c(12,0),expand=c(0,0),n.breaks=7)+
+    scale_y_continuous(limits=c(-4,10), breaks=seq(0,10,10),sec.axis = sec_axis(~ .,breaks=seq(-4,4,4))) +
+    theme_bw()+ 
+    theme(panel.background=element_rect(colour='White',fill='White'),
+          panel.border    =element_rect(colour='White',fill='White'),
+          panel.grid.major=element_line(colour='White'),
+          axis.title.y  =  element_blank(),
+          axis.text.y =element_text(family=figFont,size=8,color='White'),
+          axis.line.x = element_line(color = 'black'),
+          axis.ticks.x  = element_line(color = 'Black',size=0.4), 
+          axis.ticks.y  = element_line(color = 'White',size=0.4), 
+          axis.text = element_text(family=figFont,size=8),
+          axis.title.x = element_text(family=figFont,size=8),
+          axis.ticks.length.y=unit(2,"pt"),
+          axis.ticks.length.x=unit(3,"pt"),
+          plot.margin = unit(c(0, 0.05, 0.05, 0.05), "in"),
+          text = element_text(family=figFont,size=8),
+          legend.position='none')
+  scale <- ggdraw(ggplot() + theme(plot.background= element_rect(colour='White',fill='White'),
+                            panel.background = element_rect(colour='White',fill='White')))+
+    draw_plot(scale, x = 0, y = 0, width = 0.715, height = 1) 
+  #
+  #Save Summary Plot-----
+  plt <- ggplot() + theme(plot.background = element_rect(colour='White',fill='White'),
+                          panel.background = element_rect(colour='White',fill='White'))
+  v <- 1
+  dv <- 2*v/(length(regNames)+1)
+  for (i in 1:length(regNames)){
+    h <- (i%%2-1)/-2
+    if (i%%2 == 1){v <- v-dv}
+    plt <- ggdraw(plt)  + draw_plot(regPlts[[regNames[[i]]]], x = h, y = v, width = 0.5, height = dv)
+  }
+  for (i in 1:2){
+    h <- (i%%2-1)/-2
+    if (i%%2 == 1){v <- v-dv/2}
+    plt <- ggdraw(plt)  + draw_plot(scale, x = h, y = v, width = 0.5, height = dv/2)
+  }
+  if (save) {
+    ggsave(plot=plt, width=figSize[1], height=figSize[2], dpi = 600,
+           filename=file.path(wd,'Figures','RegionComposites',paste0('compositeSummaryGrid_',var,'_',sample,'.png')))
+  }
+}
+plt
+```
+
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+
+#Nudge values for global figure--------------------------------------------------------------------------------
+
+#Americas
+regionData[['GIC']]$xadjust  <-  -0.01
+regionData[['NWN']]$xadjust  <- -0.002
+regionData[['NWN']]$yadjust  <- -0.02
+regionData[['NEN']]$yadjust  <- -0.028
+regionData[['NEN']]$xadjust  <- -0.002
+regionData[['WNA']]$xadjust  <- -0.053
+regionData[['CNA']]$xadjust  <-  0.007
+regionData[['ENA']]$xadjust  <-  0.060
+regionData[['NAS']]$xadjust  <- -0.04
+regionData[['SCA']]$xadjust  <- -0.015
+regionData[['CAR']]$xadjust  <-  0.03
+regionData[['CAR']]$yadjust  <-  0.045
+regionData[['NWS']]$xadjust  <- -0.01
+regionData[['NSA']]$xadjust  <-  0.025
+regionData[['NSA']]$yadjust  <-  0.048
+regionData[['NES']]$yadjust  <-  0.022
+regionData[['SAM']]$yadjust  <- -0.03
+#Eruope/Africa
+regionData[['NEU']]$xadjust  <-  0.0  
+regionData[['NEU']]$yadjust  <-  0.01  
+regionData[['WCE']]$xadjust  <- -0.02  
+regionData[['MED']]$xadjust  <- -0.02   
+regionData[['CAF']]$xadjust  <- -0.054   
+regionData[['NEAF']]$yadjust <-  0.002   
+regionData[['SEAF']]$yadjust <- -0.002   
+regionData[['WSAF']]$xadjust <- -0.032  
+regionData[['ESAF']]$xadjust <-  0.03   
+#Asia/Australasia  
+
+regionData[['WSB']]$xadjust <-  -0.035
+regionData[['WSB']]$yadjust <-  0.015
+regionData[['ESB']]$yadjust <-  0.014  
+regionData[['ESB']]$yadjust <-  0.014  
+regionData[['ESB']]$xadjust <- -0.01   
+regionData[['RFE']]$xadjust <- 0.01
+regionData[['RFE']]$yadjust <- -0.03   
+regionData[['WCA']]$xadjust <- -0.021  
+regionData[['ECA']]$xadjust <- -0.0035  
+regionData[['ECA']]$yadjust <-  0.015   
+regionData[['TIB']]$xadjust <-  0.003   
+regionData[['TIB']]$yadjust <- -0.007   
+regionData[['EAS']]$xadjust <-  0.021   
+regionData[['SAS']]$yadjust <- -0.02  
+regionData[['SAS']]$xadjust <-  0.0  
+regionData[['SEA']]$xadjust <- -0.017  
+regionData[['SAU']]$xadjust <- -0.044
+regionData[['NZ']]$xadjust  <- -0.017
+regionData[['EAN']]$yadjust <- 0.01   
+
+#Ocean  
+regionData[['EPO']]$xadjust <- -0.02   
+regionData[['ARO']]$xadjust <- -0.18  
+regionData[['ARO']]$yadjust <- -0.03  
+regionData[['NAO']]$yadjust <-  0.106
+regionData[['NAO']]$xadjust <-  0.03  
+
+#Set Projections
+PROJ     <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
+PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+#Transform projection
+refregionsPrj <- sp::spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
+countriesPrj  <- sp::spTransform(countries,  CRSobj = PROJ)
+
+basemapPrj <- ggplot() +
+  #Set Border around plot - probably not the best way to do this
+  borders(aggregate(refregionsPrj, FUN=length), fill=NA, colour='black', size=2) +
+  geom_map(data=refregionsPrj, map=fortify(refregionsPrj),
+           aes(x=long, y=lat, group=group, map_id=id), fill="white", colour="white", size=1)+
+  #Add Country data (basemap)
+  geom_map(data=countriesPrj, map=fortify(countriesPrj),
+           aes(x=long, y=lat, group=group, map_id=id), fill = "grey80",color="grey90",size=0.2) +
+  coord_fixed(1) + 
+  theme_void() 
+
+```
+
+####Plot Map
+
+```{r message=FALSE, warning=FALSE}
+#Load Data----
+
+if (var == 'T'){geo <-'all'
+} else{geo<-'land'}
+Data<-vector(mode='list')
+Data$proxy <- read.csv(file.path(wd,'Data','RegionComposites',var,'MedianTS_byRegion.csv'))
+if (!is.na(modelVar)){
+  for (model in c('trace','hadcm','cmip6')){
+    Data[[model]]<- read.csv(file.path(wd,'Data','Model','RegionalTS',
+                                       paste('regional_',modelVar,'_',model,'_',geo,'.csv',sep='')))
+  }
+}
+
+#Names----
+if (var == "HC"){
+  regions <- c(page1,page2)
+  postion <- c(letters,"aa","ab","ac","ad","ae","af")
+}
+regNames <-names(Data$proxy)[-1]
+
+#Plot---- 
+xSize <- 0.1
+ySize <- 0.07
+map<-ggdraw(basemapPrj)
+for (reg in regNames){ 
+  #Load Data for Region
+  regTso   <- regionData[[reg]]$LiPD
+  regionDf <- regionData[[reg]]$SummaryDF
+  #Ensemble Composite Values
+  regEnsNA <- regionData[[reg]]$compEnsemble
+  #Model Data
+  scaleVal <- 1
+  if (var == 'HC'){scaleVal <- 30}
+  if (!is.na(modelVar)){
+    hadcmVals <- (Data[['hadcm']][[reg]]-mean(Data[['hadcm']][1:10,reg],na.rm=TRUE))[1:121]*scaleVal
+    traceVals <- (Data[['trace']][[reg]]-mean(Data[['trace']][1:10,reg],na.rm=TRUE))[1:121]*scaleVal
+    cmip6Vals <- Data[['cmip6']][[reg]]*scaleVal
+  }
+  #Standardize mean at 0
+  regEnsNA <- as.matrix(regEnsNA - as.numeric(apply(regEnsNA[which(between(binvec,0,1000)),],2,mean,na.rm=TRUE)))
+  #Standardize variance to match model
+  if (var == 'HC'){
+    regEnsNA <- regEnsNA / as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
+    if (!is.na(modelVar)){regEnsNA <- regEnsNA * mean(sd(traceVals,na.rm=TRUE),sd(hadcmVals,na.rm=TRUE))}
+  }
+  #
+  regEns  <- matrix(NA,nrow(regEnsNA),ncol(regEnsNA))
+  regEns[regionData[[reg]]$Limits50,] <- as.matrix(regEnsNA[regionData[[reg]]$Limits50 ,])
+  #Set up plot
+  regPlt <- ggdraw(ggplot()+theme_void()+theme(plot.background= element_rect(colour='White',fill='White')))
+  ###Plot timeseries for region
+  compBands <- vector(mode = 'list')
+  compBands$na <-  plotTimeseriesEnsRibbons(X=binvec, Y=as.matrix(regEnsNA), alp=alph,line.width=0.1,
+                                              color.low='grey95',
+                                              color.high='grey80',
+                                              color.line='grey40')
+  compBands$ts <- plotTimeseriesEnsRibbons(X=binvec, Y=regEns, alp=alph-0.2,line.width=0.1,
+                                             color.low=Csettings[1],
+                                             color.high=Csettings[2],
+                                             color.line=Csettings[3])
+  #
+  if (!is.na(modelVar)){
+    plotlimit_set <- range(c(traceVals,hadcmVals,cmip6Vals,
+                             apply(regEns,1,mean,na.rm=TRUE)+apply(regEns,1,sd,na.rm=TRUE),
+                             apply(regEns,1,mean,na.rm=TRUE)-apply(regEns,1,sd,na.rm=TRUE)
+                             ),na.rm=TRUE) 
+    plotlimit_set <- plotlimit_set + diff(range(plotlimit_set))*c(-0.1,0.1)
+    #Plot Model Data
+    compBands$ts <- compBands$ts + geom_hline(yintercept=0,size=0.05,color='black') +
+      geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=hadcmVals),color=Chadcm,size=0.3,alpha=alph)+
+      geom_line(aes(x=binvec[which(between(binvec,0,12000))],y=traceVals),color=Ctrace,size=0.3,alpha=alph)+
+      geom_boxplot(aes(x=6000,y=cmip6Vals),width=1000,size=0.1,alpha=alph,
+                   outlier.size=0.5,outlier.stroke = 0.15,outlier.alpha=1,outlier.colour='Black')
+  } else{
+    plotlimit_set <- quantile(regEns,c(0.001,0.999),na.rm=TRUE)
+    plotlimit_set<- plotlimit_set+diff(range(plotlimit_set))*0.1*c(-1,1)
+  }
+  for (plt in names(compBands)){
+    compBands[[plt]] <- compBands[[plt]] + 
+      scale_x_reverse(limits=c(12100,-100), expand=c(0,0), n.breaks=7,sec.axis = dup_axis())+ 
+      scale_y_continuous(limits=c(-1000,1000),breaks=seq(-100,100,2),sec.axis = dup_axis())+
+      coord_cartesian(xlim=c(12000,0), ylim=c(plotlimit_set),expand	=FALSE) +
+      theme_void() +
+      theme(panel.border    = element_rect(color='Black',fill=NA,size=0.5),
+            axis.ticks      = element_line(color='Black',size=0.1), 
+            axis.ticks.length = unit(-1,"pt"),
+            plot.margin       = unit(c(0, 0, 0, 0), "in"), legend.position='none')
+    if (plt == "ts" & var == "HC"){
+      if (abs(plotlimit_set)[1] < abs(plotlimit_set)[2]){
+        yval=plotlimit_set[2]-diff(range(plotlimit_set))/5
+      } else{
+        yval=plotlimit_set[1]+diff(range(plotlimit_set))/5
+      }
+      compBands$ts <- compBands$ts +  
+        geom_label(aes(x = 1100, y = yval,
+                       label = paste("(",postion[which(regions==reg)],")",sep="")), 
+                   fill = "white",family=figFont,size = 1.5,label.padding = unit(0.05, "lines"),
+                   alpha = 0.75,label.size=NA)
+    }
+    regPlt <- regPlt + draw_plot(compBands[[plt]], x = 0, y = 0, width = 1, height = 1)
+  }
+  plotLat <- refregionsPrj[refregions@data$Acronym == reg,]@polygons[[1]]@labpt[[1]]
+  plotLon <- refregionsPrj[refregions@data$Acronym == reg,]@polygons[[1]]@labpt[[2]]
+  if (is.null(regionData[[reg]]$xadjust)){regionData[[reg]]$xadjust <- 0}
+  if (is.null(regionData[[reg]]$yadjust)){regionData[[reg]]$yadjust <- 0}
+  map <- map + draw_plot(regPlt,width = xSize, height = ySize,
+                         x = regionData[[reg]]$xadjust+(0.5-xSize/2)+0.5*plotLat/(9050504*2), 
+                         y = regionData[[reg]]$yadjust+(0.5-ySize/2)+0.92*plotLon/(8625155*2), 
+                         )
+}
+
+
+
+scale <- ggplot() +
+  scale_x_reverse('Age (ka BP)',limits=c(12,0),expand=c(0,0),breaks=seq(0,12,3),labels=c('0','','6','','12'))+
+  #geom_segment(aes(x=11.5,xend=6,y=1,yend=1),size=2,color='Black') +
+  #geom_segment(aes(x=11.5,xend=6,y=2,yend=2),size=2,color='Black') +
+  #geom_segment(aes(x=11.5,xend=6,y=3,yend=3),size=2,color='Black') +
+  geom_segment(aes(x=11.7,xend=8.5,y=1,yend=1),size=1,color=Chadcm,alpha=alph) +
+  geom_segment(aes(x=11.7,xend=8.5,y=2,yend=2),size=1,color=Ctrace,alpha=alph) +
+  geom_segment(aes(x=11.7,xend=8.5,y=3,yend=3),size=1,color=Csettings[2],alpha=alph) +
+  annotate("text",label=paste("HadCM (",toupper(substr(modelVar,5,7)),")",sep=""), x = 4, y = 1,family=figFont,color='Black',size = 1.7)+
+  annotate("text",label=paste("TraCE (",toupper(substr(modelVar,5,7)),")",sep=""), x = 4, y = 2,family=figFont,color='Black',size = 1.7) + 
+  annotate("text",label="Proxy", x = 4, y = 3,family=figFont,color='Black',size = 1.7) + 
+  scale_y_continuous(limits=c(0,3.7),expand=c(0,0))+
+  theme_void()+ 
+  theme(panel.background=element_rect(colour='White',fill='White'),
+        plot.background    =element_rect(colour='white',fill='White'),
+        axis.line.x = element_line(color = 'black',size=0.3),
+        axis.ticks.x  = element_line(color = 'Black',size=0.3), 
+        axis.text.x = element_text(family=figFont,size=6,margin = margin(t = 1, r = 0, b = 2, l = 0)),
+        axis.title.x = element_text(family=figFont,size=6, margin(t = 1, r = 0, b = 2, l = 0)),
+        axis.ticks.length.x=unit(3,"pt"),
+        plot.margin = unit(c(0, 0, 0.1,0), "in"))
+        #text = element_text(family=figFont,size=6))
+
+
+
+if (var == 'HC'){
+  map2 <- map +
+    theme(plot.margin = unit(c(0,rep(0,4)), "in"))#+
+    #annotate("text",label=paste("(a) Hydroclimate (",toupper(substr(modelVar,1,3)),")",sep=""), x = 0.11, y = 0.93,family=figFont,color='Black',size = 2)
+} else{
+  map2 <- map +annotate("text",label="(b) Temperature", x = 0.11, y = 0.93,family=figFont,color='Black',size = 2.2)
+  
+}
+map3 <- map2 + draw_plot(scale,
+                        x = 0.14, 
+                        y = 0.22, 
+                        width = xSize, height = ySize*3)
+if (save) {
+  ggsave(plot=map3, width = 6.5, height = 3.38, dpi = 400,
+         filename = paste0(file.path(wd,'Figures','RegionComposites','global_'),
+                           modelVar,'_compBandPlt.png'))
+}
+map3
+```
+

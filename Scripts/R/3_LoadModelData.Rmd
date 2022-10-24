@@ -1,4 +1,3 @@
-rmarkdown::github_document
 
 ---
 goal: Convert netcdf data from model simulations into common time, units, and variable names 
