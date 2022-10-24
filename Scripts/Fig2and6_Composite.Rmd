@@ -668,6 +668,6 @@ if (save) {
          filename = paste0(file.path(wd,'Figures','RegionComposites','global_'),
                            modelVar,'_compBandPlt.png'))
 }
-basemapPrj
+#map
 ```
 
