@@ -1,5 +1,5 @@
 ---
-title: "Figure 1 & Table 1 - Holocene Hydroclimate Proxy Summary"
+title: "Figures 2 (grid) & Figure 6 (map) - Holocene Hydroclimate Proxy Composites"
 author: "Chris Hancock"
 output: html_document
 ---
@@ -668,6 +668,6 @@ if (save) {
          filename = paste0(file.path(wd,'Figures','RegionComposites','global_'),
                            modelVar,'_compBandPlt.png'))
 }
-map
+basemapPrj
 ```
 
