@@ -1,9 +1,7 @@
 ---
 title: "Figures 2 - Holocene Hydroclimate Proxy Composites (grid)"
 author: "Chris Hancock"
-output:
-  #pdf_document: default
-  html_document: default
+output: html_document
 ---
 
 #### Load Packages
