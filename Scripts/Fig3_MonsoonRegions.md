@@ -1,13 +1,16 @@
----
-title: "Fig3_Monsoon"
-author: "Chris Hancock"
-output: github_document
----
+Fig3_Monsoon
+================
+Chris Hancock
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+``` r
 library(cowplot)
 library(egg)
 library(geoChronR)
+```
+
+    ## Welcome to geoChronR version 1.1.9!
+
+``` r
 library(ggrepel)
 library(ggplot2)
 library(ggstar)
@@ -24,15 +27,11 @@ library(tidyverse)
 print("Packages Loaded")
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-#Set Working Directory
-wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
-#knitr::opts_knit$set(root.dir = wd)
-```
+    ## [1] "Packages Loaded"
 
 #### Load Insolation Data
-```{r}
 
+``` r
 insolationRaw    <- as.data.frame(read.table(file.path(wd,'Data','insolation_bein1.dat.txt')))
 insolationRaw$V1 <- insolationRaw$V1*-1000 #covert from ka to yrs BP
 
@@ -54,7 +53,8 @@ for (lat in c(30,-30)){
 ```
 
 #### Load Proxy Data
-```{r}
+
+``` r
 var <- 'HC'
 RegionTS <- read.csv(file.path(wd,'Data','RegionComposites',var,'MedianTS_byRegion.csv'))
 for (i in 2:ncol(RegionTS)){
@@ -66,8 +66,10 @@ SHmonsoon <- RegionTS[,c('time','SAM','ESAF')]
 load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
 ```
 
+    ## Loading objects:
+    ##   IPCC_WGI_reference_regions_v4
 
-```{r}
+``` r
 scale <- 0.03
 shift <- 0
 s<-0.75
@@ -77,14 +79,17 @@ specific <- TRUE
 
 if (save){ print(paste0("save ",var," figs"))
 } else{    print(paste0("plot ",var," figs"))}
+```
 
+    ## [1] "plot HC figs"
+
+``` r
 figFont <- 'Times New Roman'
 figText <- 10
 figSize <- c(6.5,3)
 ```
 
-```{r}
-
+``` r
 ensNH <- read.csv(file.path(wd,'Data','RegionComposites',var,paste0(names(NHmonsoon)[2],'.csv')))
 for (reg in c(names(NHmonsoon)[-c(1:2)])){
    ensNH <- cbind(ensNH,read.csv(file.path(wd,'Data','RegionComposites',var,paste0(reg,'.csv')))) 
@@ -131,7 +136,7 @@ plt <-ggplot()+
                                             fill="30\u00B0N JJA"),alpha=1,color="Black",linetype=1,size=s+0.2)+
    scale_x_reverse(limits = c(30000,0),breaks = seq(0, 12000, 2000),labels=seq(0, 12, 2),name="Age (ka BP)") +
    scale_y_continuous(limits=c(-100,100),name="Proxy Composite Anomaly",sec.axis = sec_axis((~./scale),name=bquote('Insolation Anomaly (W m'^-2*")"))) + 
-   coord_cartesian(xlim=c(12000,0), ylim=c(-4.2,4.2),expand	=FALSE)+
+   coord_cartesian(xlim=c(12000,0), ylim=c(-4.2,4.2),expand =FALSE)+
    #
    scale_linetype_manual(values=c(1,4,1,1,1,1,4,1,1,4),name='Hemisphere') +
    scale_fill_manual(values=c("White","White",rep(NA,8)),name='Insolation') +
@@ -156,9 +161,9 @@ if (save){
 plt
 ```
 
+    ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
+    ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
 
+    ## Warning: Removed 5 row(s) containing missing values (geom_path).
 
-
-
-
-
+![](Fig3_MonsoonRegions_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
