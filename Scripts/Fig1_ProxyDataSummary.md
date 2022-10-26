@@ -1,15 +1,18 @@
----
-title: "Figure 1 & Table 1 - Holocene Hydroclimate Proxy Summary"
-author: "Chris Hancock"
-output: github_document
----
+Figure 1 & Table 1 - Holocene Hydroclimate Proxy Summary
+================
+Chris Hancock
 
 #### Load Packages
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+``` r
 library(cowplot)
 library(egg)
 library(geoChronR)
+```
+
+    ## Welcome to geoChronR version 1.1.9!
+
+``` r
 library(ggrepel)
 library(ggplot2)
 library(ggstar)
@@ -25,144 +28,48 @@ library(tidyverse)
 print("Packages Loaded")
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-#Set Working Directory
-
-wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
-#knitr::opts_knit$set(root.dir = wd)
-```
+    ## [1] "Packages Loaded"
 
 #### Load Data
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+``` r
 var     <- 'HC'
 lipdTSO <- readRDS(file.path(wd,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
 proxyDf <- read.csv(file=file.path(wd,'Data','Proxy',paste0('proxyMetaData_',var,'.csv')))
 print("Proxy data loaded ")
+```
 
+    ## [1] "Proxy data loaded "
+
+``` r
 #Load IPCC region data
 load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-#Set Projections
-PROJ     <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
-PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-#Transform projection
-refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
-#Countries for basemap
-countries  <- rworldmap::getMap("less islands")
-countries  <- sp::spTransform(countries,  CRSobj = PROJ)
-#Transform proxy projections
-pointData  <- data.frame(longitude=c(proxyDf$longitude),latitude=c(proxyDf$latitude))
-pointData  <- SpatialPointsDataFrame(coords=pointData, data=pointData, 
-                                     proj4string=CRS(PROJorig))
-pointData  <- spTransform(pointData,CRSobj = PROJ)
-proxyDf$lonsPrj <- pointData@coords[,1]
-proxyDf$latsPrj <- pointData@coords[,2]
-```
+    ## Loading objects:
+    ##   IPCC_WGI_reference_regions_v4
 
 #### Figure Settings
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+``` r
 save     <- TRUE
 specific <- TRUE 
 
 if (save){ print(paste0("save ",var," figs"))
 } else{    print(paste0("plot ",var," figs"))}
+```
 
+    ## [1] "save HC figs"
+
+``` r
 figFont <- 'Times New Roman'
 figText <- 10
 figSize <- c(6.5,3)
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-#Colors and Shapes
-
-plotSettings <- vector(mode='list')
-Csettings <- c("#92C5DE","#4393C3",'#2166AC')
-if (var == 'HC'){
-  if(specific){
-    plotSettings$names <- sort(unique(proxyDf$CategorySpec))
-    #https://carto.com/carto-colors/
-    plotSettings$color <- as.character(plotSettings$names)
-    plotSettings$color[which(plotSettings$names=="Glacier Ice (Accumulation)")] <- "#5F4690" #"powder blue"
-    plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "#38A6A5" #"corn flower blue"
-    plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "#1D6996" #"dark blue"
-    plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "#94346E" # "dark orchid" #δ
-    plotSettings$color[which(plotSettings$names=="Other (calibrated)")]      <- "grey40" #"grey40"
-    plotSettings$color[which(plotSettings$names=="Other (not calibrated)")]  <- "grey" #"grey"
-    plotSettings$color[which(plotSettings$names=="Pollen (calibrated)")]     <- "#0F8554" #"forest green"
-    plotSettings$color[which(plotSettings$names=="Pollen (not calibrated)")] <- "#73AF48" #"" #"yellowgreen"
-    plotSettings$color[which(plotSettings$names=="Speleothem (other)")]      <- "#EDAD08" #"darkorange"
-    plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "#E17C05" #"lightcoral"
-    plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "#CC503E" #"firebrick"
-    #
-    plotSettings$shape <- as.character(plotSettings$names) 
-    plotSettings$shape[which(plotSettings$names=="Glacier Ice (Accumulation)")] <- 12
-    plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
-    plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
-    plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
-    plotSettings$shape[which(plotSettings$names=="Other (calibrated)")]      <- 6
-    plotSettings$shape[which(plotSettings$names=="Other (not calibrated)")]  <- 13
-    plotSettings$shape[which(plotSettings$names=="Pollen (calibrated)")]     <- 14
-    plotSettings$shape[which(plotSettings$names=="Pollen (not calibrated)")] <- 1
-    plotSettings$shape[which(plotSettings$names=="Speleothem (other)")]      <- 17
-    plotSettings$shape[which(plotSettings$names=="Speleothem (δ13C)")]       <- 23
-    plotSettings$shape[which(plotSettings$names=="Speleothem (δ18O)")]       <- 11  
-  } else{
-    plotSettings$names <- sort(unique(proxyDf$Category))
-    #
-    plotSettings$color <- as.character(plotSettings$names)
-    plotSettings$color[which(plotSettings$names=="Glacier Ice")]             <- "powder blue"
-    plotSettings$color[which(plotSettings$names=="Shoreline")]               <- "corn flower blue"
-    plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "dark blue"
-    plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "dark orchid"
-    plotSettings$color[which(plotSettings$names=="Other")]                   <- "grey"
-    plotSettings$color[which(plotSettings$names=="Pollen")]                  <- "forest green"
-    plotSettings$color[which(plotSettings$names=="Speleothem")]              <- "firebrick"
-    #
-    plotSettings$shape <- as.character(plotSettings$names) 
-    plotSettings$shape[which(plotSettings$names=="Glacier Ice")]             <- 12
-    plotSettings$shape[which(plotSettings$names=="Shoreline")]               <- 21
-    plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
-    plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
-    plotSettings$shape[which(plotSettings$names=="Other")]                   <- 13
-    plotSettings$shape[which(plotSettings$names=="Pollen")]                  <- 14
-    plotSettings$shape[which(plotSettings$names=="Speleothem")]              <- 11
-  }
-} else if (var == 'T'){
-  plotSettings$names <- sort(unique(proxyDf$Category))
-  #
-  plotSettings$color <- as.character(plotSettings$names)
-  plotSettings$color[which(plotSettings$names=="alkenone")]          <- "tomato"
-  plotSettings$color[which(plotSettings$names=="biophysical")]       <- "skyblue4"
-  plotSettings$color[which(plotSettings$names=="chironomid")]        <- "firebrick"
-  plotSettings$color[which(plotSettings$names=="isotope")]           <- "orange"
-  plotSettings$color[which(plotSettings$names=="Mg/Ca")]             <- "midnight blue"
-  plotSettings$color[which(plotSettings$names=="other biomarker")]   <- "medium blue"
-  plotSettings$color[which(plotSettings$names=="other ice")]         <- "powder blue"
-  plotSettings$color[which(plotSettings$names=="other microfossil")] <- "plum4"
-  plotSettings$color[which(plotSettings$names=="pollen")]            <- "forest green"
-  #
-  plotSettings$color[which(plotSettings$names=="alkenone")]          <- 22 
-  plotSettings$color[which(plotSettings$names=="biophysical")]       <- 1 
-  plotSettings$color[which(plotSettings$names=="chironomid")]        <- 30 
-  plotSettings$color[which(plotSettings$names=="isotope")]           <- 15 
-  plotSettings$color[which(plotSettings$names=="Mg/Ca")]             <- 25 
-  plotSettings$color[which(plotSettings$names=="other biomarker")]   <- 13 
-  plotSettings$color[which(plotSettings$names=="other ice")]         <- 12
-  plotSettings$color[which(plotSettings$names=="other microfossil")] <- 5 
-  plotSettings$color[which(plotSettings$names=="pollen")]            <- 14 
-}
-plotSettings$shape <- as.numeric(plotSettings$shape)
-
-```
-
 #### Summary Table (Table 1)
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+``` r
 #Summarize metadata by category
 pivot <- proxyDf %>%
   group_by(CategorySpec) %>%
@@ -204,43 +111,26 @@ for (cat in summary$CategorySpec){
 pivot
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-#### BaseMap
-#Create Plot
-basePlot <- ggplot(proxyDf)+
-  scale_y_continuous(name="Count of Records", oob=scales::squish, limits=c(0,150), expand=c(0,0))+
-  theme_bw()+
-  theme(text = element_text(family=figFont,size=figText),
-        plot.background = element_rect(fill = 'White',color='Black'),
-        plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "in"),
-        legend.key.height = unit(0.12, "in"),
-        legend.key.width = unit(0.1, "in"),
-        legend.title = element_blank(),
-        legend.position = 'none')
-#BaseMap
-IPCC <- TRUE
-basemap <- ggplot() +
-  borders(aggregate(refregions, FUN=length), fill=NA, color='black', size=2) +
-  geom_map(data=refregions, map=fortify(refregions), 
-           aes(x=long, y=lat, group=group, map_id=id), fill="white", color="white", size=1)+
-  geom_map(data=countries,  map=fortify(countries),  
-           aes(x=long, y=lat, group=group, map_id=id), fill ="grey80",color="grey90",size=0.2) +
-  coord_fixed(1) + 
-  theme_void() 
-if (IPCC){ 
-  basemap <- basemap +
-    geom_map(data=subset(refregions, Acronym %in% proxyDf$ipccReg), 
-             map=fortify(subset(refregions, Acronym %in% proxyDf$ipccReg)), 
-             aes(x=long, y=lat, group=group, map_id=id),
-             alpha=0.75, size=0.3, color='black' , fill=NA,linetype = "dashed") 
-}
-
-```
+    ## # A tibble: 12 × 7
+    ##    CategorySpec               count ageRange ageRes ageCtrlN ageCtrlMax pctChr…¹
+    ##    <chr>                      <int>    <dbl>  <dbl>    <dbl>      <dbl> <chr>   
+    ##  1 Glacier Ice (Accumulation)     8   12000    19.4     NA          NA  <NA>    
+    ##  2 Lake Sediment (δ18O)          43    9285    31        9        2070  79      
+    ##  3 Leaf Wax (δD)                 31   11013   150       11        2345  74      
+    ##  4 Pollen (calibrated)          350   10862   150        7        2500  93      
+    ##  5 Pollen (not calibrated)       19   11840    86.5     12.5      2395  74      
+    ##  6 Shoreline (Lake Level)       139   11506. 1174.      10        2145  <NA>    
+    ##  7 Speleothem (δ18O)             74    8895.   12.2     15        1476. 89      
+    ##  8 Speleothem (δ13C)             28    7684.   25.9     10        1630. 100     
+    ##  9 Speleothem (other)             9    8163.   34       14        1184. 67      
+    ## 10 Other (calibrated)            23   10000   106.      18        1326  4       
+    ## 11 Other (not calibrated)        95    9533    37.5      9        2184  62      
+    ## 12 All                          819   10825   109.       9        2350  68+17   
+    ## # … with abbreviated variable name ¹​pctChronData
 
 #### Plot sample resolution histogram (only Holocene ages)
 
-```{r}
-
+``` r
 #Summarize dataframe by source
 pieData    <- proxyDf %>% 
   group_by(source) %>% 
@@ -300,12 +190,19 @@ if (save) {
        filename = file.path(wd,"Figures","Proxy","PlotProxySource.png"))
 }
 print("Summary of data source for proxy data")
+```
+
+    ## [1] "Summary of data source for proxy data"
+
+``` r
 pie
 ```
 
+![](Fig1_ProxyDataSummary_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
 #### Plot sample resolution histogram (only Holocene ages)
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+``` r
 plotData <- proxyDf[,'ageRes']
 binsize <- 30
 
@@ -326,15 +223,31 @@ if (save) {
          filename = file.path(wd,"Figures","Proxy","PlotProxyAgeRes.png"))
 }
 print(paste("Mean:",as.character(round(mean(plotData)))))
-print(paste("Median:",as.character(round(median(plotData)))))
-print(paste("Range:",as.character(round(range(plotData)))))
+```
 
+    ## [1] "Mean: 230"
+
+``` r
+print(paste("Median:",as.character(round(median(plotData)))))
+```
+
+    ## [1] "Median: 109"
+
+``` r
+print(paste("Range:",as.character(round(range(plotData)))))
+```
+
+    ## [1] "Range: 0"    "Range: 1174"
+
+``` r
 plotRes
 ```
 
+![](Fig1_ProxyDataSummary_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
 #### Plot record length histogram (only Holocene ages)
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+``` r
 plotData <- proxyDf[,'ageRange']
 binsize <- 500
 
@@ -354,15 +267,31 @@ if (save) {
          filename = file.path(wd,"Figures","Proxy","PlotProxyAgeRange.png"))
 }
 print(paste("Mean:",as.character(round(mean(plotData)))))
-print(paste("Median:",as.character(round(median(plotData)))))
-print(paste("Range:",as.character(round(range(plotData)))))
+```
 
+    ## [1] "Mean: 9614"
+
+``` r
+print(paste("Median:",as.character(round(median(plotData)))))
+```
+
+    ## [1] "Median: 10825"
+
+``` r
+print(paste("Range:",as.character(round(range(plotData)))))
+```
+
+    ## [1] "Range: 24"    "Range: 12000"
+
+``` r
 plotRange
 ```
 
+![](Fig1_ProxyDataSummary_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
 #### Plot age control histogram (only Holocene ages)
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+``` r
 plotData <- proxyDf[,'ageCtrlMax']
 binsize <- 500
 
@@ -382,15 +311,31 @@ if (save) {
          filename = file.path(wd,"Figures","Proxy","PlotProxyAgeControl.png"))
 }
 print(paste("Mean:",as.character(round(mean(plotData)))))
-print(paste("Median:",as.character(round(median(plotData)))))
-print(paste("Range:",as.character(round(range(plotData)))))
+```
 
+    ## [1] "Mean: NA"
+
+``` r
+print(paste("Median:",as.character(round(median(plotData)))))
+```
+
+    ## [1] "Median: NA"
+
+``` r
+print(paste("Range:",as.character(round(range(plotData)))))
+```
+
+    ## [1] "Range: NA" "Range: NA"
+
+``` r
 plotChron
 ```
 
+![](Fig1_ProxyDataSummary_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
 #### Plot time density
 
-```{r  echo=TRUE, message=FALSE, warning=FALSE}
+``` r
 plotTimeData <- plotTimeAvailabilityTs(lipdTSO,age.range = c(0,12000),step=100,group='CategorySpecific')
 plotTime <- ggplot(plotTimeData$data,aes(yvec,value))+
   geom_area(alpha=0.9,aes(fill=group),color='Black',size=0.2)+
@@ -413,9 +358,11 @@ if (save) {
 plotTime
 ```
 
+![](Fig1_ProxyDataSummary_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
 #### Map proxy data
 
-```{r  message=TRUE, warning=FALSE}
+``` r
 proxyMapSites <- basemap+
   #Proxy Data
   geom_star(data= as.data.frame(proxyDf),aes(x=lonsPrj , y=latsPrj,
@@ -440,13 +387,20 @@ if (save) {
 proxyMapSites
 ```
 
+![](Fig1_ProxyDataSummary_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
 #### Combine proxy map with time density plot
 
-```{r message=FALSE, warning=FALSE}
+``` r
 fig1 <- ggarrange(proxyMapSites+ theme(legend.position = c(0.1,0.3)), 
                   plotTime+      theme(legend.position = 'none',
                                        plot.margin = unit(c(0, 0.5, 0.1, 0.4), "in")),
                  ncol=1, widths=c(6.5), heights=c(3.25,1.75), padding=0)
+```
+
+![](Fig1_ProxyDataSummary_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+``` r
 if (save) {
   ggsave(plot=fig1, width = 6.5, height = 5, dpi = 600,
        filename = file.path(wd,"Figures","Proxy",paste('Figure1_',var,'_ProxyMapwithTime.png',sep='')))
@@ -455,7 +409,7 @@ if (save) {
 
 #### Plot number of records in each region.
 
-```{r  message=FALSE, warning=FALSE}
+``` r
 dataTable <- fortify(subset(refregions, Acronym %in% proxyDf$ipccReg))
 dataTable$Count     <- NA
 dataTable$CountName <- NA
@@ -513,3 +467,5 @@ if (save) {
 }
 proxyMapRegions
 ```
+
+![](Fig1_ProxyDataSummary_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
