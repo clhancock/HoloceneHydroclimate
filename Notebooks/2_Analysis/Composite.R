@@ -7,7 +7,7 @@
 #Load Packages--------------------------------------------------------------------------------
 
 library(compositeR)
-?library(doParallel)
+library(doParallel)
 library(dplyr)
 library(foreach)
 library(geoChronR)
@@ -62,6 +62,18 @@ regNames <- c(as.character(regNames$name),'EAN','SSA') #Add 2 SH regions with fe
 #Set up data to add once regional composite is calculated
 compositeEnsemble <- vector(mode='list')
 medianCompositeTS <- data_frame(time=binYears[1:which(binYears==12000)])
+
+reg<-'ECA'
+lipdReg  <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
+ts<-lipdReg[[5]]
+age<-ts$age
+value<-ts$paleoData_values
+newAge = NA
+spreadBy = abs(mean(diff(binvec)))/10
+maxGap = NA
+maxPct = 0.75
+minAge = -69 
+
 
 #Loop to composite (by region)
 for (reg in c(regNames)) {

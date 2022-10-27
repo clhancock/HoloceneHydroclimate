@@ -7,14 +7,12 @@ library(htmlTable)
 library(htmltools)
 library(htmlwidgets)
 library(webshot)
-dir     <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
-var <- 'HC'
+wd   <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
+var  <- 'HC'
 
 #Load Data
-lipdData <- readRDS(file=file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))
+lipdData <- readRDS(file=file.path(wd,'Data','Proxy','lipdData.rds'))
 lipdTSO <- lipdData[[var]]
-#regList <- readShapePoly(file.path(dir,'Data','IPCC_refRegions','IPCC-WGI-reference-regions-v4.shp'))
-
 
 #Create table with metadata from LiPD files
 tbl <- tibble(Region         = pullTsVariable(lipdTSO,'geo_ipccRegion'),
@@ -52,7 +50,12 @@ for (i in 1:nrow(tbl)){
  tbl[i,] <- row
 }
 
-
+#Load IPCC region data
+load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
+PROJ     <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
+PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+#Transform projection
+refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
 
 #Order data by region and dataset and replace region name from Acronym to full name
 tbl2 <- tbl[1,]
@@ -68,15 +71,6 @@ for (reg in as.character(refregions$Acronym)){
 }
 
 
-#Id Divides between regions
-#idx <- c(lengthtbl2$Region))
-#idx2 <- c()
-#for (i in 1:(length(tbl2$Region)-1)){
- #if(tbl2$Region[i] != tbl2$Region[i+1]){
-  #idx <- c(idx,i)
-  #idx2 <- c(idx2,i+1)
- #}
-#}
 filelist <- as.vector(list.files(path = file.path(dir,"Figures","Proxy","Dashboard")))
 
 #Create Table
@@ -124,7 +118,7 @@ outTbl <- reactable(tbl2,
   Lat             = colDef(width=40, align = 'right'),
   Lon             = colDef(width=50, align = 'right')
   ))  %>%
-  add_title("Appendix 1. List of proxy records included in the Holocene Hydroclimate dataset.
+  add_title("Table S1. List of proxy records included in the Holocene Hydroclimate dataset.
              Data are grouped by geographical region which are ordered according to Iturbide et al., (2020). 
              Within each region, records are listed alphabetically according to their dataset name.
              Columns can be resized using the column boundaries in the header row. 
@@ -134,9 +128,8 @@ outTbl <- reactable(tbl2,
 outTbl
 
 
-
-
-html_file <- file.path(dir,'Figures','Proxy','Appendix1_Table','Appendix1.html')
+#save
+html_file <- file.path(wd,'Figures','Proxy','TableS1','TableS1.html')
 saveWidget(widget = outTbl, file = html_file, selfcontained = TRUE)
-write.csv(View(tbl%>%arrange(Region,Dataset)),file=file.path(dir,'Figures','Proxy','Appendix1_Table','Appendix1_static.csv'))
+write.csv(tbl%>%arrange(Region,Dataset),file=file.path(wd,'Figures','Proxy','TableS1','TableS1.csv'))
 
