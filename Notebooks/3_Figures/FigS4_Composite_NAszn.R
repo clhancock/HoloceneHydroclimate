@@ -37,7 +37,7 @@ saveDir <- file.path(dir,'Data','RegionComposites',var)
 
 #Load Data without winter+ or summer+ seasonality--------------------------------------------------------------------------------
 
-lipdData <- readRDS(file.path(dir,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
+lipdData <- readRDS(file.path(dir,'Data','Proxy','lipdData.rds'))[[var]]
 lipdData <- lipdData[which(pullTsVariable(lipdData,'geo_ipccRegion') %in% c('NCA','WNA','ENA','CNA','NWN','NEN'))]  
 lipdData <- lipdData[which(between(pullTsVariable(lipdData,'geo_latitude'),30,50))]
 
@@ -65,7 +65,7 @@ if(var == 'T'){
 
 #Set variables for composite code--------------------------------------------------------------------------------
 
-nens          <- 500     #Ensemble numbers (lower = faster)
+nens          <- 10     #Ensemble numbers (lower = faster)
 binsize       <- 100     #years (median resolution = 107yrs)
 ageMin        <- 0       #age BP
 ageMax        <- 12400   #age BP

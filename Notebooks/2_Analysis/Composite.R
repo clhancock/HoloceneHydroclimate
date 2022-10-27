@@ -7,7 +7,7 @@
 #Load Packages--------------------------------------------------------------------------------
 
 library(compositeR)
-library(doParallel)
+?library(doParallel)
 library(dplyr)
 library(foreach)
 library(geoChronR)
@@ -22,12 +22,11 @@ library(tidyverse)
 wd  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
 var  <- 'HC'
 save <- FALSE
-saveDir <- file.path(wd,'Data','RegionComposites',var)
 
 
 #Load Data without winter+ or summer+ seasonality--------------------------------------------------------------------------------
 
-lipdData <- readRDS(file.path(wd,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
+lipdData <- readRDS(file.path(wd,'Data','Proxy','lipdData.rds'))[[var]]
 lipdTSO  <- lipdData[-which(pullTsVariable(lipdData,"climateInterpretation1_seasonalityGeneral") %in% c('winter+','summer','Summer+','Winter+'))]
 
 if(var == 'T'){
@@ -39,9 +38,9 @@ if(var == 'T'){
 
 #Set variables for composite code--------------------------------------------------------------------------------
 
-nens          <- 500     #Ensemble numbers (lower = faster)
+nens          <- 5     #Ensemble numbers (lower = faster)
 binsize       <- 100     #years (median resolution = 107yrs)
-ageMin        <- 0       #age BP
+ageMin        <- -100       #age BP
 ageMax        <- 12400   #age BP
 searchDur     <- 3500    #yrs (for 3 lake deposit data points)
 nThresh       <- 6       #minimum no. of records, else skip 
@@ -70,11 +69,11 @@ for (reg in c(regNames)) {
   regN     <- length(lipdReg)
   set.seed(5) #Reproducibility
   ensOut <- foreach(i = 1:nens) %dopar% {
-    tc <- compositeEnsembles(fTS                  = lipdReg[sample(seq(1,regN),max(round(regN*0.8),3))],
+    tc <- compositeEnsembles(fTS                  = lipdReg,
                              binvec               = binvec,
                              stanFun              = standardizeMeanIteratively,
                              binFun               = simpleBinTs,
-                             ageVar               = "age",
+                             ageVar               = 'age',
                              alignInterpDirection = TRUE,
                              spread               = TRUE,
                              duration             = searchDur,
