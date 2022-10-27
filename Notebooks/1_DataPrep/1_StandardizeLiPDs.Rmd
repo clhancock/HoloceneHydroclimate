@@ -1,0 +1,493 @@
+
+---
+title: "Process LiPD Data for HoloceneHydrocliamte"
+author: "Chris Hancock"
+output: github_document
+---
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(lipdR)
+library(proj4)
+library(RCurl)
+library(sf)
+library(sp)
+library(tidyverse)
+
+print("Packages Loaded")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Set Working Directory
+wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
+#knitr::opts_knit$set(root.dir = wd)
+```
+
+```{r warnings=FALSE, message=FALSE}
+save<-TRUE
+tempVers <- '1_0_2' #Which versions of temp12k datesets to use
+hcVers   <- '0_7_0' #Which versions of Holocene hydroclimate datesets to use
+```
+
+```{r warnings=FALSE, message=FALSE}
+#Load IPCC Region Spatial Data
+PROJ     <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
+PROJorig <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
+refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
+```
+
+```{r warnings=FALSE, message=FALSE}
+D__t <- readLipd(paste0('https://lipdverse.org/Temp12k/',tempVers,'/Temp12k',tempVers,'.zip'))
+D_hc <- readLipd(paste0('https://lipdverse.org/HoloceneHydroclimate/',hcVers,'/HoloceneHydroclimate',hcVers,'.zip'))
+```
+
+####Extract timeseries from LiPD files
+```{r warnings=FALSE, message=FALSE}
+TS__t <- splitInterpretationByScope(extractTs(D__t))
+TS_hc <- splitInterpretationByScope(extractTs(D_hc))
+
+
+getTSfromLiPDs <- function(input,compilationName,versNo){
+  out <- vector(mode='list')
+  for (tso in input){
+    tsNo <- 1
+    while (!is.null(tso[[paste('inCompilationBeta',tsNo,'_compilationName',sep='')]])){
+      tsName <- tso[[paste('inCompilationBeta',tsNo,'_compilationName',sep='')]]
+      tsVers <- tso[[paste('inCompilationBeta',tsNo,'_compilationVersion',sep='')]]
+      if (tsName == compilationName & any(tsVers == versNo)){out[[length(out)+1]] <- tso}
+      tsNo <- tsNo+1
+    }
+  }
+  return(out)
+}
+
+TS__t <- getTSfromLiPDs(TS__t,'Temp12k',             tempVers)
+TS_hc <- getTSfromLiPDs(TS_hc,'HoloceneHydroclimate',hcVers)
+
+print(paste("Temp:",length(TS__t)))
+print(paste("HC:",  length(TS_hc)))
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+######Fix known metadata issues
+
+tsids <- pullTsVariable(TS_hc, "paleoData_TSid")
+
+TS_hc[[which(tsids == "S2LRbRVYOu2hWu")]][["age"]] <- TS_hc[[which(pullTsVariable(TS_hc, "paleoData_TSID") == "S2LRbRVYOu2hWu")]][["age"]]/1000
+
+##### originalDataUrl
+TS_hc[[which(tsids=="WEB6e660f3d")]]$originalDataUrl    <-"https://doi.org/10.1016/j.geomorph.2021.107896"
+TS_hc[[which(tsids=="WEB8b32a2e0")]]$originalDataUrl    <-"https://www.ncei.noaa.gov/access/paleo-search/study/5451"
+TS_hc[[which(tsids=="WEB-a7bc6-3c3f-4541-b2f0-c02b6")]]$originalDataUrl <-"http://ncdc.noaa.gov/paleo/study/16677"
+TS_hc[[which(tsids=="WEB8d973712")]]$originalDataUrl    <- 'https://www.ncei.noaa.gov/access/paleo-search/study/32033'
+TS_hc[[which(tsids=="WEBa5fcc0ed")]]$originalDataUrl    <- 'https://doi.org/10.17632/zkn8rs76hy.1'
+TS_hc[[which(tsids=="WEB22a46599")]]$originalDataUrl    <-'https://doi.org/10.17632/zkn8rs76hy.1'
+TS_hc[[which(tsids=="WEB8c80a27c")]]$originalDataUrl    <- 'https://www.ncei.noaa.gov/access/paleo-search/study/13378'
+TS_hc[[which(tsids=="LPD292174f8xxx")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/18355'
+TS_hc[[which(tsids=="NAm2kHydro096")]]$originalDataUrl  <- 'https://www.ncei.noaa.gov/access/paleo-search/study/8640'
+TS_hc[[which(tsids=="NAm2kHydro208")]]$originalDataUrl  <- 'https://www.ncei.noaa.gov/access/paleo-search/study/23072'
+TS_hc[[which(tsids=="NAm2kHydro215")]]$originalDataUrl  <- 'https://www.ncei.noaa.gov/access/paleo-search/study/23072'
+TS_hc[[which(tsids=="WEBe297c3e8")]]$originalDataUrl    <- 'https://www.ncei.noaa.gov/access/paleo-search/study/33654'
+TS_hc[[which(tsids=="WEBbf48ea2b")]]$originalDataUrl    <- 'https://doi.org/10.6084/m9.figshare.12480344'
+TS_hc[[which(tsids=="WEB-49aac-c148-4e76-809a-362e4")]]$originalDataUrl <- 'https://doi.org/10.1594/PANGAEA.832385'
+TS_hc[[which(tsids=="WEB-84c26-cf61-4730-a2fb-5101f")]]$originalDataUrl <-'https://doi.org/10.1594/PANGAEA.921255'
+TS_hc[[which(tsids=="WEB21852084")]]$originalDataUrl    <- 'https://doi.org/10.1594/PANGAEA.111890'
+TS_hc[[which(tsids=="GH28d0af42")]]$originalDataUrl     <- 'https://www.ncei.noaa.gov/access/paleo-search/study/11931'
+TS_hc[[which(tsids=="WEB-49d07-0b65-4966-88d1-10bad")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/29692'
+TS_hc[[which(tsids=="WEB-af994-241c-4196-a6fa-3589e")]]$originalDataUrl <- 'https://www.ncei.noaa.gov/access/paleo-search/study/35393'
+TS_hc[[which(tsids=="WEB29098c59")]]$originalDataUrl    <- "https://www.iceandclimate.nbi.ku.dk/data/"
+TS_hc[[which(tsids=="WEB-c74a1-de1f-477c-becc-15b90")]]$originalDataUrl <- 'https://figshare.com/s/b4b5431fd9577afd95ef'
+TS_hc[[which(tsids=="WEB-8358f-5546-4fa4-9716-b98f3")]]$originalDataUrl <- 'https://doi.org/10.5880/GFZ.4.3.2021.005'
+TS_hc[[which(tsids=="GH31325f74")]]$originalDataUrl     <- 'https://www.ncei.noaa.gov/access/paleo-search/study/13097'
+
+##### pub1_doi
+TS_hc[[which(tsids=="WEB-a7bc6-3c3f-4541-b2f0-c02b6")]]$pub1_doi <- "10.1016/j.palaeo.2014.04.014"
+TS_hc[[which(tsids=="WEB-7cf3f-ffa5-4f6d-8f4c-250b0")]]$pub1_doi <- "10.1016/j.quascirev.2021.107178"
+TS_hc[[which(tsids=="WEBa5fcc0ed")]]$pub1_doi                    <- "10.1016/j.quascirev.2021.106825"
+TS_hc[[which(tsids=="WEB22a46599")]]$pub1_doi                    <- "10.1016/j.quascirev.2021.106825"
+TS_hc[[which(tsids=="WEB15b6e09f")]]$pub1_doi                    <- "10.1016/j.palaeo.2017.09.032"
+TS_hc[[which(tsids=="WEB-49aac-c148-4e76-809a-362e4")]]$pub1_doi <- "10.1016/j.quascirev.2014.04.006"
+TS_hc[[which(tsids=="WEB-84c26-cf61-4730-a2fb-5101f")]]$pub1_doi <- "10.1016/j.quascirev.2014.04.006"
+TS_hc[[which(tsids=="WEB21852084")]]$pub1_doi                    <- "10.1126/science.1080325"
+TS_hc[[which(tsids=="LPD17ad91b2")]]$pub1_doi                    <- "10.1016/j.epsl.2015.12.014"
+TS_hc[[which(tsids=="LPD277e0621")]]$pub1_doi                    <- "10.1016/j.epsl.2015.12.014"
+TS_hc[[which(tsids=="WEB279cd5b2")]]$pub1_doi                    <- "10.1016/j.epsl.2015.12.014"
+TS_hc[[which(tsids=="WEBb00c1138")]]$pub1_doi                    <- "10.1016/j.epsl.2021.117148"
+TS_hc[[which(tsids=="WEB19b9d003")]]$pub1_doi                    <- "10.1016/j.epsl.2021.117148"
+TS_hc[[which(tsids=="WEB7baf4af4")]]$pub1_doi                    <- "10.1016/j.quascirev.2018.05.030"
+TS_hc[[which(tsids=="WEB-49d07-0b65-4966-88d1-10bad")]]$pub1_doi <- "10.5194/cp-16-1097-2020"
+TS_hc[[which(tsids=="WEB-af994-241c-4196-a6fa-3589e")]]$pub1_doi <- "10.1029/2021GL096611"
+TS_hc[[which(tsids=="WEB-f9320-c765-469f-b4ee-6276b")]]$pub1_doi <- "10.1029/2020GL089183"
+TS_hc[[which(tsids=="WEB-747c6-735e-4b08-a565-465fb")]]$pub1_doi <- "10.1002/jqs.2759"
+TS_hc[[which(tsids=="WEB-85b98-f377-4cb2-a58b-dc9c3")]]$pub1_doi <- "10.1016/j.epsl.2005.02.025"
+TS_hc[[which(tsids=="LPD1d1e6750")]]$pub1_doi                    <- "10.1038/nature13196"
+TS_hc[[which(tsids=="LPD1756fdf4")]]$pub1_doi                    <- "10.1038/nature13196"
+TS_hc[[which(tsids=="WEB-c74a1-de1f-477c-becc-15b90")]]$pub1_doi <- "10.1038/s41598-019-38626-3"
+TS_hc[[which(tsids=="WEB-8358f-5546-4fa4-9716-b98f3")]]$pub1_doi <- "10.1038/s43247-022-00368-y"
+TS_hc[[which(tsids=="WEB-9119d-899e-4084-82c1-1fac9")]]$pub1_doi <- "10.1016/j.epsl.2012.03.016"
+```
+
+```{r}
+lipdData <- list(T = TS__t, HC = TS_hc)
+```
+
+
+#### Add region metadata and standardize seasonality and climate variable names 
+
+```{r warnings=FALSE, message=FALSE}
+metadata <- c("climateInterpretation1_seasonalityGeneral",
+              "climateInterpretation1_variable")
+for (name in metadata){
+  print(paste("Original",name,":",list(unique(pullTsVariable(lipdData$HC,name)))))
+}
+#
+for (var in names(lipdData)){
+  for (ts in 1:length(lipdData[[var]])){
+    #
+    #Load basic information for each record
+    #
+    tso                  <- lipdData[[var]][[ts]]
+    tso$age              <- as.numeric(tso$age)
+    tso$paleoData_values <- as.numeric(tso$paleoData_values)
+    #
+    #Add Ipcc regions to metadata
+    #
+    pointData <- data.frame(longitude=c(tso$geo_longitude),latitude=c(tso$geo_latitude))
+    pointData <- spTransform(SpatialPointsDataFrame(coords=pointData,data = pointData, proj4string = CRS(PROJorig)),CRSobj = PROJ)
+    tso$geo_ipccRegion <- as.character(over(pointData, refregions)$Acronym)
+    #
+    #Add Holocene age information
+    #
+    df <- data.frame(age    = as.numeric(tso$age), 
+                     values = as.numeric(tso$paleoData_values)) %>%
+      filter(between(age,-100,12400)) %>%
+      filter(!is.na(values)) %>%
+      arrange(age)
+    tso$ageMin     <- max(min(df$age),0)
+    tso$ageMax     <- min(max(df$age),12000)
+    tso$ageRange   <- tso$ageMax-tso$ageMin
+    tso$ageRes     <- median(diff(df$age))
+    tso$ageResPlus <- median(diff(df$age[which(diff(df$values) != 0)]))
+    tso$paleoData_HoloceneValues <- df
+    #
+    #Make sure name of climate interp field is standardized 
+    #
+    if (is.null(tso$climateInterpretation1_direction) == FALSE){
+      tso$climateInterpretation1_interpDirection <- tso$climateInterpretation1_direction
+    }
+    #
+    #Standardize seasonality & interpretation variable (M->P-E)
+    #
+    if (var == 'HC'){
+      szn <- tso$climateInterpretation1_seasonalityGeneral
+      if (is.null(szn)){                                szn <- 'Annual'
+      } else if        (grepl('ummer',szn)){ 
+        if (substr(szn, nchar(szn), nchar(szn)) == '+'){szn <- 'Summer+'
+        } else{                                         szn <- 'Summer'}
+      } else if (grepl('inter',szn)){ 
+        if (substr(szn, nchar(szn), nchar(szn)) == '+'){szn <- 'Winter+'} 
+        else{                                           szn <- 'Winter'}
+      } else {                                          szn <- 'Annual'} 
+      tso$climateInterpretation1_seasonalityGeneral <- szn
+      #
+      if (is.null(tso$climateInterpretation1_variable) | tso$climateInterpretation1_variable == 'M'){ 
+        tso$climateInterpretation1_variable <- 'P-E'
+      }
+    }
+    lipdData[[var]][[ts]] <- tso
+  }
+}
+for (name in metadata){
+  print(paste("Revised",name,":",list(unique(pullTsVariable(lipdData$HC,name)))))
+}
+#
+```
+
+
+#### Add chronology metadata
+
+```{r warnings=FALSE, message=FALSE}
+for (var in c('HC')){
+  for (ts in 1:length(lipdData[[var]])){
+    #
+    #Load basic information for each record
+    #
+    tso     <- lipdData[[var]][[ts]]
+    Dselect <- D_hc[[tso$dataSetName]]
+    n_chron <- length(Dselect[["chronData"]][[1]][["measurementTable"]])
+    n_paleo <- max(length(Dselect[["paleoData"]]),length(Dselect[["paleoData"]][[1]][["measurementTable"]]))
+    #
+    #
+    if (n_chron == 0){                                         
+      i_chron <- NA
+    } else if (n_chron*n_paleo == 1){                          
+      i_chron <- 1
+    } else if (grepl("Composite",tso$paleoData_variableName)){
+      offset<-c()
+      for (j in 1:n_chron){
+        chronAges <- Dselect[["chronData"]][[1]][["measurementTable"]][[j]][["age"]]$values
+        offset <- c(offset,max(abs(tso$ageMin-min(chronAges,na.rm=TRUE)),
+                               abs(tso$ageMax-max(chronAges,na.rm=TRUE))))
+      }
+      i_chron <- which(offset==min(offset))
+    } else if(n_chron+1 == n_paleo & tso$archiveType=='Speleothem'){
+        for (i in 1:n_paleo){
+          if (!is.null(Dselect[["paleoData"]][[1]][["measurementTable"]][[i]][[tso$paleoData_variableName]]$TSid)){
+            if (Dselect[["paleoData"]][[1]][["measurementTable"]][[i]][[tso$paleoData_variableName]]$TSid == tso$paleoData_TSid){
+              i_chron <- i
+            }
+          }
+        }
+    } else if (n_chron != n_paleo){      
+      offset<-c()
+      for (j in 1:n_chron){
+        chronAges <- Dselect[["chronData"]][[1]][["measurementTable"]][[j]][["age"]]$values
+        offset <- c(offset,max(abs(tso$ageMin-min(chronAges,na.rm=TRUE)),
+                               abs(tso$ageMax-max(chronAges,na.rm=TRUE))))
+      }
+      i_chron <- which(offset==min(offset))
+    } else{
+      for (i in 1:n_paleo){
+        if (!is.null(Dselect[["paleoData"]][[1]][["measurementTable"]][[i]][[tso$paleoData_variableName]]$TSid)){
+          if (Dselect[["paleoData"]][[1]][["measurementTable"]][[i]][[tso$paleoData_variableName]]$TSid == tso$paleoData_TSid){
+            i_chron <- i
+          }
+        }
+      }
+    }
+    if (tso$paleoData_TSid %in% c('lcRpbhIeSqLqRxKnBNF','lcRseG41EyZPFn7vBuL','LPD1498ea89','LPD03892251')){i_chron<-NA}
+    if (!is.na(i_chron)){
+      tso$chronData_table <- Dselect[["chronData"]][[1]][["measurementTable"]][[i_chron]]
+      names <- names(tso$chronData_table)[grepl(c('age'),names(tso$chronData_table),ignore.case=TRUE)]
+      for (name in c('type','error','min','max','hi','radio','14','lo','comment','use',"up","old","young","std",
+                     "reservoir","σ","low","Rejected","±","comment","err","uncertainty","unc")){
+        names <- names[which(grepl(name,names,ignore.case=TRUE)==FALSE)]
+      }
+      ageColName <- NA
+      for (name in c("Th230/Th232","Median","calib.14C","14C.raw","14C Age","14C age BP","Cal yr chosen","age14C","14C age (yr BP)","C14 age dated",
+                     tail(names,1),"corrected 230Th Age",
+                     "Median Year BP",'age','Age','calAge','CalAge','CalibratedAge','Calibrated Age')){
+        if (name %in% names(tso$chronData_table)){
+          ageColName <- name
+        } 
+      }
+      tso$chronData_ageName <- ageColName
+      tso$chronData_ages <- as.numeric(tso$chronData_table[[tso$chronData_ageName]]$values)
+      if (grepl("Composite",tso$paleoData_variableName)){
+        tso$chronData_ages <- c()
+        for (j in 1:n_chron){
+          tso$chronData_ages <- c(tso$chronData_ages,as.numeric(Dselect[["chronData"]][[1]][["measurementTable"]][[j]][["age"]]$values))
+        }
+      }
+      if ((length(which(tso$chronData_ages<13000))<=1) | is.na(sum(tso$chronData_ages,na.rm=TRUE)) | (sum(!is.na(tso$chronData_ages))<length(tso$chronData_ages)*0.5)){
+        tso$chronData_table             <- NA
+        tso$chronData_ageName           <- NA
+        tso$chronData_ages              <- NA
+        tso$chronData_ages_12k          <- NA
+        tso$chronData_agesN_12k         <- NA
+        tso$chronData_agesMaxGap_12k    <- NA
+        tso$chronData_agesMedianGap_12k <- NA
+      }else{
+        tso$chronData_ages <- tso$chronData_ages[which(!is.na(tso$chronData_ages))]
+        if(mean(tso$chronData_ages,na.rm=TRUE)<0){
+          tso$chronData_ages<-tso$chronData_ages*-1 #
+        }
+        if(grepl("ka",tso$chronData_table[[tso$chronData_ageName]]$units)){
+          tso$chronData_ages<-tso$chronData_ages*1000 #d 
+        } else if(max(tso$chronData_ages,na.rm=TRUE)<300){
+          tso$chronData_ages<-tso$chronData_ages*1000 #d 
+        }
+        tso$chronData_ages_12k          <- tso$chronData_ages[which(tso$chronData_ages<13000)]
+        tso$chronData_agesN_12k         <- length(which(diff(tso$chronData_ages_12k)>0))+1
+        tso$chronData_agesMaxGap_12k    <- max(diff(sort(c(tso$ageMin,tso$chronData_ages_12k,tso$ageMax))))
+        tso$chronData_agesMedianGap_12k <- median(abs(diff(sort(c(tso$ageMin,tso$chronData_ages_12k,tso$ageMax)))))
+      }
+    } else{
+      tso$chronData_table             <- NA
+      tso$chronData_ageName           <- NA
+      tso$chronData_ages              <- NA
+      tso$chronData_ages_12k          <- NA
+      tso$chronData_agesN_12k         <- NA
+      tso$chronData_agesMaxGap_12k    <- NA
+      tso$chronData_agesMedianGap_12k <- NA
+    }
+    lipdData[[var]][[ts]] <- tso
+  }
+}
+
+```
+
+#### Add category metadata and standardize source 
+
+```{r warnings=FALSE, message=FALSE}
+for (var in names(lipdData)){
+  for (ts in 1:length(lipdData[[var]])){
+    #
+    #Load basic information for each record
+    #
+    tso <- lipdData[[var]][[ts]]
+    #
+    #Add category information
+    #
+    if (var == 'HC'){
+      archive  <- tso$archiveType
+      proxy    <- tso$paleoData_proxy
+      unit     <- tso$paleoData_units
+      if(is.null(tso$climateInterpretation1_variableDetail)){tso$climateInterpretation1_variableDetail<-'Blank'} 
+      if (is.null(proxy) | is.null(archive)){
+        tso$Category         <- 'Other'
+        tso$CategorySpecific <- 'Other (not calibrated)'
+      } else if (archive == 'Speleothem'){
+        tso$Category           <- 'Speleothem'
+        if (proxy == 'd18O' | proxy ==  'd13C'){
+          tso$CategorySpecific <- paste(archive,' (','δ',substring(proxy, 2),')',sep='')
+        } else{
+          tso$CategorySpecific <- 'Speleothem (other)'
+        }
+      } else if (tolower(tso$climateInterpretation1_variableDetail) == 'lakelevel@surface'){
+        tso$Category           <- 'Shoreline'
+        tso$CategorySpecific   <- 'Shoreline (Lake Level)'
+      } else if (archive == 'GlacierIce'){
+        tso$Category           <- 'Glacier Ice'
+        tso$CategorySpecific   <- 'Glacier Ice (Accumulation)'
+      } else if (archive == 'LakeSediment' & proxy == 'd18O'){
+        tso$Category           <- 'Lake Sediment (δ18O)'
+        tso$CategorySpecific   <- 'Lake Sediment (δ18O)'
+      } else if (proxy == 'dDwax'){
+        tso$Category           <- 'Leaf Wax'
+        tso$CategorySpecific   <- 'Leaf Wax (δD)'
+      } else if (proxy == 'pollen'){
+        tso$Category           <- 'Pollen'
+        if (is.null(unit)){
+          tso$CategorySpecific <- 'Pollen (not calibrated)'
+        } else if (grepl('mm/',unit)){ 
+          tso$CategorySpecific <- 'Pollen (calibrated)'
+        } else {
+          tso$CategorySpecific <- 'Pollen (not calibrated)'
+        }
+      } else {
+        tso$Category           <- 'Other'
+        if (is.null(unit)){
+          tso$CategorySpecific <- 'Other (not calibrated)'
+        } else if (grepl('mm/',unit)){ 
+          tso$CategorySpecific <- 'Other (calibrated)'
+        } else {
+          tso$CategorySpecific <- 'Other (not calibrated)'
+        }
+      }
+    } else{
+      tso$Category         <- tso$paleoData_proxyGeneral
+      tso$CategorySpecific <- tso$paleoData_proxyGeneral
+    }
+    #
+    #Add source
+    #
+    if (var == 'HC'){
+      if (is.null(tso$createdBy)){tso$createdBy <- ''}
+      if (is.null(tso$originalDataUrl)){tso$originalDataUrl <- ''}
+      if (is.null(tso$calibration_method)){tso$calibration_method <- ''}
+      if (is.null(tso$pub1_doi)){tso$pub1_doi <- ''}
+      if (is.null(tso$pub2_doi)){tso$pub2_doi <- ''}
+      #
+      if (grepl('oxfordLakeStatus2Lipd',tso$createdBy)){
+        tso$Source = 'Oxford Lake Level Database'
+      }
+      else if (grepl('paleoDiver2lipd',tso$createdBy)){
+        tso$Source = 'Liefert and Shuman, 2020'
+      }
+      else if (tso$createdBy =='sisal2lipd'){
+        tso$Source = 'SISALv2'
+      }
+      else if (grepl('LegacyClimate2LiPD',tso$createdBy)){
+        tso$Source = 'Legacy Climate v1.0'
+      }
+      else if (tso$originalDataUrl == 'geochange.er.usgs.gov/midden/'){
+        tso$Source = 'wNA'
+      }
+      else if (grepl('/study/30535',tso$originalDataUrl)){
+        tso$Source = 'wNA'
+      }
+      else if (grepl('10.25921/bnxb-1n90',tso$originalDataUrl)){
+        tso$Source = 'Mid-Latitude Holocene'
+      }
+      else if (grepl('/study/15444',tso$originalDataUrl)){
+        tso$Source = 'Arctic Holocene'
+      }
+      else if (grepl('10.5194/essd-12-2261-2020',tso$originalDataUrl) | (substr(tso$dataSetName,1,2) == 'LS')){
+        tso$Source = 'Iso2k'
+      }
+      else if (grepl('10.25921/4RY2-G808',tso$originalDataUrl) | grepl('/study/27330',tso$originalDataUrl)){
+        tso$Source = 'Temp12k'
+      } else{tso$Source = 'Other'}
+    } else{tso$Source <- 'Temp12k'}
+    #
+    lipdData[[var]][[ts]] <- tso
+  }
+}
+```
+
+#### Save LiPD timeseries as .rds file
+
+```{r warnings=FALSE, message=FALSE}
+print(paste("Temp:",length(lipdData$T)))  #1319
+print(paste("HC:",  length(lipdData$HC))) #819
+
+if(save){saveRDS(lipdData, file.path(wd,'Data','Proxy','lipdData.rds'))}
+```
+
+#### Create summary dataframe for HC and T proxies
+
+```{r warnings=FALSE, message=FALSE}
+for (var in names(lipdData)){
+  lipdTSO <- lipdData[[var]]
+  proxyDf <- tibble(dataset       = pullTsVariable(lipdTSO,'dataSetName'),
+                    tsid          = pullTsVariable(lipdTSO,'paleoData_TSid'),
+                    longitude     = pullTsVariable(lipdTSO,'geo_longitude'),
+                    latitude      = pullTsVariable(lipdTSO,'geo_latitude'),
+                    ipccReg       = pullTsVariable(lipdTSO,'geo_ipccRegion'),
+                    archive       = pullTsVariable(lipdTSO,'archiveType'),
+                    proxy         = pullTsVariable(lipdTSO,'paleoData_proxy'),
+                    Category      = pullTsVariable(lipdTSO,'Category'),
+                    CategorySpec  = pullTsVariable(lipdTSO,'CategorySpecific'),
+                    minAge        = pullTsVariable(lipdTSO,'ageMin'),
+                    maxAge        = pullTsVariable(lipdTSO,'ageMax'),
+                    ageRange      = pullTsVariable(lipdTSO,'ageRange'),
+                    ageRes        = pullTsVariable(lipdTSO,'ageRes'),
+                    ageResPlus    = pullTsVariable(lipdTSO,'ageResPlus'),
+                    season        = pullTsVariable(lipdTSO,'climateInterpretation1_seasonalityGeneral'),
+                    climInterp    = pullTsVariable(lipdTSO,'climateInterpretation1_variable'),
+                    source        = pullTsVariable(lipdTSO,'Source'),
+                    direction     = pullTsVariable(lipdTSO,'climateInterpretation1_interpDirection'),
+                    ka_0.5        = rep(NA, length(lipdTSO)),
+                    ka_4          = rep(NA, length(lipdTSO)),
+                    ka_6          = rep(NA, length(lipdTSO)),
+                    ka_8          = rep(NA, length(lipdTSO)),
+                    ka_10         = rep(NA, length(lipdTSO)),
+                    maxValAge     = rep(NA, length(lipdTSO)),
+                    minValAge     = rep(NA, length(lipdTSO)),
+  ) 
+  #
+  if (var=='HC'){
+      proxyDf$ageCtrlN      = pullTsVariable(lipdTSO,'chronData_agesN_12k')
+      proxyDf$ageCtrlMax    = pullTsVariable(lipdTSO,'chronData_agesMaxGap_12k')
+      proxyDf$ageCtrlMedian = pullTsVariable(lipdTSO,'chronData_agesMedianGap_12k')
+  }
+  #Calculate timeslice means 
+  for (tso in lipdTSO){
+    i = which(proxyDf$tsid == tso$paleoData_TSid)
+    vals = tso$paleoData_values[which(between(tso$age,0,12000))]
+    ages =              tso$age[which(between(tso$age,0,12000))]
+    for (ka in c(0.5,seq(4,10,2))){
+      bounds <- which(between(ages, 1000*ka-500, 1000*ka+500))
+      proxyDf[i,paste('ka',ka,sep='_')] <- round(mean(vals[bounds],na.rm=TRUE),3)
+    }
+    if (!is.na(proxyDf[i,'direction'])){
+      if (proxyDf[i,'direction']=='negative'){vals  <- vals*-1
+      }
+    }
+    proxyDf[i,'maxValAge'] <- mean(ages[which(vals==max(vals,na.rm=TRUE))])
+    proxyDf[i,'minValAge'] <- mean(ages[which(vals==min(vals,na.rm=TRUE))])
+  }
+  write.csv(proxyDf,file=file.path(wd,'Data','Proxy',paste('proxyMetadata_',var,'.csv',sep='')))
+}
+```
