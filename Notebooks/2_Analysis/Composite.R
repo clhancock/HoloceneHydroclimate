@@ -52,7 +52,7 @@ binYears <- rowMeans(cbind(binvec[-1],binvec[-length(binvec)]))
 #ID regions to reconstruct based on number of records (nThresh)
 regNames <- data.frame(name=pullTsVariable(lipdTSO,'geo_ipccRegion')) %>% 
   group_by(name) %>% 
-  summarise(n = n()) %>% 
+  dplyr::summarise(n = n()) %>% 
   filter(n >= nThresh)
 regNames <- c(as.character(regNames$name),'EAN','SSA') #Add 2 SH regions with fewer records to gain global coverage
 
@@ -69,12 +69,12 @@ ts<-lipdReg[[5]]
 age<-ts$age
 value<-ts$paleoData_values
 newAge = NA
-spreadBy = abs(mean(diff(binvec)))/10
+spreadBy = 1
 maxGap = NA
 maxPct = 0.75
 minAge = -69 
 
-
+reg<-'ECA'
 #Loop to composite (by region)
 for (reg in c(regNames)) {
   lipdReg  <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
@@ -82,7 +82,7 @@ for (reg in c(regNames)) {
   set.seed(5) #Reproducibility
   ensOut <- foreach(i = 1:nens) %dopar% {
     tc <- compositeEnsembles(fTS                  = lipdReg,
-                             binvec               = binvec,
+                             binvec               = binvec+0.05,
                              stanFun              = standardizeMeanIteratively,
                              binFun               = simpleBinTs,
                              ageVar               = 'age',
