@@ -94,11 +94,38 @@ cmipRegionTS_ann <- read.csv(file.path(modelTSpath,paste('regional_',var,'_ANN_c
 
 ![](Fig8_AgreeByAmount_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
+``` r
+plt <- cowplot::ggdraw(ggplot() + 
+                       coord_cartesian(xlim=c(0,1),ylim=c(0,1),expand=FALSE)+
+                       annotate("text",label="(a)", x = 0.05, y = 0.9,family=figFont,color='black',size=4)+
+                       annotate("text",label="(b)", x = 0.35, y = 0.9,family=figFont,color='black',size=4)+
+
+                       theme_void()+
+                       theme(plot.background= element_rect(colour='White',fill='White'),
+                             panel.background = element_rect(colour='White',fill='White')))+
+    draw_plot(ggpubr::as_ggplot(get_legend(scatter)),       x = 0,     y = 0, width = 0.4, height = 0.5)+
+    draw_plot(scatter+theme(legend.position='None'),        x = 0.4,   y = 0, width = 0.6, height = 1)+
+                        #annotate("text",label="EAS", x = 0.52, y = 0.85,family=figFont,color=monsoonC,size=3)+
+                        #annotate("text",label="NWS", x = 0.68, y = 0.26,family=figFont,color=tropicC,size=3)+
+                        #annotate("text",label="ESB", x = 0.54, y = 0.26,family=figFont,color=nml,size=3)+
+
+  draw_plot(proxyMapRegions,  x = 0,   y = 0.25, width = 0.4, height = 0.7)
+
+
+monsoonC<- '#ED645A'
+tropicC <- '#DAA51B'
+sml     <- '#24796C'
+nml     <- '#2F8AC4'
+polar   <- '#A5AA99'
+  
+plt
+```
+
 ![](Fig8_AgreeByAmount_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
 if (save) {
-  ggsave(plot=plt, width = 3.25, height = 4.5, dpi = 600,
+  ggsave(plot=plt, width = 6.5, height = 3.25, dpi = 600,
          filename = file.path(wd,"Figures","Model",'ProxyAgreeByModelAnom.png'))
 }
 ```
