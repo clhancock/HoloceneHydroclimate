@@ -78,6 +78,8 @@ for reg in np.unique(proxyDF['ipccReg']):
             if var == 'pre': p_n += 1
             count += 1
             #geography
+            lon = regData['longitude'][i]
+            if lon < 0: lon = 360+lon
             lat = np.argmin(np.abs(modelData[model][szn]['lat'].data-regData['latitude'][i]))
             lon = np.argmin(np.abs(modelData[model][szn]['lon'].data-regData['longitude'][i]))
             #site timeseries
