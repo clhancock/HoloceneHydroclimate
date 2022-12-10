@@ -36,15 +36,16 @@ load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions
 refregions <-  spTransform(IPCC_WGI_reference_regions_v4, CRSobj = PROJ)
 ```
 
+#### Load Proxy Data
 ```{r warnings=FALSE, message=FALSE}
 D__t <- readLipd(paste0('https://lipdverse.org/Temp12k/',tempVers,'/Temp12k',tempVers,'.zip'))
 D_hc <- readLipd(paste0('https://lipdverse.org/HoloceneHydroclimate/',hcVers,'/HoloceneHydroclimate',hcVers,'.zip'))
 ```
 
-####Extract timeseries from LiPD files
+#### Extract timeseries from LiPD files
 ```{r warnings=FALSE, message=FALSE}
-TS__t <- splitInterpretationByScope(extractTs(D__t))
-TS_hc <- splitInterpretationByScope(extractTs(D_hc))
+TS__t_all <- splitInterpretationByScope(extractTs(D__t))
+TS_hc_all <- splitInterpretationByScope(extractTs(D_hc))
 
 
 getTSfromLiPDs <- function(input,compilationName,versNo){
@@ -61,8 +62,8 @@ getTSfromLiPDs <- function(input,compilationName,versNo){
   return(out)
 }
 
-TS__t <- getTSfromLiPDs(TS__t,'Temp12k',             tempVers)
-TS_hc <- getTSfromLiPDs(TS_hc,'HoloceneHydroclimate',hcVers)
+TS__t <- getTSfromLiPDs(TS__t_all,'Temp12k',             tempVers)
+TS_hc <- getTSfromLiPDs(TS_hc_all,'HoloceneHydroclimate',hcVers)
 
 print(paste("Temp:",length(TS__t)))
 print(paste("HC:",  length(TS_hc)))
@@ -336,13 +337,13 @@ for (var in names(lipdData)){
       if(is.null(tso$climateInterpretation1_variableDetail)){tso$climateInterpretation1_variableDetail<-'Blank'} 
       if (is.null(proxy) | is.null(archive)){
         tso$Category         <- 'Other'
-        tso$CategorySpecific <- 'Other (not calibrated)'
+        tso$CategorySpecific <- 'Other (Not Calibrated)'
       } else if (archive == 'Speleothem'){
         tso$Category           <- 'Speleothem'
         if (proxy == 'd18O' | proxy ==  'd13C'){
           tso$CategorySpecific <- paste(archive,' (','δ',substring(proxy, 2),')',sep='')
         } else{
-          tso$CategorySpecific <- 'Speleothem (other)'
+          tso$CategorySpecific <- 'Speleothem (Other)'
         }
       } else if (tolower(tso$climateInterpretation1_variableDetail) == 'lakelevel@surface'){
         tso$Category           <- 'Shoreline'
@@ -359,20 +360,20 @@ for (var in names(lipdData)){
       } else if (proxy == 'pollen'){
         tso$Category           <- 'Pollen'
         if (is.null(unit)){
-          tso$CategorySpecific <- 'Pollen (not calibrated)'
+          tso$CategorySpecific <- 'Pollen (Not Calibrated)'
         } else if (grepl('mm/',unit)){ 
-          tso$CategorySpecific <- 'Pollen (calibrated)'
+          tso$CategorySpecific <- 'Pollen (Calibrated)'
         } else {
-          tso$CategorySpecific <- 'Pollen (not calibrated)'
+          tso$CategorySpecific <- 'Pollen (Not Calibrated)'
         }
       } else {
         tso$Category           <- 'Other'
         if (is.null(unit)){
-          tso$CategorySpecific <- 'Other (not calibrated)'
+          tso$CategorySpecific <- 'Other (Not Calibrated)'
         } else if (grepl('mm/',unit)){ 
-          tso$CategorySpecific <- 'Other (calibrated)'
+          tso$CategorySpecific <- 'Other (Calibrated)'
         } else {
-          tso$CategorySpecific <- 'Other (not calibrated)'
+          tso$CategorySpecific <- 'Other (Not Calibrated)'
         }
       }
     } else{
@@ -426,10 +427,88 @@ for (var in names(lipdData)){
 }
 ```
 
+
+```{r}
+legacyRMSE <- read.csv("/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/ProxyInfo/LegacyClimateTSidPassQC.csv")
+otherUnc   <- read.csv("/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/ProxyInfo/hc_proxy_Unc.csv")
+
+var <- 'HC'
+for (ts in 1:length(lipdData[[var]])){
+  tso <- lipdData[[var]][[ts]] 
+  #SISAL Measurment Unc.
+  if(tso$Source=="SISALv2"){ #ts = 290
+    Dselect_paleo <- D_hc[[tso$dataSetName]][["paleoData"]][[1]][["measurementTable"]]
+    if(substr(tso$paleoData_variableName, 1, 4) %in% c('d18O','d13C') == FALSE){next}
+    for (i in length(Dselect_paleo)){ 
+      if(!is.null(Dselect_paleo[[i]][[tso$paleoData_variableName]])){
+        if(Dselect_paleo[[i]][[tso$paleoData_variableName]]$TSid == tso$paleoData_TSid){
+          if(sum(tso$age==Dselect_paleo[[i]]$age$values,na.rm=TRUE) == sum(!is.na(tso$age))){
+            #
+            unc <-                   Dselect_paleo[[i]][[paste0(substr(tso$paleoData_variableName, 1, 4),"Precision")]]
+            if (is.null(unc)){unc <- Dselect_paleo[[i]][[paste0(substr(tso$paleoData_variableName, 1, 4),"PrecisionComposite")]]}
+            
+            tso$paleoData_valuesUnc_TSid        <-unc$TSid
+            tso$paleoData_valuesUnc_Description <- "measurment precision"
+            tso$paleoData_valuesUnc             <- median(unc$values)
+            tso$paleoData_valuesMax             <- tso$paleoData_values + unc$values
+            tso$paleoData_valuesMin             <- tso$paleoData_values - unc$values
+            #tso$paleoData_valuesAgeMax <- tso$age + Dselect_paleo[[i]]$ageBchronUncertaintyLow$values
+            #tso$paleoData_valuesAgeMin <- tso$age - Dselect_paleo[[i]]$ageBchronUncertaintyLow$values
+            #
+          } else{print(paste("error:",tso$paleoData_TSid))}
+        }
+      }
+    }
+  } else if (tso$Source == "Legacy Climate v1.0"){
+    tsoUnc <- TS_hc_all[[which(pullTsVariable(TS_hc_all,"paleoData_TSid")==legacyRMSE[which(legacyRMSE$TSid==tso$paleoData_TSid),]$MeasUncertaintyTSid)]]
+    if(sum(tso$age==tsoUnc$age) == length(tso$age)){
+      tso$paleoData_valuesUnc_TSid        <- tsoUnc$TSid
+      tso$paleoData_valuesUnc_Description <- "RMSE"
+      tso$paleoData_valuesUnc             <- legacyRMSE[which(legacyRMSE$TSid==tso$paleoData_TSid),]$RMSE
+      tso$paleoData_valuesMax             <- tso$paleoData_values + tsoUnc$paleoData_values
+      tso$paleoData_valuesMin             <- tso$paleoData_values - tsoUnc$paleoData_values
+    } else{print(paste("error:",tso$paleoData_TSid))}
+  } else if (tso$paleoData_TSid %in% otherUnc$tsid){
+    df <- otherUnc %>% filter(tsid==tso$paleoData_TSid)
+    if (nrow(df) == 1){
+      if (is.na(df$unc)){
+        tso$paleoData_valuesUnc_TSid        <- NA
+        tso$paleoData_valuesUnc_Description <- NA
+        tso$paleoData_valuesUnc             <- NA
+      } else{
+        tso$paleoData_valuesUnc_TSid        <- NA
+        tso$paleoData_valuesUnc_Description <- df$description
+        tso$paleoData_valuesUnc             <- df$unc
+        tso$paleoData_valuesMax             <- tso$paleoData_values + df$unc
+        tso$paleoData_valuesMin             <- tso$paleoData_values - df$unc 
+      }
+    } else if (nrow(df) > 1){
+      if(sum(tso$age==df$age,na.rm=TRUE) == sum(!is.na(tso$age))){
+        tso$paleoData_valuesUnc_TSid        <- NA
+        tso$paleoData_valuesUnc_Description <- df$description
+        tso$paleoData_valuesUnc             <- median(df$unc,na.rm=TRUE)
+        if (df$type[1]=='abs'){
+          tso$paleoData_valuesMax           <- df$max
+          tso$paleoData_valuesMin           <- df$min
+        } else{
+          tso$paleoData_valuesMax           <- tso$paleoData_values + df$max
+          tso$paleoData_valuesMin           <- tso$paleoData_values - df$min
+        }
+      } else{
+        print(tso$paleoData_TSid)
+        print(ts)
+      }
+    }
+  }
+  lipdData[[var]][[ts]] <- tso
+}
+```
+
+
 #### Save LiPD timeseries as .rds file
 
 ```{r warnings=FALSE, message=FALSE}
-print(paste("Temp:",length(lipdData$T)))  #1319
+print(paste("Temp:",length(lipdData$T)))  #1321
 print(paste("HC:",  length(lipdData$HC))) #819
 
 if(save){saveRDS(lipdData, file.path(wd,'Data','Proxy','lipdData.rds'))}

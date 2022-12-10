@@ -34,7 +34,7 @@ print("Packages Loaded")
 
 ``` r
 var     <- 'HC'
-lipdTSO <- readRDS(file.path(wd,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
+lipdTSO <- readRDS(file.path(wd,'Data','Proxy','lipdData.rds'))[[var]]
 proxyDf <- read.csv(file=file.path(wd,'Data','Proxy',paste0('proxyMetaData_',var,'.csv')))
 print("Proxy data loaded ")
 ```
@@ -117,14 +117,14 @@ pivot
     ##  1 Glacier Ice (Accumulation)     8   12000    19.4     NA          NA  <NA>    
     ##  2 Lake Sediment (δ18O)          43    9285    31        9        2070  79      
     ##  3 Leaf Wax (δD)                 31   11013   150       11        2345  74      
-    ##  4 Pollen (calibrated)          350   10862   150        7        2500  93      
-    ##  5 Pollen (not calibrated)       19   11840    86.5     12.5      2395  74      
+    ##  4 Pollen (Calibrated)          350   10862   150        7        2500  93      
+    ##  5 Pollen (Not Calibrated)       19   11840    86.5     12.5      2395  74      
     ##  6 Shoreline (Lake Level)       139   11506. 1174.      10        2145  <NA>    
     ##  7 Speleothem (δ18O)             74    8895.   12.2     15        1476. 89      
     ##  8 Speleothem (δ13C)             28    7684.   25.9     10        1630. 100     
-    ##  9 Speleothem (other)             9    8163.   34       14        1184. 67      
-    ## 10 Other (calibrated)            23   10000   106.      18        1326  4       
-    ## 11 Other (not calibrated)        95    9533    37.5      9        2184  62      
+    ##  9 Speleothem (Other)             9    8163.   34       14        1184. 67      
+    ## 10 Other (Calibrated)            23   10000   106.      18        1326  4       
+    ## 11 Other (Not Calibrated)        95    9533    37.5      9        2184  62      
     ## 12 All                          819   10825   109.       9        2350  68+17   
     ## # … with abbreviated variable name ¹​pctChronData
 
@@ -363,13 +363,18 @@ plotTime
 #### Map proxy data
 
 ``` r
+labs <- plotSettings$names
+labs[2]    <- expression(paste("Lake Sediment (δ"^"18"*"O)"))#bquote(atop(Lake~Sediment~δ^18~O))
+labs[10]      <- expression(paste("Speleothem (δ"^"13"*"C)"))
+labs[11]      <-expression(paste("Speleothem (δ"^"18"*"O)"))
+
 proxyMapSites <- basemap+
   #Proxy Data
   geom_star(data= as.data.frame(proxyDf),aes(x=lonsPrj , y=latsPrj,
                                                   starshape=CategorySpec, fill=CategorySpec),
             size=1.75,color='Black',alpha=1,starstroke=0.3) + 
-  scale_fill_manual(values=plotSettings$color,name= 'Proxy Category') +
-  scale_starshape_manual(values=plotSettings$shape,name= 'Proxy Category') +
+  scale_fill_manual(values=plotSettings$color,name= 'Proxy Category',labels=labs) +
+  scale_starshape_manual(values=plotSettings$shape,name= 'Proxy Category',labels=labs) +
   #Theme
   theme(text = element_text(family=figFont,size=figText),
         plot.background = element_rect(fill = 'white',color='white'),
@@ -378,12 +383,14 @@ proxyMapSites <- basemap+
         legend.margin = margin(c(0, 0.1, 0.05, 0.06), unit="in"),
         legend.key.height = unit(0.12, "in"),
         legend.key.width = unit(0.12, "in"),
-        legend.position = c(0.12,0.32),
+        legend.position = c(0.09,0.32),
         legend.title = element_blank())#,legend.position = 'none')# legend.position = c(0.5,0.7))
 if (save) {
   ggsave(plot=proxyMapSites, width = 6.5, height = 3.25, dpi = 600, 
        filename = file.path(wd,"Figures","Proxy",paste('PlotProxyTypeRegion_',var,'.png',sep='')))
 }
+
+
 proxyMapSites
 ```
 
@@ -392,7 +399,7 @@ proxyMapSites
 #### Combine proxy map with time density plot
 
 ``` r
-fig1 <- ggarrange(proxyMapSites+ theme(legend.position = c(0.1,0.3)), 
+fig1 <- ggarrange(proxyMapSites+ theme(legend.position = c(0.07,0.3)), 
                   plotTime+      theme(legend.position = 'none',
                                        plot.margin = unit(c(0, 0.5, 0.1, 0.4), "in")),
                  ncol=1, widths=c(6.5), heights=c(3.25,1.75), padding=0)

@@ -113,11 +113,11 @@ if (var == 'HC'){
     plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "#38A6A5" #"corn flower blue"
     plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "#1D6996" #"dark blue"
     plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "#94346E" # "dark orchid" #δ
-    plotSettings$color[which(plotSettings$names=="Other (calibrated)")]      <- "grey40" #"grey40"
-    plotSettings$color[which(plotSettings$names=="Other (not calibrated)")]  <- "grey" #"grey"
-    plotSettings$color[which(plotSettings$names=="Pollen (calibrated)")]     <- "#0F8554" #"forest green"
-    plotSettings$color[which(plotSettings$names=="Pollen (not calibrated)")] <- "#73AF48" #"" #"yellowgreen"
-    plotSettings$color[which(plotSettings$names=="Speleothem (other)")]      <- "#EDAD08" #"darkorange"
+    plotSettings$color[which(plotSettings$names=="Other (Calibrated)")]      <- "grey40" #"grey40"
+    plotSettings$color[which(plotSettings$names=="Other (Not Calibrated)")]  <- "grey" #"grey"
+    plotSettings$color[which(plotSettings$names=="Pollen (Calibrated)")]     <- "#0F8554" #"forest green"
+    plotSettings$color[which(plotSettings$names=="Pollen (Not Calibrated)")] <- "#73AF48" #"" #"yellowgreen"
+    plotSettings$color[which(plotSettings$names=="Speleothem (Other)")]      <- "#EDAD08" #"darkorange"
     plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "#E17C05" #"lightcoral"
     plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "#CC503E" #"firebrick"
     #
@@ -126,11 +126,11 @@ if (var == 'HC'){
     plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
     plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
     plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
-    plotSettings$shape[which(plotSettings$names=="Other (calibrated)")]      <- 6
-    plotSettings$shape[which(plotSettings$names=="Other (not calibrated)")]  <- 13
-    plotSettings$shape[which(plotSettings$names=="Pollen (calibrated)")]     <- 14
-    plotSettings$shape[which(plotSettings$names=="Pollen (not calibrated)")] <- 1
-    plotSettings$shape[which(plotSettings$names=="Speleothem (other)")]      <- 17
+    plotSettings$shape[which(plotSettings$names=="Other (Calibrated)")]      <- 6
+    plotSettings$shape[which(plotSettings$names=="Other (Not Calibrated)")]  <- 13
+    plotSettings$shape[which(plotSettings$names=="Pollen (Calibrated)")]     <- 14
+    plotSettings$shape[which(plotSettings$names=="Pollen (Not Calibrated)")] <- 1
+    plotSettings$shape[which(plotSettings$names=="Speleothem (Other)")]      <- 17
     plotSettings$shape[which(plotSettings$names=="Speleothem (δ13C)")]       <- 23
     plotSettings$shape[which(plotSettings$names=="Speleothem (δ18O)")]       <- 11  
   } else{
@@ -277,7 +277,8 @@ proxyMapRegions <- basemap +
            aes(x=long, y=lat, group=group, map_id=id,fill=as.factor(dataTable$regType))) +
   scale_fill_manual(values=c(sml,nml,polar,monsoonC,tropicC))+
   #Add proxy sites
-  geom_point(data=as.data.frame(proxyDf), aes(x=lonsPrj , y=latsPrj), shape=1,size=0.5,stroke=0.3) +
+  geom_point(data=as.data.frame(proxyDf), aes(x=lonsPrj , y=latsPrj),shape=1,size=0.5,stroke=0.3) +
+  #scale_shape_manual(values=c(1))
   #Format Legend
   theme(plot.background = element_rect(fill = NA,color=NA),
         plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "in"),
@@ -292,13 +293,14 @@ proxyMapRegions
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 library(plyr )
 df <- na.omit(data)
+df[nrow(df)+1,] <- data.frame('For Legend',' Proxy Sites',0,0,0,0,0,0,0,0)
+
 find_hull <- function(df) df[chull(df$proxyAgreePct, df$averageRange), ]
 hulls <- ddply(df, "regType", find_hull)
 
 scatter <- ggplot(data=data,aes(x=averageRange,y=proxyAgreePct,shape=regType,fill=regType,group = regType))+
   geom_hline(yintercept = 50,size=0.2)+
   geom_polygon(data = hulls, alpha = 0.6) +
-  geom_point(size=2.5,color='Black')+
   geom_point(size=2.5,color='Black')+
   annotate("text",label="50% Proxy \n Even Wet/Dry Split",                        
            x = 0.21, y = 50,family=figFont,color='grey40',size=3)+
@@ -308,12 +310,12 @@ scatter <- ggplot(data=data,aes(x=averageRange,y=proxyAgreePct,shape=regType,fil
            x = 0.21, y = 10,family=figFont,color='grey40',size=3)+
   annotate("segment", x = 0.21, xend = 0.21, y = 60, yend = 80, colour = "grey40", size=0.7, arrow=arrow(type='closed',length = unit(0.05, "inches")))+
   annotate("segment", x = 0.21, xend = 0.21, y = 40, yend = 20, colour = "grey40", size=0.7, arrow=arrow(type='closed',length = unit(0.05, "inches")))+
-  scale_fill_manual(values=c(nml,sml,polar,monsoonC,tropicC))+
-  scale_shape_manual(values=c(24,25,23,21,22))+
+  scale_fill_manual(values=c('White',nml,sml,polar,monsoonC,tropicC))+
+  scale_shape_manual(values=c(1,24,25,23,21,22))+
   theme_bw()+
   #scale_x_continuous(limits=c(0,1000))+
   coord_cartesian(xlim=c(0,0.28), ylim=c(0,100),expand	=FALSE) +
-  labs(y='Proxy Agreement with Sign of Mid-Holocene Anomaly \n (% of proxy records within each region) ',
+  labs(y='Proxy Agreement in Direction of Simulated Anomaly \n (% of proxy records within each region) ',
        #% of Proxy Records with the Same Sign 6-0 ka Anomaly \n as the Simulated 6-0 ka Anomaly',
        x='Magnitude of Simulated Mid-Holocene Anomaly \n (absolute value of mm/day)')+
   #labs(y='% of Proxy Records With the Same Sign 6-0 ka Anomaly',x='Absolute Value of Simulated 6-0 ka Anomalies \n _______________________________________ \n \n Mean of Values At 0ka and 6ka')+

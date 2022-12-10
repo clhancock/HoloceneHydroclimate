@@ -123,12 +123,14 @@ for (sample in c(1,2)){
     regionDf <- regionData[[reg]]$SummaryDF
     #Ensemble Composite Values
     regEnsNA <- regionData[[reg]]$compEnsemble
-    #zscore: regEnsNA <- as.numeric(apply(regEnsNA,2,mean,na.rm=TRUE))) / as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
+    regEnsNA <- (regEnsNA - as.numeric(apply(regEnsNA,2,mean,na.rm=TRUE)))/as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
+    #regEnsNA <- (regEnsNA - mean(apply(regEnsNA,1,quantile,probs=c(0.5),na.rm=TRUE),na.rm=TRUE))/sd(apply(regEnsNA,1,quantile,probs=c(0.5),na.rm=TRUE),na.rm=TRUE)
     #Create matrix for portion of timeseries with >50% data coverage
     regEns  <- matrix(NA,nrow(regEnsNA),ncol(regEnsNA))
     regEns[regionData[[reg]]$Limits50,] <- as.matrix(regEnsNA[regionData[[reg]]$Limits50 ,])
     #Set up plot
-    plotlim <- min(seq(2,8,2)[which(seq(2,8,1) > quantile(abs(regEns),0.97,na.rm=TRUE))][1],9,na.rm=TRUE)
+    plotlim <- min(seq(2,8,1)[which(seq(2,8,1) > quantile(abs(regEns),0.97,na.rm=TRUE))][1],9,na.rm=TRUE)
+    plotlim <- 4
     regPlt <- ggdraw(ggplot()+
                        theme_void()+
                        theme(plot.background= element_rect(colour='White',fill='White')))
@@ -244,7 +246,7 @@ for (sample in c(1,2)){
             panel.border= element_rect(colour='Black',color=,fill=NA),
             panel.grid  = element_blank(),
             axis.title  = element_blank(),
-            axis.ticks  = element_line(color = 'Black',size=0.4), 
+            axis.ticks  = element_line(color = 'Black',size=0.6), 
             axis.text.x = element_blank(),
             axis.text.y =element_text(family='Times New Roman',size=8,color='Black'),
             axis.ticks.length.y=unit(2,"pt"),
@@ -253,8 +255,8 @@ for (sample in c(1,2)){
             text = element_text(family='Times New Roman',size=8),
             legend.position='none')
     #
-    regPlts[[reg]] <- ggdraw(ggplot() + theme(plot.background= element_rect(colour='White',fill='White'),
-                                              panel.background = element_rect(colour='White',fill='White')))+
+    regPlts[[reg]] <- ggdraw(ggplot() + theme(plot.background= element_rect(colour='White',fill='White',size=0.5),
+                                              panel.background = element_rect(colour='White',fill='White',size=0.5)))+
       draw_plot(compBands$na, x = 0.052, y = 0.3, width = 0.665, height = 0.7) +
       draw_plot(compBands$ts, x = 0.052, y = 0.3, width = 0.665, height = 0.7) +
       draw_plot(pltTime,      x = 0, y = 0, width = 0.671, height = 0.3) +

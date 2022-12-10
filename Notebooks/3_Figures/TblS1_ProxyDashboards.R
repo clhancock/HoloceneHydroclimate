@@ -43,7 +43,7 @@ proxyDf <- as.data.frame(spTransform(SpatialPointsDataFrame(proxyDf[,c("longitud
 
 
 #### Figure Settings
-save     <- TRUE
+save     <- FALSE
 specific <- TRUE 
 
 if (save){ print(paste0("save ",var," figs"))
@@ -118,6 +118,7 @@ for (reg in as.character(refregions@data[["Acronym"]])){
   print(paste(n,reg,sep=". "))
   tsn <- 0
   for (ts in arrange(regionDf, desc(latitude), longitude)$tsid){
+    #ts <- arrange(regionDf, desc(latitude), longitude)$tsid#[3]
     tsn<-tsn+1
     siteDf  <- regionDf[which(regionDf$tsid==ts),]
     tso     <- regTSO[[which(pullTsVariable(regTSO,'paleoData_TSid')==ts)]]
@@ -145,6 +146,9 @@ for (reg in as.character(refregions@data[["Acronym"]])){
       plt <- plt + 
         geom_point(aes(x=tso$chronData_ages_12k,y=tso$chronData_ages_12k*0+min(df$values,na.rm=TRUE)), color="black",size=2,shape=17)+
         scale_y_continuous(name=paste(tso$paleoData_variableName,' (',tso$paleoData_units,')',sep=''))
+    }
+    if (length(tso$paleoData_valuesMax)>0){
+        plt <- plt + geom_ribbon(aes(x= as.numeric(tso$age), ymin=tso$paleoData_valuesMin, ymax=tso$paleoData_valuesMax), fill='grey10',color=NA,alpha=0.1)
     }
     #
     map <- regMap + geom_star(data=siteDf,

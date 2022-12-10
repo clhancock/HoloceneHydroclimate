@@ -108,7 +108,10 @@ for i in ['Wet','Dry']:
     ax.set_ylim([0,50])
     #
     ax.tick_params(labelbottom=False) 
-    ax.set_title('Largest '+i+' '+var.upper()+' Anomaly',fontsize=8)  #y=1.1, x = 0.42,loc='left', fontsize = 10)
+    if var == 'pre':
+        ax.set_title('Largest '+i+' '+'Precipitation'+'Anomaly',fontsize=8)  #y=1.1, x = 0.42,loc='left', fontsize = 10)
+    else:
+        ax.set_title('Largest '+i+' '+var.upper()+' Anomaly',fontsize=8)  #y=1.1, x = 0.42,loc='left', fontsize = 10)
     ax.spines['right'].set_visible(True);ax.spines['top'].set_visible(True)
     if col == 1: ax.tick_params(labelleft=False) 
 

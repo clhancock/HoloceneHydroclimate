@@ -36,7 +36,7 @@ wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclima
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 var     <- 'HC'
-lipdTSO <- readRDS(file.path(wd,'Data','Proxy','LiPD','lipdData.rds'))[[var]]
+lipdTSO <- readRDS(file.path(wd,'Data','Proxy','lipdData.rds'))[[var]]
 proxyDf <- read.csv(file=file.path(wd,'Data','Proxy',paste0('proxyMetaData_',var,'.csv')))
 print("Proxy data loaded ")
 
@@ -91,11 +91,11 @@ if (var == 'HC'){
     plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "#38A6A5" #"corn flower blue"
     plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "#1D6996" #"dark blue"
     plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "#94346E" # "dark orchid" #δ
-    plotSettings$color[which(plotSettings$names=="Other (calibrated)")]      <- "grey40" #"grey40"
-    plotSettings$color[which(plotSettings$names=="Other (not calibrated)")]  <- "grey" #"grey"
-    plotSettings$color[which(plotSettings$names=="Pollen (calibrated)")]     <- "#0F8554" #"forest green"
-    plotSettings$color[which(plotSettings$names=="Pollen (not calibrated)")] <- "#73AF48" #"" #"yellowgreen"
-    plotSettings$color[which(plotSettings$names=="Speleothem (other)")]      <- "#EDAD08" #"darkorange"
+    plotSettings$color[which(plotSettings$names=="Other (Calibrated)")]      <- "grey40" #"grey40"
+    plotSettings$color[which(plotSettings$names=="Other (Not Calibrated)")]  <- "grey" #"grey"
+    plotSettings$color[which(plotSettings$names=="Pollen (Calibrated)")]     <- "#0F8554" #"forest green"
+    plotSettings$color[which(plotSettings$names=="Pollen (Not Calibrated)")] <- "#73AF48" #"" #"yellowgreen"
+    plotSettings$color[which(plotSettings$names=="Speleothem (Other)")]      <- "#EDAD08" #"darkorange"
     plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "#E17C05" #"lightcoral"
     plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "#CC503E" #"firebrick"
     #
@@ -104,13 +104,14 @@ if (var == 'HC'){
     plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
     plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
     plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
-    plotSettings$shape[which(plotSettings$names=="Other (calibrated)")]      <- 6
-    plotSettings$shape[which(plotSettings$names=="Other (not calibrated)")]  <- 13
-    plotSettings$shape[which(plotSettings$names=="Pollen (calibrated)")]     <- 14
-    plotSettings$shape[which(plotSettings$names=="Pollen (not calibrated)")] <- 1
-    plotSettings$shape[which(plotSettings$names=="Speleothem (other)")]      <- 17
+    plotSettings$shape[which(plotSettings$names=="Other (Calibrated)")]      <- 6
+    plotSettings$shape[which(plotSettings$names=="Other (Not Calibrated)")]  <- 13
+    plotSettings$shape[which(plotSettings$names=="Pollen (Calibrated)")]     <- 14
+    plotSettings$shape[which(plotSettings$names=="Pollen (Not Calibrated)")] <- 1
+    plotSettings$shape[which(plotSettings$names=="Speleothem (Other)")]      <- 17
     plotSettings$shape[which(plotSettings$names=="Speleothem (δ13C)")]       <- 23
     plotSettings$shape[which(plotSettings$names=="Speleothem (δ18O)")]       <- 11  
+    #
   } else{
     plotSettings$names <- sort(unique(proxyDf$Category))
     #
@@ -220,7 +221,7 @@ basePlot <- ggplot(proxyDf)+
 #BaseMap
 IPCC <- TRUE
 basemap <- ggplot() +
-  borders(aggregate(refregions, FUN=length), fill=NA, color='black', size=2) +
+ #borders(aggregate(refregions, FUN=length), fill=NA, color='black', size=2) +
   geom_map(data=refregions, map=fortify(refregions), 
            aes(x=long, y=lat, group=group, map_id=id), fill="white", color="white", size=1)+
   geom_map(data=countries,  map=fortify(countries),  
@@ -229,10 +230,14 @@ basemap <- ggplot() +
   theme_void() 
 if (IPCC){ 
   basemap <- basemap +
-    geom_map(data=subset(refregions, Acronym %in% proxyDf$ipccReg), 
-             map=fortify(subset(refregions, Acronym %in% proxyDf$ipccReg)), 
+      geom_map(data=refregions,#subset(refregions, Acronym %in% proxyDf$ipccReg), 
+             map=fortify(refregions),#subset(refregions, Acronym %in% proxyDf$ipccReg)), 
              aes(x=long, y=lat, group=group, map_id=id),
-             alpha=0.75, size=0.3, color='black' , fill=NA,linetype = "dashed") 
+             alpha=0.75, linewidth=0.3, color='grey' , fill=NA,linetype = 2) +
+      geom_map(data=subset(refregions, Acronym %in% proxyDf$ipccReg), 
+             map=fortify(refregions),#subset(refregions, Acronym %in% proxyDf$ipccReg)), 
+             aes(x=long, y=lat, group=group, map_id=id),
+             alpha=0.75, linewidth=0.3, color='black' , fill=NA,linetype = 'dotdash') 
 }
 
 ```
@@ -416,13 +421,18 @@ plotTime
 #### Map proxy data
 
 ```{r  message=TRUE, warning=FALSE}
+labs <- plotSettings$names
+labs[2]    <- expression(paste("Lake Sediment (δ"^"18"*"O)"))#bquote(atop(Lake~Sediment~δ^18~O))
+labs[10]      <- expression(paste("Speleothem (δ"^"13"*"C)"))
+labs[11]      <-expression(paste("Speleothem (δ"^"18"*"O)"))
+
 proxyMapSites <- basemap+
   #Proxy Data
   geom_star(data= as.data.frame(proxyDf),aes(x=lonsPrj , y=latsPrj,
                                                   starshape=CategorySpec, fill=CategorySpec),
             size=1.75,color='Black',alpha=1,starstroke=0.3) + 
-  scale_fill_manual(values=plotSettings$color,name= 'Proxy Category') +
-  scale_starshape_manual(values=plotSettings$shape,name= 'Proxy Category') +
+  scale_fill_manual(values=plotSettings$color,name= 'Proxy Category',labels=labs) +
+  scale_starshape_manual(values=plotSettings$shape,name= 'Proxy Category',labels=labs) +
   #Theme
   theme(text = element_text(family=figFont,size=figText),
         plot.background = element_rect(fill = 'white',color='white'),
@@ -431,19 +441,21 @@ proxyMapSites <- basemap+
         legend.margin = margin(c(0, 0.1, 0.05, 0.06), unit="in"),
         legend.key.height = unit(0.12, "in"),
         legend.key.width = unit(0.12, "in"),
-        legend.position = c(0.12,0.32),
+        legend.position = c(0.09,0.32),
         legend.title = element_blank())#,legend.position = 'none')# legend.position = c(0.5,0.7))
 if (save) {
   ggsave(plot=proxyMapSites, width = 6.5, height = 3.25, dpi = 600, 
        filename = file.path(wd,"Figures","Proxy",paste('PlotProxyTypeRegion_',var,'.png',sep='')))
 }
+
+
 proxyMapSites
 ```
 
 #### Combine proxy map with time density plot
 
 ```{r message=FALSE, warning=FALSE}
-fig1 <- ggarrange(proxyMapSites+ theme(legend.position = c(0.1,0.3)), 
+fig1 <- ggarrange(proxyMapSites+ theme(legend.position = c(0.07,0.3)), 
                   plotTime+      theme(legend.position = 'none',
                                        plot.margin = unit(c(0, 0.5, 0.1, 0.4), "in")),
                  ncol=1, widths=c(6.5), heights=c(3.25,1.75), padding=0)
