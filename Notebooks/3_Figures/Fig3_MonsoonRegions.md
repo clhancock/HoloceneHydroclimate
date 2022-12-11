@@ -63,6 +63,9 @@ for (i in 2:ncol(RegionTS)){
 NHmonsoon <- RegionTS[,c('time','EAS','TIB','SAH','NEAF')]#,'ECA','WCA')]
 SHmonsoon <- RegionTS[,c('time','SAM','ESAF')]
 
+NHmidlat <-  RegionTS[,c('time','NWN','NEN','WNA','CNA','ENA','NEU','WCE','WSB','ESB')]
+SHmidlat <-  RegionTS[,c('time','NZ','SAU','SSA')]
+
 load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
 ```
 
@@ -120,12 +123,12 @@ for (reg in names(SHmonsoon2)[-1]){
 z <- 0.1
 plt <-ggplot()+
    geom_hline(yintercept =0,color='grey70') +
-   geom_ribbon(aes(x=RegionTS$time,ymin=apply(ensNH,1,quantile,probs=(0+z),na.rm=TRUE),
-                                   ymax=apply(ensNH,1,quantile,probs=(1-z),na.rm=TRUE)),
-               fill='grey70',color=NA,alpha=0.4)+
-   geom_ribbon(aes(x=RegionTS$time,ymin=apply(ensSH,1,quantile,probs=(0+z),na.rm=TRUE),
-                                   ymax=apply(ensSH,1,quantile,probs=(1-z),na.rm=TRUE)),
-               fill='grey70',color=NA,alpha=0.4)+
+   #geom_ribbon(aes(x=RegionTS$time,ymin=apply(ensNH,1,quantile,probs=(0+z),na.rm=TRUE),
+    #                               ymax=apply(ensNH,1,quantile,probs=(1-z),na.rm=TRUE)),
+     #          fill='grey70',color=NA,alpha=0.4)+
+  # geom_ribbon(aes(x=RegionTS$time,ymin=apply(ensSH,1,quantile,probs=(0+z),na.rm=TRUE),
+   #                                ymax=apply(ensSH,1,quantile,probs=(1-z),na.rm=TRUE)),
+    #           fill='grey70',color=NA,alpha=0.4)+
    geom_line(data=melt(NHmonsoon2,  id.vars = 'time', variable.name = 'region'),
                        aes(x=time,y=value,color=region,linetype='North'),size=s)+
    geom_line(data=melt(SHmonsoon2,  id.vars = 'time', variable.name = 'region'),
@@ -167,3 +170,56 @@ plt
     ## Warning: Removed 5 row(s) containing missing values (geom_path).
 
 ![](Fig3_MonsoonRegions_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+``` r
+ensNH <- read.csv(file.path(wd,'Data','RegionComposites',var,paste0(names(NHmonsoon)[2],'.csv')))
+for (reg in c(names(NHmonsoon)[-c(1:2)])){
+   ensNH <- cbind(ensNH,read.csv(file.path(wd,'Data','RegionComposites',var,paste0(reg,'.csv')))) 
+   
+}
+for (i in 1:ncol(ensNH)){
+   ensNH[,i] <- (ensNH[,i] - mean(ensNH[1:10,i],na.rm=TRUE))#/sd(RegionTS[,i],na.rm=TRUE) 
+}
+ensSH <- read.csv(file.path(wd,'Data','RegionComposites',var,paste0(names(SHmonsoon)[2],'.csv')))
+for (reg in c(names(SHmonsoon)[-c(1:2)])){
+   ensSH <- cbind(ensSH,read.csv(file.path(wd,'Data','RegionComposites',var,paste0(reg,'.csv')))) 
+}
+for (i in 1:ncol(ensSH)){
+   ensSH[,i] <- (ensSH[,i] - mean(ensSH[1:10,i],na.rm=TRUE))#/sd(RegionTS[,i],na.rm=TRUE) 
+}
+```
+
+``` r
+NHmidlat2 <- NHmidlat
+SHmidlat2 <- SHmidlat
+
+for (reg in names(NHmidlat2)[-1]){
+   names(NHmidlat2)[which(names(NHmidlat2)==reg)] <- as.character(IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]$Name)
+}
+ 
+for (reg in names(SHmidlat2)[-1]){
+  names(SHmidlat2)[which(names(SHmidlat2)==reg)] <- as.character(IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]$Name)
+}
+
+pltRolors <- c()
+pltColors <- c('#fcde9c','#faa476','#f0746e','#dc3977','#b9257a','#7c1d6f','black','grey30','grey60')
+
+z <- 0.1
+plt <-ggplot()+
+   geom_hline(yintercept =0,color='grey70') +
+   geom_line(data=melt(NHmidlat2,  id.vars = 'time', variable.name = 'region'),
+                       aes(x=time,y=value,color=region),size=s)+
+   scale_x_reverse(limits = c(30000,0),breaks = seq(0, 12000, 2000),labels=seq(0, 12, 2),name="Age (ka BP)") +
+   scale_y_continuous(limits=c(-100,100),name="Proxy Composite Anomaly (Z-score)") + 
+   scale_color_manual(values=pltColors,name='Region') +
+   coord_cartesian(xlim=c(12000,0), ylim=c(-5.2,2.2),expand =FALSE)+
+   theme_bw() +  
+   theme(text = element_text(family=figFont,size=12))
+
+
+
+
+plt
+```
+
+![](Fig3_MonsoonRegions_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->

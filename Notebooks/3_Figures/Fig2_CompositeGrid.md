@@ -246,7 +246,7 @@ for (sample in c(1,2)){
             panel.border= element_rect(colour='Black',color=,fill=NA),
             panel.grid  = element_blank(),
             axis.title  = element_blank(),
-            axis.ticks  = element_line(color = 'Black',size=0.6), 
+            axis.ticks  = element_line(color = 'Black',size=0.4), 
             axis.text.x = element_blank(),
             axis.text.y =element_text(family='Times New Roman',size=8,color='Black'),
             axis.ticks.length.y=unit(2,"pt"),
@@ -255,8 +255,8 @@ for (sample in c(1,2)){
             text = element_text(family='Times New Roman',size=8),
             legend.position='none')
     #
-    regPlts[[reg]] <- ggdraw(ggplot() + theme(plot.background= element_rect(colour='White',fill='White',size=0.5),
-                                              panel.background = element_rect(colour='White',fill='White',size=0.5)))+
+    regPlts[[reg]] <- ggdraw(ggplot() + theme(plot.background= element_rect(colour='White',fill='White'),
+                                              panel.background = element_rect(colour='White',fill='White')))+
       draw_plot(compBands$na, x = 0.052, y = 0.3, width = 0.665, height = 0.7) +
       draw_plot(compBands$ts, x = 0.052, y = 0.3, width = 0.665, height = 0.7) +
       draw_plot(pltTime,      x = 0, y = 0, width = 0.671, height = 0.3) +
