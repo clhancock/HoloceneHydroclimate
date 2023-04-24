@@ -17,7 +17,7 @@ library(tidyverse)
 print("Packages Loaded")
 
 #Set Working Directory
-wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
+wd = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
 
 #### Load Data
 
@@ -43,7 +43,7 @@ proxyDf <- as.data.frame(spTransform(SpatialPointsDataFrame(proxyDf[,c("longitud
 
 
 #### Figure Settings
-save     <- FALSE
+save     <- TRUE
 specific <- TRUE 
 
 if (save){ print(paste0("save ",var," figs"))
@@ -66,11 +66,11 @@ if (var == 'HC'){
     plotSettings$color[which(plotSettings$names=="Shoreline (Lake Level)")]  <- "#38A6A5" #"corn flower blue"
     plotSettings$color[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- "#1D6996" #"dark blue"
     plotSettings$color[which(plotSettings$names=="Leaf Wax (δD)")]           <- "#94346E" # "dark orchid" #δ
-    plotSettings$color[which(plotSettings$names=="Other (calibrated)")]      <- "grey40" #"grey40"
-    plotSettings$color[which(plotSettings$names=="Other (not calibrated)")]  <- "grey" #"grey"
-    plotSettings$color[which(plotSettings$names=="Pollen (calibrated)")]     <- "#0F8554" #"forest green"
-    plotSettings$color[which(plotSettings$names=="Pollen (not calibrated)")] <- "#73AF48" #"" #"yellowgreen"
-    plotSettings$color[which(plotSettings$names=="Speleothem (other)")]      <- "#EDAD08" #"darkorange"
+    plotSettings$color[which(plotSettings$names=="Other (Calibrated)")]      <- "grey40" #"grey40"
+    plotSettings$color[which(plotSettings$names=="Other (Not Calibrated)")]  <- "grey" #"grey"
+    plotSettings$color[which(plotSettings$names=="Pollen (Calibrated)")]     <- "#0F8554" #"forest green"
+    plotSettings$color[which(plotSettings$names=="Pollen (Not Calibrated)")] <- "#73AF48" #"" #"yellowgreen"
+    plotSettings$color[which(plotSettings$names=="Speleothem (Other)")]      <- "#EDAD08" #"darkorange"
     plotSettings$color[which(plotSettings$names=="Speleothem (δ13C)")]       <- "#E17C05" #"lightcoral"
     plotSettings$color[which(plotSettings$names=="Speleothem (δ18O)")]       <- "#CC503E" #"firebrick"
     #
@@ -79,10 +79,10 @@ if (var == 'HC'){
     plotSettings$shape[which(plotSettings$names=="Shoreline (Lake Level)")]  <- 21
     plotSettings$shape[which(plotSettings$names=="Lake Sediment (δ18O)")]    <- 15
     plotSettings$shape[which(plotSettings$names=="Leaf Wax (δD)")]           <- 5
-    plotSettings$shape[which(plotSettings$names=="Other (calibrated)")]      <- 6
-    plotSettings$shape[which(plotSettings$names=="Other (not calibrated)")]  <- 13
-    plotSettings$shape[which(plotSettings$names=="Pollen (calibrated)")]     <- 14
-    plotSettings$shape[which(plotSettings$names=="Pollen (not calibrated)")] <- 1
+    plotSettings$shape[which(plotSettings$names=="Other (Calibrated)")]      <- 6
+    plotSettings$shape[which(plotSettings$names=="Other (Not Calibrated)")]  <- 13
+    plotSettings$shape[which(plotSettings$names=="Pollen (Calibrated)")]     <- 14
+    plotSettings$shape[which(plotSettings$names=="Pollen (Not Calibrated)")] <- 1
     plotSettings$shape[which(plotSettings$names=="Speleothem (other)")]      <- 17
     plotSettings$shape[which(plotSettings$names=="Speleothem (δ13C)")]       <- 23
     plotSettings$shape[which(plotSettings$names=="Speleothem (δ18O)")]       <- 11  

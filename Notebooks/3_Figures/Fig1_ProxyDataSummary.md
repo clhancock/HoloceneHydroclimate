@@ -117,15 +117,15 @@ pivot
     ##  1 Glacier Ice (Accumulation)     8   12000    19.4     NA          NA  <NA>    
     ##  2 Lake Sediment (δ18O)          43    9285    31        9        2070  79      
     ##  3 Leaf Wax (δD)                 31   11013   150       11        2345  74      
-    ##  4 Pollen (Calibrated)          350   10862   150        7        2500  93      
+    ##  4 Pollen (Calibrated)          345   10820   150        7        2500  94      
     ##  5 Pollen (Not Calibrated)       19   11840    86.5     12.5      2395  74      
     ##  6 Shoreline (Lake Level)       139   11506. 1174.      10        2145  <NA>    
     ##  7 Speleothem (δ18O)             74    8895.   12.2     15        1476. 89      
     ##  8 Speleothem (δ13C)             28    7684.   25.9     10        1630. 100     
     ##  9 Speleothem (Other)             9    8163.   34       14        1184. 67      
     ## 10 Other (Calibrated)            23   10000   106.      18        1326  4       
-    ## 11 Other (Not Calibrated)        95    9533    37.5      9        2184  62      
-    ## 12 All                          819   10825   109.       9        2350  68+17   
+    ## 11 Other (Not Calibrated)        94    9542.   37.8      9        2214. 62      
+    ## 12 All                          813   10820   109.       8.5      2348. 68+17   
     ## # … with abbreviated variable name ¹​pctChronData
 
 #### Plot sample resolution histogram (only Holocene ages)
@@ -269,13 +269,13 @@ if (save) {
 print(paste("Mean:",as.character(round(mean(plotData)))))
 ```
 
-    ## [1] "Mean: 9614"
+    ## [1] "Mean: 9608"
 
 ``` r
 print(paste("Median:",as.character(round(median(plotData)))))
 ```
 
-    ## [1] "Median: 10825"
+    ## [1] "Median: 10820"
 
 ``` r
 print(paste("Range:",as.character(round(range(plotData)))))
@@ -341,7 +341,8 @@ plotTime <- ggplot(plotTimeData$data,aes(yvec,value))+
   geom_area(alpha=0.9,aes(fill=group),color='Black',size=0.2)+
   scale_fill_manual(values=plotSettings$color) +
   scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),n.breaks=7)+
-  scale_y_continuous(name = "Count of Records",limits=c(0,length(lipdTSO)),expand=c(0,0),
+  scale_y_continuous(name = "Count of Available\nRecords Through Time",
+                     limits=c(0,length(lipdTSO)),expand=c(0,0),
                      labels=seq(0,length(lipdTSO),100), breaks=seq(0,length(lipdTSO),100))+
   theme_bw()+
   theme(text = element_text(family=figFont,size=figText),

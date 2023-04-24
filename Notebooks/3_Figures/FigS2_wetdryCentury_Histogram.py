@@ -16,8 +16,7 @@ plt.rcParams['axes.linewidth'] = 0.5;
 plt.rcParams['axes.edgecolor'] = 'k'
 #plt.tick_params(labelsize=8)
 
-Dir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
-
+Dir = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
 
 binSize = 1000
 binN = int(12000/binSize)
@@ -41,7 +40,7 @@ for i in range(0,binN):
 #%% Calculate Wettest and Dryest Century of transient model
 models = ['trace','hadcm']
 szn = 'ANN'
-var = 'pre'
+var = 'p-e'
 vals = {}
 for model in models:
     data = xr.open_dataset(Dir+'Data/Model/'+model+'/'+model+'_'+szn+'.nc',decode_times=False)
@@ -120,60 +119,60 @@ if save: plt.savefig(Dir+'Figures/Model/HistWettestCentury_'+var+'_'+szn+'.png',
                          dpi=400,format='png',bbox_inches='tight')       
 else: plt.show()
 
-#%% Map
-from   matplotlib.colors   import LinearSegmentedColormap
-import cartopy.crs         as ccrs        # Packages for mapping in python
-import cartopy.util        as cutil
+# #%% Map
+# from   matplotlib.colors   import LinearSegmentedColormap
+# import cartopy.crs         as ccrs        # Packages for mapping in python
+# import cartopy.util        as cutil
 
-save = False
-cramp = plt.cm.get_cmap('RdGy_r',10)
-cramp = LinearSegmentedColormap.from_list('cramp',['#7f3b08','white','#2d004b'],N=10)
-mlevels = np.array([i /10 for i in list(range(-10,11,2))])
+# save = False
+# cramp = plt.cm.get_cmap('RdGy_r',10)
+# cramp = LinearSegmentedColormap.from_list('cramp',['#7f3b08','white','#2d004b'],N=10)
+# mlevels = np.array([i /10 for i in list(range(-10,11,2))])
 
-models = ['trace','hadcm']
-szn = 'ANN'
-var = 'pre'
-vals = {}
-data = xr.open_dataset(Dir+'Data/Model/'+model+'/'+model+'_'+szn+'.nc',decode_times=False)
-    #land = rm.defined_regions.natural_earth.land_110.mask_3D(data)
-    #vals[model+'_Dry_all'] = np.argmin(data[var].data,axis=0)*abs(data.age[0]-data.age[1]).data
-vals = np.argmax(data[var].data,axis=0)*abs(data.age[0]-data.age[1]).data
+# models = ['trace','hadcm']
+# szn = 'ANN'
+# var = 'pre'
+# vals = {}
+# data = xr.open_dataset(Dir+'Data/Model/'+model+'/'+model+'_'+szn+'.nc',decode_times=False)
+#     #land = rm.defined_regions.natural_earth.land_110.mask_3D(data)
+#     #vals[model+'_Dry_all'] = np.argmin(data[var].data,axis=0)*abs(data.age[0]-data.age[1]).data
+# vals = np.argmax(data[var].data,axis=0)*abs(data.age[0]-data.age[1]).data
     
 
-cramp = plt.cm.get_cmap("PuOr",8)
-ax = plt.axes(projection=ccrs.Robinson())
-model_contour=plt.pcolormesh(data.lon, data.lat, vals,transform=ccrs.PlateCarree(),
-                              vmin=0,vmax=12000,cmap=cramp)
+# cramp = plt.cm.get_cmap("PuOr",8)
+# ax = plt.axes(projection=ccrs.Robinson())
+# model_contour=plt.pcolormesh(data.lon, data.lat, vals,transform=ccrs.PlateCarree(),
+#                               vmin=0,vmax=12000,cmap=cramp)
 
-ax.coastlines()
-ax.set_global()
-cbar = plt.colorbar(model_contour,orientation="horizontal",#ticks=[-1,-0.6,-0.3,0,0.3,0.6,1],
-                        fraction=0.04, pad=0.04,aspect=30)
-plt.show()
-
-
+# ax.coastlines()
+# ax.set_global()
+# cbar = plt.colorbar(model_contour,orientation="horizontal",#ticks=[-1,-0.6,-0.3,0,0.3,0.6,1],
+#                         fraction=0.04, pad=0.04,aspect=30)
+# plt.show()
 
 
 
-#cbar.set_label('Pearson Correlation Coefficient',fontsize=8, fontfamily = 'Times New Roman')
-#cbar.ax.set_xticklabels([-1,-0.6,-0.3,0,0.3,0.6,1],fontsize=8)
-plt.show()
+
+
+# #cbar.set_label('Pearson Correlation Coefficient',fontsize=8, fontfamily = 'Times New Roman')
+# #cbar.ax.set_xticklabels([-1,-0.6,-0.3,0,0.3,0.6,1],fontsize=8)
+# plt.show()
 
 
 
-plt.figure(figsize=(6,3.01))
-gs = gridspec.GridSpec(12,8)
-ax = plt.subplot(gs[0:12,0:6],projection=ccrs.Robinson()) 
-refRegLand = rm.defined_regions.ar6.land
-refRegLand.plot_regions(ax=ax,add_label=False,line_kws=dict(linewidth=0.7))
-data_cyclic,lon_cyclic = cutil.add_cyclic_point(rVals,coord=lons)
-model_contour = plt.contourf(lon_cyclic,lats, data_cyclic,transform=ccrs.PlateCarree(),
-                             vmin=-1,vmax=1,cmap=cramp,levels=20)  
-ax.scatter(pltlons,pltlats,c=pltVals,transform=ccrs.PlateCarree(),
-           cmap=cramp,vmin=-1,vmax=1,s=40,ec='k',lw=2)
-ax.set_global()
-ax.annotate('(a)',xy=(0, 0), xycoords='data', xytext=(0.05, 0.95), 
-            textcoords='axes fraction', fontsize=8, fontfamily = 'Times New Roman')
+# plt.figure(figsize=(6,3.01))
+# gs = gridspec.GridSpec(12,8)
+# ax = plt.subplot(gs[0:12,0:6],projection=ccrs.Robinson()) 
+# refRegLand = rm.defined_regions.ar6.land
+# refRegLand.plot_regions(ax=ax,add_label=False,line_kws=dict(linewidth=0.7))
+# data_cyclic,lon_cyclic = cutil.add_cyclic_point(rVals,coord=lons)
+# model_contour = plt.contourf(lon_cyclic,lats, data_cyclic,transform=ccrs.PlateCarree(),
+#                              vmin=-1,vmax=1,cmap=cramp,levels=20)  
+# ax.scatter(pltlons,pltlats,c=pltVals,transform=ccrs.PlateCarree(),
+#            cmap=cramp,vmin=-1,vmax=1,s=40,ec='k',lw=2)
+# ax.set_global()
+# ax.annotate('(a)',xy=(0, 0), xycoords='data', xytext=(0.05, 0.95), 
+#             textcoords='axes fraction', fontsize=8, fontfamily = 'Times New Roman')
 
 
 

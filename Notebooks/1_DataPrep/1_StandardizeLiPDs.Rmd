@@ -16,18 +16,18 @@ library(tidyverse)
 print("Packages Loaded")
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-#Set Working Directory
-wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
-#knitr::opts_knit$set(root.dir = wd)
-```
 
+#### Settings
 ```{r warnings=FALSE, message=FALSE}
+wd = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
+
 save<-TRUE
+
 tempVers <- '1_0_2' #Which versions of temp12k datesets to use
 hcVers   <- '0_7_0' #Which versions of Holocene hydroclimate datesets to use
 ```
 
+#### Load Proxy Data
 ```{r warnings=FALSE, message=FALSE}
 #Load IPCC Region Spatial Data
 PROJ     <- '+proj=robin   +ellps=WGS84 +datum=WGS84 +no_defs +lon_0=0 +x_0=0 +y_0=0 +units=m'
@@ -69,11 +69,13 @@ print(paste("Temp:",length(TS__t)))
 print(paste("HC:",  length(TS_hc)))
 ```
 
+
+#### Fix known metadata issues (should be fixed for next LiPDverse update)
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
-######Fix known metadata issues
 
 tsids <- pullTsVariable(TS_hc, "paleoData_TSid")
 
+#Fix ages from ka to yr BP
 TS_hc[[which(tsids == "S2LRbRVYOu2hWu")]][["age"]] <- TS_hc[[which(pullTsVariable(TS_hc, "paleoData_TSID") == "S2LRbRVYOu2hWu")]][["age"]]/1000
 
 ##### originalDataUrl
@@ -126,9 +128,20 @@ TS_hc[[which(tsids=="LPD1756fdf4")]]$pub1_doi                    <- "10.1038/nat
 TS_hc[[which(tsids=="WEB-c74a1-de1f-477c-becc-15b90")]]$pub1_doi <- "10.1038/s41598-019-38626-3"
 TS_hc[[which(tsids=="WEB-8358f-5546-4fa4-9716-b98f3")]]$pub1_doi <- "10.1038/s43247-022-00368-y"
 TS_hc[[which(tsids=="WEB-9119d-899e-4084-82c1-1fac9")]]$pub1_doi <- "10.1016/j.epsl.2012.03.016"
+
+#Remove these duplicates
+TS_hc <- TS_hc[-which(tsids %in% c('lcRYFM1oW2BMerncgWT',  #Legacy Climate error. Duplicate data in the same file. Use correct timeseries
+                'lcR7JrQa2JW0MEcIlwG', #Legacy Climate error. Duplicate data in the same file. Use correct timeseries
+                'WEBcdfe38ba',         #2 records (Ti & Ti/CA) from the same core. Because these are highly correlated, we exclude the Ti timeseries
+                'lcRtoAUZCUcuHH7pJF4', #  Legacy Climate error. Duplicate data in the same file. Use correct timeseries
+                'GH6d568132',          #Included Marsicek et al. (2013), but also in LegacyClimate. Use LegacyClimate
+                'lcRLjFgm2COLZCD5g59' #2 pollen calibrations from the same site. Defer to the higher resolution RuppertLake.Higuera.2006
+          ))]
+
 ```
 
 ```{r}
+#Consolidate
 lipdData <- list(T = TS__t, HC = TS_hc)
 ```
 
@@ -427,10 +440,11 @@ for (var in names(lipdData)){
 }
 ```
 
+#### Add uncertainty information #beta
 
 ```{r}
-legacyRMSE <- read.csv("/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/ProxyInfo/LegacyClimateTSidPassQC.csv")
-otherUnc   <- read.csv("/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/ProxyInfo/hc_proxy_Unc.csv")
+legacyRMSE <- read.csv(file.path(wd,'Data','Proxy','LegacyClimateTSidPassQC.csv'))
+otherUnc   <- read.csv(file.path(wd,'Data','Proxy','hc_proxy_Unc.csv'))
 
 var <- 'HC'
 for (ts in 1:length(lipdData[[var]])){
@@ -509,7 +523,7 @@ for (ts in 1:length(lipdData[[var]])){
 
 ```{r warnings=FALSE, message=FALSE}
 print(paste("Temp:",length(lipdData$T)))  #1321
-print(paste("HC:",  length(lipdData$HC))) #819
+print(paste("HC:",  length(lipdData$HC))) #813
 
 if(save){saveRDS(lipdData, file.path(wd,'Data','Proxy','lipdData.rds'))}
 ```

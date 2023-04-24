@@ -6,6 +6,9 @@
 
 #Load Packages--------------------------------------------------------------------------------
 
+
+#library(compositeR)
+devtools::install("/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/Notebooks/compositeR")
 library(compositeR)
 library(doParallel)
 library(dplyr)
@@ -19,10 +22,9 @@ library(tidyverse)
 
 #Set up directories and names--------------------------------------------------------------------------------
 
-wd  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
-var  <- 'HC'
-save <- FALSE
-
+wd = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
+var  <- 'T'
+save <- TRUE
 
 #Load Data without winter+ or summer+ seasonality--------------------------------------------------------------------------------
 
@@ -32,15 +34,15 @@ lipdTSO  <- lipdData[-which(pullTsVariable(lipdData,"climateInterpretation1_seas
 if(var == 'T'){
   lipdTSO <- filterTs(lipdTSO,'paleoData_units == degC')
   lipdTSO <- filterTs(lipdTSO,'paleoData_datum == abs')
-  std <- FALSE      #Use calibrated data for T so no need to normalize variance
+  std <- TRUE       #Use calibrated data for T so no need to normalize variance #Change to true so that a more 1:1: comparison 4/24/23
 } else{std <- TRUE} #Normalize HC variance because data recorded with different units
 
 
 #Set variables for composite code--------------------------------------------------------------------------------
 
-nens          <- 5     #Ensemble numbers (lower = faster)
-binsize       <- 100     #years (median resolution = 107yrs)
-ageMin        <- -100       #age BP
+nens          <- 500     #Ensemble numbers (lower = faster)
+binsize       <- 100     #years (median resolution = 109yrs)
+ageMin        <- 0       #age BP
 ageMax        <- 12400   #age BP
 searchDur     <- 3500    #yrs (for 3 lake deposit data points)
 nThresh       <- 6       #minimum no. of records, else skip 
@@ -63,30 +65,31 @@ regNames <- c(as.character(regNames$name),'EAN','SSA') #Add 2 SH regions with fe
 compositeEnsemble <- vector(mode='list')
 medianCompositeTS <- data_frame(time=binYears[1:which(binYears==12000)])
 
-reg<-'ECA'
-lipdReg  <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
-ts<-lipdReg[[5]]
-age<-ts$age
-value<-ts$paleoData_values
-newAge = NA
-spreadBy = 1
-maxGap = NA
-maxPct = 0.75
-minAge = -69 
-
-reg<-'ECA'
 #Loop to composite (by region)
 for (reg in c(regNames)) {
   lipdReg  <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
   regN     <- length(lipdReg)
+  # If sufficient data, use a sample for each iteration
+  if (regN < 8){        pct <- 1.00
+  } else if (regN < 30){pct <- 0.75
+  }else{  pct <- 0.666}
+  #
+  #
+  for (i in 1:length(lipdReg)){
+    if (lipdReg[[i]]$climateInterpretation1_interpDirection == 'negative'){
+      lipdReg[[i]]$paleoData_values <- lipdReg[[i]]$paleoData_values*-1
+    }
+  }
+  #
+  #
   set.seed(5) #Reproducibility
   ensOut <- foreach(i = 1:nens) %dopar% {
-    tc <- compositeEnsembles(fTS                  = lipdReg,
-                             binvec               = binvec+0.05,
+    tc <- compositeEnsembles(fTS                  = lipdReg[sample(seq(1,length(lipdReg)),length(lipdReg)*pct)],
+                             binvec               = binvec,
                              stanFun              = standardizeMeanIteratively,
                              binFun               = simpleBinTs,
                              ageVar               = 'age',
-                             alignInterpDirection = TRUE,
+                             alignInterpDirection = FALSE,
                              spread               = TRUE,
                              duration             = searchDur,
                              searchRange          = c(1000,10000),
@@ -94,19 +97,23 @@ for (reg in c(regNames)) {
                              minN                 = 3)
     return(list(composite = tc$composite,count = tc$count))
   }
+  # Reformat Data
   regionComposite           <- as.matrix(purrr::map_dfc(ensOut,magrittr::extract,"composite"))
   rownames(regionComposite) <- binYears
+  #Only Holocene 
   regionComposite           <- regionComposite[1:which(binYears==12000),]
+  # Rescale for full timeseries
+  if(std){regionComposite           <- (regionComposite-mean(regionComposite,na.rm=TRUE))/(sd(regionComposite,na.rm=TRUE))}
+  # Save to matrix
   compositeEnsemble[[reg]]  <- regionComposite
   medianCompositeTS[[reg]]  <- apply(regionComposite,1,median,na.rm=TRUE)
 }
 
-#plot region to confirm that everything looks good
-plotTimeseriesEnsRibbons(X = binYears[1:which(binYears==12000)],Y = compositeEnsemble[['EAS']])+
+#plot E Asia region to confirm that everything looks good
+plotTimeseriesEnsRibbons(X = binYears[1:which(binYears==12000)],Y = compositeEnsemble[['SAS']] )+
   scale_x_reverse(name = "age (yr BP)",         oob = scales::squish)+
   scale_y_continuous(name = "Standardized Anomaly",oob = scales::squish)+
-  theme_bw()+
-  ggtitle(paste("E. Asia","Composite Ensemble"))
+  theme_bw()#+ggtitle(paste("S Asia (using align interpretation = TRUE"))
 
 
 #Save--------------------------------------------------------------------------------

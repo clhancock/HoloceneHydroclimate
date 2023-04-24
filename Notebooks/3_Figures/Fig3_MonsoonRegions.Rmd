@@ -26,18 +26,17 @@ print("Packages Loaded")
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 #Set Working Directory
-wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
+wd = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
 #knitr::opts_knit$set(root.dir = wd)
 ```
 
-#### Load Insolation Data
+#### Load Insolation Data for 30N and 30S
 ```{r}
 
 insolationRaw    <- as.data.frame(read.table(file.path(wd,'Data','insolation_bein1.dat.txt')))
 insolationRaw$V1 <- insolationRaw$V1*-1000 #covert from ka to yrs BP
 
 insolation <- vector(mode='list')
-
 for (lat in c(30,-30)){
   i <- as.character(lat)
   insolation[[i]] <- insolationRaw[which(insolationRaw$V2==lat),]
@@ -47,8 +46,8 @@ for (lat in c(30,-30)){
                            JJA=apply(insolation[[i]][c(6,7,8)+2],1,sum),
                            ANN=apply(insolation[[i]][seq(1,12)+2],1,sum))[1:13,]
   #Calc anomalies
-  for (col in 1:ncol(insolation[[i]])){
-    insolation[[i]][,col] <- insolation[[i]][,col] - insolation[[i]][1,col] 
+  for (col in 2:ncol(insolation[[i]])){
+    insolation[[i]][,col] <- insolation[[i]][,col] - mean(insolation[[i]][1:2,col] )
   }
 }
 ```
@@ -60,6 +59,8 @@ RegionTS <- read.csv(file.path(wd,'Data','RegionComposites',var,'MedianTS_byRegi
 for (i in 2:ncol(RegionTS)){
   RegionTS[,i] <- (RegionTS[,i] - mean(RegionTS[1:10,i],na.rm=TRUE))#/sd(RegionTS[,i],na.rm=TRUE) 
 }
+
+#Definite regions
 NHmonsoon <- RegionTS[,c('time','EAS','TIB','SAH','NEAF')]#,'ECA','WCA')]
 SHmonsoon <- RegionTS[,c('time','SAM','ESAF')]
 
@@ -69,14 +70,14 @@ SHmidlat <-  RegionTS[,c('time','NZ','SAU','SSA')]
 load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
 ```
 
-
+####Plot settings
 ```{r}
-scale <- 0.03
-shift <- 0
-s<-0.75
+scale <- 0.03 #For having 2 y-axis (what to multiply by)
+shift <- 0    #For having 2 y-axis (what to add by)
+s<-1          #linewidth
+z <- 0.1 #which quantiles to plot (0.1 = 0.1 to 0.9)
 
-save     <- FALSE
-specific <- TRUE 
+save     <- TRUE
 
 if (save){ print(paste0("save ",var," figs"))
 } else{    print(paste0("plot ",var," figs"))}
@@ -86,44 +87,32 @@ figText <- 10
 figSize <- c(6.5,3)
 ```
 
+#### Plot Monsson
 ```{r}
 
 ensNH <- read.csv(file.path(wd,'Data','RegionComposites',var,paste0(names(NHmonsoon)[2],'.csv')))
-for (reg in c(names(NHmonsoon)[-c(1:2)])){
-   ensNH <- cbind(ensNH,read.csv(file.path(wd,'Data','RegionComposites',var,paste0(reg,'.csv')))) 
-   
-}
-for (i in 1:ncol(ensNH)){
-   ensNH[,i] <- (ensNH[,i] - mean(ensNH[1:10,i],na.rm=TRUE))#/sd(RegionTS[,i],na.rm=TRUE) 
-}
 ensSH <- read.csv(file.path(wd,'Data','RegionComposites',var,paste0(names(SHmonsoon)[2],'.csv')))
-for (reg in c(names(SHmonsoon)[-c(1:2)])){
-   ensSH <- cbind(ensSH,read.csv(file.path(wd,'Data','RegionComposites',var,paste0(reg,'.csv')))) 
-}
-for (i in 1:ncol(ensSH)){
-   ensSH[,i] <- (ensSH[,i] - mean(ensSH[1:10,i],na.rm=TRUE))#/sd(RegionTS[,i],na.rm=TRUE) 
-}
+#Get NH Data
+for (reg in c(names(NHmonsoon)[-c(1:2)])){ensNH <- cbind(ensNH,read.csv(file.path(wd,'Data','RegionComposites',var,paste0(reg,'.csv')))) }
+for (reg in c(names(SHmonsoon)[-c(1:2)])){ensSH <- cbind(ensSH,read.csv(file.path(wd,'Data','RegionComposites',var,paste0(reg,'.csv')))) }
+#Subtract 0-1 ka mean
+for (i in 1:ncol(ensNH)){ensNH[,i] <- (ensNH[,i] - mean(ensNH[1:10,i],na.rm=TRUE))}#/sd(RegionTS[,i],na.rm=TRUE) 
+for (i in 1:ncol(ensSH)){ensSH[,i] <- (ensSH[,i] - mean(ensSH[1:10,i],na.rm=TRUE)) }#/sd(RegionTS[,i],na.rm=TRUE)
 
+#Rename
 NHmonsoon2 <- NHmonsoon
 SHmonsoon2 <- SHmonsoon
-
-for (reg in names(NHmonsoon2)[-1]){
-   names(NHmonsoon2)[which(names(NHmonsoon2)==reg)] <- as.character(IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]$Name)
-}
+for (reg in names(NHmonsoon2)[-1]){names(NHmonsoon2)[which(names(NHmonsoon2)==reg)] <- as.character(IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]$Name)}
+for (reg in names(SHmonsoon2)[-1]){names(SHmonsoon2)[which(names(SHmonsoon2)==reg)] <- as.character(IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]$Name)}
  
-for (reg in names(SHmonsoon2)[-1]){
-  names(SHmonsoon2)[which(names(SHmonsoon2)==reg)] <- as.character(IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]$Name)
-}
- 
-z <- 0.1
 plt <-ggplot()+
    geom_hline(yintercept =0,color='grey70') +
-   #geom_ribbon(aes(x=RegionTS$time,ymin=apply(ensNH,1,quantile,probs=(0+z),na.rm=TRUE),
-    #                               ymax=apply(ensNH,1,quantile,probs=(1-z),na.rm=TRUE)),
-     #          fill='grey70',color=NA,alpha=0.4)+
-  # geom_ribbon(aes(x=RegionTS$time,ymin=apply(ensSH,1,quantile,probs=(0+z),na.rm=TRUE),
-   #                                ymax=apply(ensSH,1,quantile,probs=(1-z),na.rm=TRUE)),
-    #           fill='grey70',color=NA,alpha=0.4)+
+   geom_ribbon(aes(x=RegionTS$time,ymin=apply(ensNH,1,quantile,probs=(0+z),na.rm=TRUE),
+                                   ymax=apply(ensNH,1,quantile,probs=(1-z),na.rm=TRUE)),
+               fill='grey70',color=NA,alpha=0.25)+
+   geom_ribbon(aes(x=RegionTS$time,ymin=apply(ensSH,1,quantile,probs=(0+z),na.rm=TRUE),
+                                   ymax=apply(ensSH,1,quantile,probs=(1-z),na.rm=TRUE)),
+               fill='grey70',color=NA,alpha=0.25)+
    geom_line(data=melt(NHmonsoon2,  id.vars = 'time', variable.name = 'region'),
                        aes(x=time,y=value,color=region,linetype='North'),size=s)+
    geom_line(data=melt(SHmonsoon2,  id.vars = 'time', variable.name = 'region'),
@@ -134,7 +123,7 @@ plt <-ggplot()+
                                             fill="30\u00B0N JJA"),alpha=1,color="Black",linetype=1,size=s+0.2)+
    scale_x_reverse(limits = c(30000,0),breaks = seq(0, 12000, 2000),labels=seq(0, 12, 2),name="Age (ka BP)") +
    scale_y_continuous(limits=c(-100,100),name="Proxy Composite Anomaly",sec.axis = sec_axis((~./scale),name=bquote('Insolation Anomaly (W m'^-2*")"))) + 
-   coord_cartesian(xlim=c(12000,0), ylim=c(-4.2,4.2),expand	=FALSE)+
+   coord_cartesian(xlim=c(12000,0), ylim=c(-3.8,3.8),expand	=FALSE)+
    #
    scale_linetype_manual(values=c(1,4,1,1,1,1,4,1,1,4),name='Hemisphere') +
    scale_fill_manual(values=c("White","White",rep(NA,8)),name='Insolation') +
@@ -161,24 +150,6 @@ plt
 
 
 ```{r}
-ensNH <- read.csv(file.path(wd,'Data','RegionComposites',var,paste0(names(NHmonsoon)[2],'.csv')))
-for (reg in c(names(NHmonsoon)[-c(1:2)])){
-   ensNH <- cbind(ensNH,read.csv(file.path(wd,'Data','RegionComposites',var,paste0(reg,'.csv')))) 
-   
-}
-for (i in 1:ncol(ensNH)){
-   ensNH[,i] <- (ensNH[,i] - mean(ensNH[1:10,i],na.rm=TRUE))#/sd(RegionTS[,i],na.rm=TRUE) 
-}
-ensSH <- read.csv(file.path(wd,'Data','RegionComposites',var,paste0(names(SHmonsoon)[2],'.csv')))
-for (reg in c(names(SHmonsoon)[-c(1:2)])){
-   ensSH <- cbind(ensSH,read.csv(file.path(wd,'Data','RegionComposites',var,paste0(reg,'.csv')))) 
-}
-for (i in 1:ncol(ensSH)){
-   ensSH[,i] <- (ensSH[,i] - mean(ensSH[1:10,i],na.rm=TRUE))#/sd(RegionTS[,i],na.rm=TRUE) 
-}
-```
-
-```{r}
 NHmidlat2 <- NHmidlat
 SHmidlat2 <- SHmidlat
 
@@ -190,10 +161,8 @@ for (reg in names(SHmidlat2)[-1]){
   names(SHmidlat2)[which(names(SHmidlat2)==reg)] <- as.character(IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]$Name)
 }
 
-pltRolors <- c()
 pltColors <- c('#fcde9c','#faa476','#f0746e','#dc3977','#b9257a','#7c1d6f','black','grey30','grey60')
 
-z <- 0.1
 plt <-ggplot()+
    geom_hline(yintercept =0,color='grey70') +
    geom_line(data=melt(NHmidlat2,  id.vars = 'time', variable.name = 'region'),

@@ -29,9 +29,9 @@ library(sp)
 
 #Set up directories and names--------------------------------------------------------------------------------
 
-dir  <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate' #
+dir = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
 var  <- 'HC'
-save <- FALSE
+save <- TRUE
 saveDir <- file.path(dir,'Data','RegionComposites',var)
 
 
@@ -65,12 +65,13 @@ if(var == 'T'){
 
 #Set variables for composite code--------------------------------------------------------------------------------
 
-nens          <- 10     #Ensemble numbers (lower = faster)
+nens          <- 500     #Ensemble numbers (lower = faster)
 binsize       <- 100     #years (median resolution = 107yrs)
-ageMin        <- 0       #age BP
+ageMin        <- -100    #age BP
 ageMax        <- 12400   #age BP
 searchDur     <- 3500    #yrs (for 3 lake deposit data points)
-nThresh       <- 4       #minimum no. of records, else skip 
+nThresh       <- 6       #minimum no. of records, else skip 
+
 
 #Set bin vectors
 binvec   <- seq(ageMin-binsize/2, to = ageMax+binsize/2, by = binsize)

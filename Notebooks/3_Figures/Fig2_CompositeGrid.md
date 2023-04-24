@@ -2,6 +2,8 @@ Figures 2 - Holocene Hydroclimate Proxy Composites (grid)
 ================
 Chris Hancock
 
+#### ONLY SET UP FOR HYDROCLIMATE (NOT TEMP)
+
 #### Load Packages
 
 ``` r
@@ -123,13 +125,11 @@ for (sample in c(1,2)){
     regionDf <- regionData[[reg]]$SummaryDF
     #Ensemble Composite Values
     regEnsNA <- regionData[[reg]]$compEnsemble
-    regEnsNA <- (regEnsNA - as.numeric(apply(regEnsNA,2,mean,na.rm=TRUE)))/as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
-    #regEnsNA <- (regEnsNA - mean(apply(regEnsNA,1,quantile,probs=c(0.5),na.rm=TRUE),na.rm=TRUE))/sd(apply(regEnsNA,1,quantile,probs=c(0.5),na.rm=TRUE),na.rm=TRUE)
     #Create matrix for portion of timeseries with >50% data coverage
     regEns  <- matrix(NA,nrow(regEnsNA),ncol(regEnsNA))
     regEns[regionData[[reg]]$Limits50,] <- as.matrix(regEnsNA[regionData[[reg]]$Limits50 ,])
     #Set up plot
-    plotlim <- min(seq(2,8,1)[which(seq(2,8,1) > quantile(abs(regEns),0.97,na.rm=TRUE))][1],9,na.rm=TRUE)
+    #plotlim <- min(seq(2,8,1)[which(seq(2,8,1) > quantile(abs(regEns),0.97,na.rm=TRUE))][1],9,na.rm=TRUE)
     plotlim <- 4
     regPlt <- ggdraw(ggplot()+
                        theme_void()+

@@ -28,7 +28,7 @@ print("Packages Loaded")
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 #Set Working Directory
 
-wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
+wd = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
 #knitr::opts_knit$set(root.dir = wd)
 ```
 
@@ -401,7 +401,8 @@ plotTime <- ggplot(plotTimeData$data,aes(yvec,value))+
   geom_area(alpha=0.9,aes(fill=group),color='Black',size=0.2)+
   scale_fill_manual(values=plotSettings$color) +
   scale_x_reverse(name = "Age (yr BP)", limits=c(12000,0),expand=c(0,0),n.breaks=7)+
-  scale_y_continuous(name = "Count of Records",limits=c(0,length(lipdTSO)),expand=c(0,0),
+  scale_y_continuous(name = "Count of Available\nRecords Through Time",
+                     limits=c(0,length(lipdTSO)),expand=c(0,0),
                      labels=seq(0,length(lipdTSO),100), breaks=seq(0,length(lipdTSO),100))+
   theme_bw()+
   theme(text = element_text(family=figFont,size=figText),

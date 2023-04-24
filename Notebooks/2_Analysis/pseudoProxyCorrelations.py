@@ -13,7 +13,7 @@ import matplotlib.pyplot   as plt
 #Load Model Data
 #
 #Set time variables and resolution of data
-dataDir = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
+dataDir = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
 modelData = {}
 for model in ['hadcm','trace','cmip6']:
     modelData[model] = {}

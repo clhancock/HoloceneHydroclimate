@@ -4,6 +4,8 @@ author: "Chris Hancock"
 output: github_document
 ---
 
+#### ONLY SET UP FOR HYDROCLIMATE (NOT TEMP)
+
 #### Load Packages
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
@@ -27,8 +29,7 @@ print("Packages Loaded")
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 #Set Working Directory
-
-wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate/'
+wd = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/'
 #knitr::opts_knit$set(root.dir = wd)
 ```
 
@@ -38,6 +39,7 @@ wd = '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclima
 var      <- 'HC'
 modelVar <- 'pre_ANN'
 
+#Load Proxies
 lipdTSO <- readRDS(file.path(wd,'Data','Proxy','lipdData.rds'))[[var]]
 proxyDf <- read.csv(file=file.path(wd,'Data','Proxy',paste0('proxyMetaData_',var,'.csv')))
 proxyDf <- proxyDf %>% filter(season %in% c("Winter+","Summer+") == FALSE)
@@ -49,8 +51,8 @@ binvec <- read.csv(file.path(wd,'Data','RegionComposites',var,'MedianTS_byRegion
 #Load IPCC region data
 load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
 
+#For each region, get important info to plot
 regionData <- vector(mode='list')
-
 for (reg in sort(unique(proxyDf$ipccReg))){
   regionData[[reg]]$polygon   <- IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]
   regionData[[reg]]$name      <- as.character(regionData[[reg]]$polygon$Name)
@@ -243,13 +245,11 @@ for (sample in c(1,2)){
     regionDf <- regionData[[reg]]$SummaryDF
     #Ensemble Composite Values
     regEnsNA <- regionData[[reg]]$compEnsemble
-    regEnsNA <- (regEnsNA - as.numeric(apply(regEnsNA,2,mean,na.rm=TRUE)))/as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
-    #regEnsNA <- (regEnsNA - mean(apply(regEnsNA,1,quantile,probs=c(0.5),na.rm=TRUE),na.rm=TRUE))/sd(apply(regEnsNA,1,quantile,probs=c(0.5),na.rm=TRUE),na.rm=TRUE)
     #Create matrix for portion of timeseries with >50% data coverage
     regEns  <- matrix(NA,nrow(regEnsNA),ncol(regEnsNA))
     regEns[regionData[[reg]]$Limits50,] <- as.matrix(regEnsNA[regionData[[reg]]$Limits50 ,])
     #Set up plot
-    plotlim <- min(seq(2,8,1)[which(seq(2,8,1) > quantile(abs(regEns),0.97,na.rm=TRUE))][1],9,na.rm=TRUE)
+    #plotlim <- min(seq(2,8,1)[which(seq(2,8,1) > quantile(abs(regEns),0.97,na.rm=TRUE))][1],9,na.rm=TRUE)
     plotlim <- 4
     regPlt <- ggdraw(ggplot()+
                        theme_void()+

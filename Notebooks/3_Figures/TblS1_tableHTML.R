@@ -7,7 +7,7 @@ library(htmlTable)
 library(htmltools)
 library(htmlwidgets)
 library(webshot)
-wd   <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
+wd = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
 var  <- 'HC'
 
 #Load Data
@@ -71,7 +71,7 @@ for (reg in as.character(refregions$Acronym)){
 }
 
 
-filelist <- as.vector(list.files(path = file.path(dir,"Figures","Proxy","Dashboard")))
+filelist <- as.vector(list.files(path = file.path(wd,"Figures","Proxy","Dashboard")))
 
 #Create Table
 outTbl <- reactable(tbl2,
@@ -122,7 +122,7 @@ outTbl <- reactable(tbl2,
              Data are grouped by geographical region which are ordered according to Iturbide et al., (2020). 
              Within each region, records are listed alphabetically according to their dataset name.
              Columns can be resized using the column boundaries in the header row. 
-             The empty boxes below the heading allow you to search for specific records. A full discription of each row is provided in the appendix file of Hancock et al., 2022",
+             The empty boxes below the heading allow you to search for specific records. A full discription of each row is provided in the appendix file of Hancock et al., 2023",
             font_size=12, font_weight='normal', font_style='italic')
 
 outTbl

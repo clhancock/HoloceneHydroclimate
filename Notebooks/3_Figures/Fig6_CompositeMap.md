@@ -30,12 +30,41 @@ print("Packages Loaded")
 
     ## [1] "Packages Loaded"
 
-#### Load Data
+    ## Loading objects:
+    ##   IPCC_WGI_reference_regions_v4
+
+#### Figure Settings
 
 ``` r
 var      <- 'HC'
 modelVar <- 'pre_ANN'
 
+save     <- TRUE
+
+if (save){ print(paste0("save ",var," figs"))
+} else{    print(paste0("plot ",var," figs"))}
+```
+
+    ## [1] "save HC figs"
+
+``` r
+figFont <- 'Times New Roman'
+figText <- 10
+figSize <- c(6.5,7)
+alph    <- 1
+
+#Colors and Shapes - should be the same in each rmd file
+plotSettings <- vector(mode='list')
+Csettings <- c("#92C5DE","#4393C3",'#2166AC') #For ensemble
+Chadcm <- '#DDAA33'
+Ctrace <- '#BB5566'
+#
+```
+
+#### Load Data
+
+``` r
+#Load proxy data
 lipdTSO <- readRDS(file.path(wd,'Data','Proxy','lipdData.rds'))[[var]]
 proxyDf <- read.csv(file=file.path(wd,'Data','Proxy',paste0('proxyMetaData_',var,'.csv')))
 proxyDf <- proxyDf %>% filter(season %in% c("Winter+","Summer+") == FALSE)
@@ -48,16 +77,7 @@ print("Proxy data loaded ")
 #Get x axis 
 binvec <- read.csv(file.path(wd,'Data','RegionComposites',var,'MedianTS_byRegion.csv'))$time
 
-#Load IPCC region data
-load(url('https://github.com/SantanderMetGroup/ATLAS/blob/main/reference-regions/IPCC-WGI-reference-regions-v4_R.rda?raw=true'), verbose = TRUE)
-```
-
-    ## Loading objects:
-    ##   IPCC_WGI_reference_regions_v4
-
-``` r
 regionData <- vector(mode='list')
-
 for (reg in sort(unique(proxyDf$ipccReg))){
   regionData[[reg]]$polygon   <- IPCC_WGI_reference_regions_v4[IPCC_WGI_reference_regions_v4@data$Acronym == reg, ]
   regionData[[reg]]$name      <- as.character(regionData[[reg]]$polygon$Name)
@@ -81,24 +101,7 @@ for (reg in sort(unique(proxyDf$ipccReg))){
 }
 ```
 
-#### Figure Settings
-
-``` r
-save     <- TRUE
-specific <- TRUE 
-
-if (save){ print(paste0("save ",var," figs"))
-} else{    print(paste0("plot ",var," figs"))}
-```
-
-    ## [1] "save HC figs"
-
-``` r
-figFont <- 'Times New Roman'
-figText <- 10
-figSize <- c(6.5,7)
-alph    <- 1
-```
+![](Fig6_CompositeMap_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 \####Plot Map
 
@@ -117,7 +120,7 @@ if (!is.na(modelVar)){
   }
 }
 
-#Names----
+#Names----To allow cross refrence with figure 2
 page1<- c('WCA','ECA','TIB','EAS','NCA','SAS','SCA','SEA',
           'NWS','SAH','SAM','NEAF','NES','SEAF','WSAF','ESAF')
 page2<- c('NEN','GIC','NWN','WNA','CNA','ENA','NEU','WSB',
@@ -134,10 +137,8 @@ ySize <- 0.07
 map<-ggdraw(basemapPrj)
 for (reg in regNames){ 
   #Load Data for Region
-  regTso   <- regionData[[reg]]$LiPD
-  regionDf <- regionData[[reg]]$SummaryDF
   #Ensemble Composite Values
-  regEnsNA <- regionData[[reg]]$compEnsemble
+  regEnsNA <- as.matrix(regionData[[reg]]$compEnsemble)
   #Model Data
   scaleVal <- 1
   if (var == 'HC'){scaleVal <- 365}
@@ -147,11 +148,13 @@ for (reg in regNames){
     cmip6Vals <- Data[['cmip6']][[reg]]*scaleVal
   }
   #Standardize mean at 0
-  #regEnsNA <- as.matrix(regEnsNA - as.numeric(apply(regEnsNA[which(between(binvec,0,1000)),],2,mean,na.rm=TRUE)))
+  regEnsNA <- regEnsNA-mean(regEnsNA[which(between(binvec,0,1000)),],na.rm=TRUE)
   #Standardize variance to match model
   if (var == 'HC'){
-    regEnsNA <- regEnsNA / as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE))
-    if (!is.na(modelVar)){regEnsNA <- regEnsNA * mean(sd(traceVals,na.rm=TRUE),sd(hadcmVals,na.rm=TRUE))}
+    if (!is.na(modelVar)){
+      scaleVal <- mean(sd(traceVals,na.rm=TRUE),sd(hadcmVals,na.rm=TRUE)) / median(as.numeric(apply(regEnsNA,2,sd,na.rm=TRUE)),na.rm=TRUE)
+      regEnsNA <- regEnsNA * scaleVal
+    }
   }
   #
   regEns  <- matrix(NA,nrow(regEnsNA),ncol(regEnsNA))
@@ -223,7 +226,7 @@ for (reg in regNames){
 map
 ```
 
-![](Fig6_CompositeMap_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](Fig6_CompositeMap_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ``` r
 if (var == 'HC'){
@@ -279,7 +282,7 @@ scale <- ggplot() +
 scale
 ```
 
-![](Fig6_CompositeMap_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](Fig6_CompositeMap_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ``` r
 if (var == 'HC'){

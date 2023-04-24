@@ -1,4 +1,4 @@
-dir <- '/Volumes/GoogleDrive/My Drive/zResearch/Manuscript/2021_HoloceneHydroclimate/2021_HoloceneHydroclimate' #
+dir = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
 var <- 'pre'
 data <- read.csv(file.path(dir,'Data','Model','pseudoProxyCorr_pre.csv'))
 data3 <- read.csv(file.path(dir,'Data','Model','pseudoProxyCorr_pre_byCount.csv'))
