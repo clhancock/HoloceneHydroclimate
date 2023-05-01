@@ -97,7 +97,7 @@ for model in cmip6['mh'].keys():
         vals = vals.weighted(vals.days_in_months).mean(dim=("month"))
         cmipEns[szn].append(vals.drop('days_in_months'))
 
-#Save to_netcdf
+#%%Save to_netcdf
 monthlyMean = xr.concat(monthlyMean,dim='model').mean(dim=("model"))
 monthlyMean.to_netcdf(saveDir+'Data/Model/cmip6/cmip6'+'_MonthlyMean.nc')
 for szn in seasons.keys(): 

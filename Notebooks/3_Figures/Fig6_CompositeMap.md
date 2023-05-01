@@ -36,8 +36,8 @@ print("Packages Loaded")
 #### Figure Settings
 
 ``` r
-var      <- 'HC'
-modelVar <- 'pre_ANN'
+var      <- 'T'
+modelVar <- 'tas_ANN'
 
 save     <- TRUE
 
@@ -45,7 +45,7 @@ if (save){ print(paste0("save ",var," figs"))
 } else{    print(paste0("plot ",var," figs"))}
 ```
 
-    ## [1] "save HC figs"
+    ## [1] "save T figs"
 
 ``` r
 figFont <- 'Times New Roman'

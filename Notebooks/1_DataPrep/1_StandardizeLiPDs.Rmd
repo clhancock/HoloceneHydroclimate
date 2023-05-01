@@ -78,6 +78,9 @@ tsids <- pullTsVariable(TS_hc, "paleoData_TSid")
 #Fix ages from ka to yr BP
 TS_hc[[which(tsids == "S2LRbRVYOu2hWu")]][["age"]] <- TS_hc[[which(pullTsVariable(TS_hc, "paleoData_TSID") == "S2LRbRVYOu2hWu")]][["age"]]/1000
 
+TS_hc[[which(tsids == "WEB6e660f3d")]][["age"]] <- TS_hc[[which(pullTsVariable(TS_hc, "paleoData_TSID") == "WEB6e660f3d")]][["age"]]*1000
+
+
 ##### originalDataUrl
 TS_hc[[which(tsids=="WEB6e660f3d")]]$originalDataUrl    <-"https://doi.org/10.1016/j.geomorph.2021.107896"
 TS_hc[[which(tsids=="WEB8b32a2e0")]]$originalDataUrl    <-"https://www.ncei.noaa.gov/access/paleo-search/study/5451"

@@ -10,6 +10,7 @@ regNames <- hcNames[which(hcNames %in% tNames)][-1]
 x = 500
 Proxy_HC_T_Rvals = matrix(nrow= x*x,ncol=length(regNames))
 for (reg in regNames){
+  print(reg)
   HCseries <- read.csv(file.path(wd,'Data','RegionComposites','HC',
                                  paste(reg,'.csv',sep='')))
   T_series <- read.csv(file.path(wd,'Data','RegionComposites','T',

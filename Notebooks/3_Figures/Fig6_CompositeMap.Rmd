@@ -46,8 +46,8 @@ countries  <- sp::spTransform(countries,  CRSobj = PROJ)
 #### Figure Settings
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-var      <- 'HC'
-modelVar <- 'pre_ANN'
+var      <- 'T'
+modelVar <- 'tas_ANN'
 
 save     <- TRUE
 

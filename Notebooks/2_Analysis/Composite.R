@@ -34,7 +34,7 @@ lipdTSO  <- lipdData[-which(pullTsVariable(lipdData,"climateInterpretation1_seas
 if(var == 'T'){
   lipdTSO <- filterTs(lipdTSO,'paleoData_units == degC')
   lipdTSO <- filterTs(lipdTSO,'paleoData_datum == abs')
-  std <- TRUE       #Use calibrated data for T so no need to normalize variance #Change to true so that a more 1:1: comparison 4/24/23
+  std <- FALSE       #Use calibrated data for T so no need to normalize variance #Change to true so that a more 1:1: comparison 4/24/23
 } else{std <- TRUE} #Normalize HC variance because data recorded with different units
 
 
@@ -42,7 +42,7 @@ if(var == 'T'){
 
 nens          <- 500     #Ensemble numbers (lower = faster)
 binsize       <- 100     #years (median resolution = 109yrs)
-ageMin        <- 0       #age BP
+ageMin        <- 0       #age BP 
 ageMax        <- 12400   #age BP
 searchDur     <- 3500    #yrs (for 3 lake deposit data points)
 nThresh       <- 6       #minimum no. of records, else skip 
@@ -56,8 +56,10 @@ regNames <- data.frame(name=pullTsVariable(lipdTSO,'geo_ipccRegion')) %>%
   group_by(name) %>% 
   dplyr::summarise(n = n()) %>% 
   filter(n >= nThresh)
-regNames <- c(as.character(regNames$name),'EAN','SSA') #Add 2 SH regions with fewer records to gain global coverage
 
+if (var != 'T'){
+  regNames <- c(as.character(regNames$name),'EAN','SSA') #Add 2 SH regions with fewer records to gain global coverage
+} else{regNames <- c(as.character(regNames$name))}
 
 #Calculate reconstructions--------------------------------------------------------------------------------
 
@@ -94,7 +96,7 @@ for (reg in c(regNames)) {
                              duration             = searchDur,
                              searchRange          = c(1000,10000),
                              normalizeVariance    = std,
-                             minN                 = 3)
+                             minN                 = 8)
     return(list(composite = tc$composite,count = tc$count))
   }
   # Reformat Data
@@ -110,7 +112,7 @@ for (reg in c(regNames)) {
 }
 
 #plot E Asia region to confirm that everything looks good
-plotTimeseriesEnsRibbons(X = binYears[1:which(binYears==12000)],Y = compositeEnsemble[['SAS']] )+
+plotTimeseriesEnsRibbons(X = binYears[1:which(binYears==12000)],Y = compositeEnsemble[['WNA']] )+
   scale_x_reverse(name = "age (yr BP)",         oob = scales::squish)+
   scale_y_continuous(name = "Standardized Anomaly",oob = scales::squish)+
   theme_bw()#+ggtitle(paste("S Asia (using align interpretation = TRUE"))
