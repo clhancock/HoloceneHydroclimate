@@ -1,7 +1,7 @@
 # HoloceneHydroclimate
 Repository for data, code, and figures used by Hancock et al. (2023).
 
-The proxy records in the Holocene Hydroclimate dataset are provided here: 
+The proxy records in the Holocene Hydroclimate dataset are provided here:  
 https://lipdverse.org/HoloceneHydroclimate/current_version/
 
 A table listing the proxy records is provided here: 
