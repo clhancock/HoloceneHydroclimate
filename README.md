@@ -1,6 +1,8 @@
 # HoloceneHydroclimate
 Repository for data, code, and figures used by Hancock et al. (2023).
 
+View the data here: https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Proxy/TableS1/TableS1.html
+
 Hancock, C., McKay, N. P., Erb, M. P., Kaufman, D. K., Routson, C., Ivanovic, R. F., Gregoire, L. J., and Valdes, P.: Global synthesis of regional Holocene hydroclimate variability using proxy and model data, Paleoceanography and Paleoclimatology
 
 ## Data ================================
