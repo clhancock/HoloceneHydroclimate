@@ -8,7 +8,7 @@
 
 
 #library(compositeR)
-devtools::install("/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate/Notebooks/compositeR")
+devtools::install("/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/compositeR")
 library(compositeR)
 library(doParallel)
 library(dplyr)
@@ -23,8 +23,8 @@ library(tidyverse)
 #Set up directories and names--------------------------------------------------------------------------------
 
 wd = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
-var  <- 'T'
-save <- TRUE
+var  <- 'HC'
+save <- FALSE
 
 #Load Data without winter+ or summer+ seasonality--------------------------------------------------------------------------------
 
@@ -68,7 +68,7 @@ compositeEnsemble <- vector(mode='list')
 medianCompositeTS <- data_frame(time=binYears[1:which(binYears==12000)])
 
 #Loop to composite (by region)
-for (reg in c(regNames)) {
+for (reg in c('ENA')) { #regNames
   lipdReg  <- filterTs(lipdTSO,paste('geo_ipccRegion ==',reg))
   regN     <- length(lipdReg)
   # If sufficient data, use a sample for each iteration
@@ -96,7 +96,7 @@ for (reg in c(regNames)) {
                              duration             = searchDur,
                              searchRange          = c(1000,10000),
                              normalizeVariance    = std,
-                             minN                 = 8)
+                             minN                 = 3)
     return(list(composite = tc$composite,count = tc$count))
   }
   # Reformat Data
@@ -111,11 +111,11 @@ for (reg in c(regNames)) {
   medianCompositeTS[[reg]]  <- apply(regionComposite,1,median,na.rm=TRUE)
 }
 
-#plot E Asia region to confirm that everything looks good
-plotTimeseriesEnsRibbons(X = binYears[1:which(binYears==12000)],Y = compositeEnsemble[['WNA']] )+
-  scale_x_reverse(name = "age (yr BP)",         oob = scales::squish)+
-  scale_y_continuous(name = "Standardized Anomaly",oob = scales::squish)+
-  theme_bw()#+ggtitle(paste("S Asia (using align interpretation = TRUE"))
+#plot an example region to confirm that everything looks good
+# plotTimeseriesEnsRibbons(X = binYears[1:which(binYears==12000)],Y = compositeEnsemble[['WNA']] )+
+#   scale_x_reverse(name = "age (yr BP)",         oob = scales::squish)+
+#   scale_y_continuous(name = "Standardized Anomaly",oob = scales::squish)+
+#   theme_bw()#+ggtitle(paste("S Asia (using align interpretation = TRUE"))
 
 
 #Save--------------------------------------------------------------------------------

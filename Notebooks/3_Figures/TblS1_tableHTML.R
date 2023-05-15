@@ -85,7 +85,11 @@ outTbl <- reactable(tbl2,
  sortable     = FALSE,
  showSortable = FALSE,
  borderless   = TRUE,
- compact      = TRUE,
+ #compact      = TRUE,
+   # defaultColDef = colDef(
+  #    minWidth = 100,
+  #    resizable = TRUE
+  # ),
  theme = reactableTheme(
   borderWidth = 1.2, borderColor='Black',
   headerStyle = list(`border-bottom` = "double",`border-top` = "thin solid", borderColor = "#555",borderWidth = 2,align = 'left')),
@@ -94,35 +98,35 @@ outTbl <- reactable(tbl2,
   #if (index %in% idx) {list(      `border-bottom` = "thin solid")}
   #else if (index %in% idx2) {list(`border-top   ` = "thin solid")}},
  columns   = list(
-  Region          = colDef(width=160,align = 'left'),
-  Dataset         = colDef(width=170,align = 'left', name='Dataset Name (Site.Author.Year)', cell = function(value, index){
+  Region          = colDef(minWidth=160,align = 'left'),
+  Dataset         = colDef(minWidth=170,align = 'left', name='Dataset Name (Site.Author.Year)', cell = function(value, index){
     htmltools::tags$a(href = paste('http://lipdverse.org/HoloceneHydroclimate/current_version/',value,'.html',sep=''), target = "_blank", as.character(value))}),
-  TSid            = colDef(width=80, align = 'left', name='TSid (unique)', cell = function(value, index){
+  TSid            = colDef(minWidth=80, align = 'left', name='TSid (unique)', cell = function(value, index){
     htmltools::tags$a(href = paste("https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Proxy/Dashboard/",
                                    filelist[which(grepl(value,filelist))],sep=""), target = "_blank", as.character(value))}),
-  Archive         = colDef(width=80, align = 'left'),
-  Category        = colDef(width=80, align = 'left'),
-  Proxy           = colDef(width=80, align = 'left'),
-  Interp          = colDef(width=45, align = 'center'),
-  Season          = colDef(width=60, align = 'center'),
-  Direction       = colDef(width=60, align = 'center'),
-  PublicationDOI  = colDef(width=150,align = 'left', cell = function(value, index){
+  Archive         = colDef(minWidth=80, align = 'left'),
+  Category        = colDef(minWidth=80, align = 'left'),
+  Proxy           = colDef(minWidth=80, align = 'left'),
+  Interp          = colDef(minWidth=45, align = 'center'),
+  Season          = colDef(minWidth=60, align = 'center'),
+  Direction       = colDef(minWidth=60, align = 'center'),
+  PublicationDOI  = colDef(minWidth=150,align = 'left', cell = function(value, index){
     htmltools::tags$a(href = value, target = "_blank", as.character(value))}),
-  SourceURL  = colDef(width=150,align = 'left', cell = function(value, index){
+  SourceURL  = colDef(minWidth=150,align = 'left', cell = function(value, index){
     htmltools::tags$a(href = value, target = "_blank", as.character(value))}),
-  #SourceURL = colDef(width=150,align = 'left'),
-  AgeRange        = colDef(width=70, align = 'center', name='Age Range (ka)',filterable=FALSE),
-  Resolution      = colDef(width=70, align = 'center',name='Resolution (yrs/sample)'),
-  AgeControlN     = colDef(width=90, align = 'center', name='Age Control (#)'),
-  AgeControlMax   = colDef(width=120, align = 'center', name='Max Age Control Gap (yrs)'),
-  Lat             = colDef(width=40, align = 'right'),
-  Lon             = colDef(width=50, align = 'right')
+  SourceURL = colDef(minWidth=150,align = 'left'),
+  AgeRange        = colDef(minWidth=70, align = 'center', name='Age Range (ka)',filterable=FALSE),
+  Resolution      = colDef(minWidth=70, align = 'center',name='Resolution (yrs/sample)'),
+  AgeControlN     = colDef(minWidth=90, align = 'center', name='Age Control (#)'),
+  AgeControlMax   = colDef(minWidth=120, align = 'center', name='Max Age Control Gap (yrs)'),
+  Lat             = colDef(minWidth=40, align = 'right'),
+  Lon             = colDef(minWidth=50, align = 'right')
   ))  %>%
   add_title("Table S1. List of proxy records included in the Holocene Hydroclimate dataset.
              Data are grouped by geographical region which are ordered according to Iturbide et al., (2020). 
              Within each region, records are listed alphabetically according to their dataset name.
              Columns can be resized using the column boundaries in the header row. 
-             The empty boxes below the heading allow you to search for specific records. A full discription of each row is provided in the appendix file of Hancock et al., 2023",
+             The empty boxes below the heading allow you to search for specific records. A full description of each row is provided in the appendix file of Hancock et al. (2023)",
             font_size=12, font_weight='normal', font_style='italic')
 
 outTbl

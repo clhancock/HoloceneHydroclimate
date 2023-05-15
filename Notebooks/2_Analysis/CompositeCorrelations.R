@@ -2,6 +2,8 @@ library(dplyr)
 library(geoChronR)
 
 wd<-getwd()
+wd = '/Users/chrishancock/Library/CloudStorage/OneDrive-NorthernArizonaUniversity/Research/Manuscript/HoloceneHydroclimate/HoloceneHydroclimate'
+
 hcNames <- names(read.csv(file.path(wd,'Data','RegionComposites','HC','MedianTS_byRegion.csv')))
 tNames  <- names(read.csv(file.path(wd,'Data','RegionComposites','T','MedianTS_byRegion.csv')))
 time <- as.matrix(read.csv(file.path(wd,'Data','RegionComposites','HC','MedianTS_byRegion.csv'))[,'time'])
@@ -9,7 +11,7 @@ regNames <- hcNames[which(hcNames %in% tNames)][-1]
 
 x = 500
 Proxy_HC_T_Rvals = matrix(nrow= x*x,ncol=length(regNames))
-for (reg in regNames){
+for (reg in c('ENA')){
   print(reg)
   HCseries <- read.csv(file.path(wd,'Data','RegionComposites','HC',
                                  paste(reg,'.csv',sep='')))
@@ -30,3 +32,5 @@ names(correlationEnsemble) <- regNames
 write.csv(correlationEnsemble,
           file=file.path(wd,'Data',
                          paste('HC_T_RegionalProxyEnsCorrelations.csv',sep='')))
+
+#read.csv()

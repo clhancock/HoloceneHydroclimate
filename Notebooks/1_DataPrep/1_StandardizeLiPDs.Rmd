@@ -144,6 +144,18 @@ TS_hc <- TS_hc[-which(tsids %in% c('lcRYFM1oW2BMerncgWT',  #Legacy Climate error
 ```
 
 ```{r}
+#The LiPD ages are C14 ages
+for (i in which(pullTsVariable(TS__t, "dataSetName") %in% c('Sixteen.Futyma.1986'))){
+  #Replacement ages are converted using the Convert2calAge.R script
+  print(TS__t[[i]]$dataSetName)
+  TS__t[[i]]$age <- as.numeric(c(2208.5,2338.5,2533.5,2733.5,2953.5,3133.5,3278.5,3408.5,
+                                 3543.5,3668.5,3793.5,3923.5,4058.5,4268.5,4758.5,5228.5,5688.5,6073.5,
+                                 6478.5,6743.5 ,7183.5,7333.5,7568.5,7788.5,8013.5,8243.5,8558.5,9103.5,
+                                 9683.5,10213.5,10838.5,11533.5,12243.5))
+}
+```
+
+```{r}
 #Consolidate
 lipdData <- list(T = TS__t, HC = TS_hc)
 ```
