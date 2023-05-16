@@ -40,7 +40,7 @@ These results are shown in Fig. 4
 ```
 RegionalTS:
 
--csv files containing the mean of data binned by IPCC region for pre, tas, and p-e. 
+-csv files containing the mean of data binned by IPCC region for pre, tas, and p-e.  
 -For hadcm/trace, each region is a column and each row an age.
 -For cmip6, each row is a model
 -Land/all files distinguish if the regional mean includes an ocean mask. 
@@ -86,6 +86,7 @@ Proxy_MetaData
 ### Regional Composites
 ```
 -csv files for hydroclimate and temperature proxy composites for each region
+-Hydroclimate composites are standardized anomalies (z-scores). Temperatures are degC anomalies. Both relative to the Holocene mean. 
 -Each region has a csv file which includes the entire composite ensemble
 -'MedianTS_byRegion.csv' list the ensemble median for each region in a single file
 -Results of /Notebooks/2_Analysis/Composite.R
