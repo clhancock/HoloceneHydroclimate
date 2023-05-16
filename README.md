@@ -5,7 +5,7 @@ The proxy records in the Holocene Hydroclimate dataset are provided here:
 https://lipdverse.org/HoloceneHydroclimate/current_version/
 
 A table listing the proxy records is provided here: 
-https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Proxy/TableS1/TableS1.html
+https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Proxy/TableS1/TableS1.html and described by: https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Proxy/TableS1/TableS1_Key.pdf
 
 Hancock, C., McKay, N. P., Erb, M. P., Kaufman, D. K., Routson, C., Ivanovic, R. F., Gregoire, L. J., and Valdes, P.: Global synthesis of regional Holocene hydroclimate variability using proxy and model data, Paleoceanography and Paleoclimatology
 
@@ -126,6 +126,7 @@ Each script named to indicate which figure it was used to create (Fig1_...)
 ## Figures ================================
 
 ```
+Figure used in publication are identified in '/Notebooks/3_Figures/README.md'
 Figures created by /Notebooks/3_Figures/...
 ```
 
