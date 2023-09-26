@@ -12,7 +12,8 @@ https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Proxy/TableS
 A complete list of references is provided here:
 https://lipdverse.org/HoloceneHydroclimate/current_version/references.html
 
-Hancock, C., McKay, N. P., Erb, M. P., Kaufman, D. K., Routson, C., Ivanovic, R. F., Gregoire, L. J., and Valdes, P.: Global synthesis of regional Holocene hydroclimate variability using proxy and model data, Paleoceanography and Paleoclimatology
+
+Cite: Hancock, C. L., McKay, N. P., Erb, M. P., Kaufman, D. S., Routson, C. R., Ivanovic, R. F., et al. (2023). Global synthesis of regional Holocene hydroclimate variability using proxy and model data. Paleoceanography and Paleoclimatology, 38, e2022PA004597. https://doi.org/10.1029/2022PA004597
 
 ## Data ================================
 
