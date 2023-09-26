@@ -5,7 +5,9 @@ The proxy records in the most recent Holocene Hydroclimate dataset are provided 
 https://lipdverse.org/HoloceneHydroclimate/current_version/
 
 A table listing the proxy records is provided here: 
-https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Proxy/TableS1/TableS1.html and described by: https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Proxy/TableS1/TableS1_Key.pdf
+https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Proxy/TableS1/TableS1.html 
+and described by: 
+https://raw.githack.com/clhancock/HoloceneHydroclimate/main/Figures/Proxy/TableS1/TableS1_Key.pdf
 
 A complete list of references is provided here:
 https://lipdverse.org/HoloceneHydroclimate/current_version/references.html
