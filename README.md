@@ -14,7 +14,7 @@ https://lipdverse.org/HoloceneHydroclimate/current_version/references.html
 
 Cite: Hancock, C. L., McKay, N. P., Erb, M. P., Kaufman, D. S., Routson, C. R., Ivanovic, R. F., et al. (2023). Global synthesis of regional Holocene hydroclimate variability using proxy and model data. Paleoceanography and Paleoclimatology, 38, e2022PA004597. https://doi.org/10.1029/2022PA004597
 
-[Cover.pdf](https://github.com/clhancock/HoloceneHydroclimate/files/12729999/Cover.pdf)
+[ArticleCoverPage.pdf](https://github.com/clhancock/HoloceneHydroclimate/files/12729999/Cover.pdf)
 
 
 ## Data ================================
